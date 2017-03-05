@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# lets-encrypt
+RewriteRule ^.well-known/.*$ - [L]
+
+# Allowed
+RewriteRule ^(1.0)/.*$ - [L]
+
+# Everything Else
+RewriteRule ^(.*)$ index.php [L]
