@@ -7,11 +7,20 @@
 			}
 		}
 
+		/**
+		 * Helper function for get()/post()/delete() to get the domain object or
+		 * return an error.
+		 * If a domain param is not provided, we will return false. If a domain
+		 * param is provided and the domain is not found, we will error out.
+		 *
+		 * @param $params Params array.
+		 * @return Domain object or FALSE if no domain provided or found.
+		 */
 		private function getDomainFromParam($params) {
 			if (isset($params['domain'])) {
 				$domain = $this->getContextKey('user')->getDomainByName($params['domain']);
 				if ($domain === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown domain: ' . $domain);
+					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
 				}
 			} else {
 				$domain = FALSE;
@@ -20,14 +29,34 @@
 			return $domain;
 		}
 
+		/**
+		 * Helper function for get()/post()/delete() to get the record object or
+		 * return an error.
+		 * If a record param is not provided, we will return false. If a record
+		 * param is provided and the record is not found, we will error out.
+		 *
+		 * @param $domain Domain object to search under.
+		 * @param $params Params array.
+		 * @return Domain object or FALSE if no domain provided or found.
+		 */
+		private function getRecordFromParam($domain, $params) {
+			if (isset($params['recordid'])) {
+				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
+				if ($record === FALSE) {
+					$this->getContextKey('response')->sendError('Unknown record id: ' . $params['recordid']);
+				}
+			} else {
+				$record = FALSE;
+			}
+
+			return $record;
+		}
+
 		public function get($params) {
 			$domain = $this->getDomainFromParam($params);
 
 			if (isset($params['recordid'])) {
-				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
-				if ($record === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown record id for domain ' . $params['domain'] . ' : ' . $params['recordid']);
-				}
+				$record = $this->getRecordFromParam($domain, $params);
 
 				return $this->getRecordID($domain, $record);
 			} else if (isset($params['records'])) {
@@ -45,10 +74,7 @@
 			$domain = $this->getDomainFromParam($params);
 
 			if (isset($params['recordid'])) {
-				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
-				if ($record === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown record id for domain ' . $params['domain'] . ' : ' . $params['recordid']);
-				}
+				$record = $this->getRecordFromParam($domain, $params);
 
 				return $this->updateRecordID($domain, $record);
 			} else if (isset($params['records'])) {
@@ -103,6 +129,13 @@
 			$r = $domain->toArray();
 			unset($r['owner']);
 
+			$soa = $domain->getSOARecord();
+			if ($soa !== FALSE) {
+				$soa = $soa->toArray();
+				unset($soa['domain_id']);
+			}
+			$r['SOA'] = $soa;
+
 			$this->getContextKey('response')->data($r);
 
 			return true;
@@ -128,14 +161,23 @@
 		}
 
 		private function deleteRecordID($domain, $record) {
+			$this->getContextKey('response')->data('deleted', $record->delete() ? 'true' : 'false');
 			return true;
 		}
 
 		private function deleteRecords($domain) {
+			$records = $domain->getRecords();
+			$count = 0;
+			foreach ($records as $record) {
+				if ($record->delete()) { $count++; }
+			}
+			$this->getContextKey('response')->set('deleted', $count);
+
 			return true;
 		}
 
 		private function deleteDomain($domain) {
+			$this->getContextKey('response')->data('deleted', $domain->delete() ? 'true' : 'false');
 			return true;
 		}
 

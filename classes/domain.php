@@ -47,7 +47,7 @@ class Domain extends DBObject {
 	 * @return List of record objects for this domain.
 	 */
 	public function getRecords() {
-		$result = Record::find($this->getDB(), ['domain_id' => $this->getID()]);
+		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA'], ['type' => '!=']);
 		return ($result) ? $result : [];
 	}
 
@@ -58,7 +58,17 @@ class Domain extends DBObject {
 	 * @return Record object if found else FALSE.
 	 */
 	public function getRecord($id) {
-		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'id' => $id]);
+		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'id' => $id, 'type' => 'SOA'], ['type' => '!=']);
+		return ($result) ? $result[0] : FALSE;
+	}
+
+	/**
+	 * Get the SOA record for this domain.
+	 *
+	 * @return Record object if found else FALSE.
+	 */
+	public function getSOARecord() {
+		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA']);
 		return ($result) ? $result[0] : FALSE;
 	}
 }

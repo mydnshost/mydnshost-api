@@ -1,13 +1,13 @@
 <?php
 
 	class Userdata extends APIMethod {
-		public function check($requestMethod, $matches) {
+		public function check($requestMethod, $params) {
 			if ($this->getContextKey('user') == NULL) {
 				throw new APIMethod_NeedsAuthentication();
 			}
 		}
 
-		public function get($matches) {
+		public function get($params) {
 			$user = $this->getContextKey('user');
 
 			$userinfo = ['id' => $user->getId(),

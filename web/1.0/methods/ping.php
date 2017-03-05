@@ -1,9 +1,9 @@
 <?php
 
 	class Ping extends APIMethod {
-		public function get($matches) {
-			if (isset($matches['time'])) {
-				$this->getContext()['response']->set('time', $matches['time']);
+		public function get($params) {
+			if (isset($params['time'])) {
+				$this->getContext()['response']->set('time', $params['time']);
 			}
 
 			return TRUE;

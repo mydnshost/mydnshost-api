@@ -8,34 +8,34 @@ abstract class APIMethod {
 	 * context for calling this method.
 	 *
 	 * @param $requestMethod How was this method called (GET/POST/DELETE)
-	 * @param $matches The URL matches when finding the route.
+	 * @param $params The URL matches when finding the route.
 	 * @throws An exception if we are not in a position to call this method.
 	 */
-	public function check($requestMethod, $matches) { }
+	public function check($requestMethod, $params) { }
 
 	/**
 	 * Called for a GET request that has been routed to this object.
 	 *
-	 * @param $matches The URL matches when finding the route.
+	 * @param $params The URL matches when finding the route.
 	 * @return true if the method was handled, else false.
 	 */
-	public function get($matches) { return false; }
+	public function get($params) { return false; }
 
 	/**
 	 * Called for a POST/PUT request that has been routed to this object.
 	 *
-	 * @param $matches The URL matches when finding the route.
+	 * @param $params The URL matches when finding the route.
 	 * @return true if the method was handled, else false.
 	 */
-	public function post($matches) { return false; }
+	public function post($params) { return false; }
 
 	/**
 	 * Called for a DELETE request that has been routed to this object.
 	 *
-	 * @param $matches The URL matches when finding the route.
+	 * @param $params The URL matches when finding the route.
 	 * @return true if the method was handled, else false.
 	 */
-	public function delete($matches) { return false; }
+	public function delete($params) { return false; }
 
 	/**
 	 * Get the API Context for this method.
@@ -69,20 +69,20 @@ abstract class APIMethod {
 	 * Handle calling this method.
 	 *
 	 * @param $requestMethod How was this method called (GET/POST/DELETE)
-	 * @param $matches The URL matches when finding the route.
+	 * @param $params The URL matches when finding the route.
 	 * @return true if the method was handled, else false.
 	 */
-	public final function call($requestMethod, $matches) {
+	public function call($requestMethod, $params) {
 		switch (strtoupper($requestMethod)) {
 			case "GET":
-				$this->check("GET", $matches);
-				return $this->get($matches);
+				$this->check("GET", $params);
+				return $this->get($params);
 			case "POST":
-				$this->check("POST", $matches);
-				return $this->post($matches);
+				$this->check("POST", $params);
+				return $this->post($params);
 			case "DELETE":
-				$this->check("DELETE", $matches);
-				return $this->delete($matches);
+				$this->check("DELETE", $params);
+				return $this->delete($params);
 			default:
 				return FALSE;
 		}
