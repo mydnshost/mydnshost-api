@@ -16,6 +16,10 @@ class Record extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'records';
 
+	public function __construct($db) {
+		parent::__construct($db);
+	}
+
 	public function setDomainID($value) {
 		$this->setData('domain_id', $value);
 	}

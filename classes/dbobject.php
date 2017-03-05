@@ -19,6 +19,26 @@ abstract class DBObject {
 	private $changed = FALSE;
 	/** last error for this object. */
 	private $lastError = NULL;
+	/** The DB Object that owns this DBObject */
+	private $myDB = NULL;
+
+	/**
+	 * Create a new DBObect
+	 *
+	 * @param $db Database we belong to
+	 */
+	public function __construct($db) {
+		$this->myDB = $db;
+	}
+
+	/**
+	 * Get our database.
+	 *
+	 * @return Database we belong to
+	 */
+	public function getDB() {
+		return $this->myDB;
+	}
 
 	/**
 	 * Set a data value.
@@ -158,7 +178,7 @@ abstract class DBObject {
 			$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 			foreach ($rows as $row) {
 				$class = get_called_class();
-				$obj = new $class();
+				$obj = new $class($db);
 				$obj->setFromArray($row);
 				$obj->postLoad();
 				$obj->changed = false;
@@ -178,10 +198,9 @@ abstract class DBObject {
 	 * Save this object to the database.
 	 * This will attempt an INSERT if isKnown() is false, else an UPDATE.
 	 *
-	 * @param $db Database object to save to.
 	 * @return TRUE if we saved successfully, else false.
 	 */
-	public function save($db) {
+	public function save() {
 		$this->presave();
 		if (!$this->changed) { return TRUE; }
 
@@ -211,11 +230,11 @@ abstract class DBObject {
 			$query = sprintf('INSERT INTO `%s` (%s) VALUES (%s)', static::$_table, implode(', ', $keys), implode(', ', $placeholders));
 		}
 
-		$statement = $db->getPDO()->prepare($query);
+		$statement = $this->myDB->getPDO()->prepare($query);
 		$result = $statement->execute($params);
 		if ($result) {
 			if (!$this->isKnown()) {
-				$this->setData(static::$_key, $db->getPDO()->lastInsertId());
+				$this->setData(static::$_key, $this->myDB->getPDO()->lastInsertId());
 			}
 			$this->postSave($result);
 			$this->changed = false;
@@ -232,13 +251,12 @@ abstract class DBObject {
 	/**
 	 * Delete this object from the database.
 	 *
-	 * @param $db Database object to save to.
 	 * @return TRUE if we were deleted, else false.
 	 */
-	public function delete($db) {
+	public function delete() {
 		if (!$this->isKnown()) { return FALSE; }
 		$query = sprintf('DELETE FROM %s WHERE `%s` = :key', static::$_table, static::$_key);
-		$statement = $db->getPDO()->prepare($query);
+		$statement = $this->myDB->getPDO()->prepare($query);
 		$params[':key'] = $this->getData(static::$_key);
 		$result = $statement->execute($params);
 		if (!$result) {

@@ -45,7 +45,7 @@
 	$context = ['response' => $resp, 'data' => $postdata, 'db' => DB::get()];
 
 	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
-		$user = User::loadFromEmail(DB::get(), $_SERVER['PHP_AUTH_USER']);
+		$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
 			$context['user'] = $user;
@@ -53,7 +53,7 @@
 
 		if (isset($postdata['impersonate'])) {
 			if ($user->isAdmin()) {
-				$impersonating = User::loadFromEmail(DB::get(), $postdata['impersonate']);
+				$impersonating = User::loadFromEmail($context['db'], $postdata['impersonate']);
 				if ($impersonating !== FALSE) {
 					// All the API Methods only look for user.
 					$context['user'] = $impersonating;

@@ -1,19 +1,19 @@
 <?php
 
 	class Domains extends APIMethod {
-		public function check($requestMethod, $matches) {
+		public function check($requestMethod, $params) {
 			if ($this->getContextKey('user') == NULL) {
 				throw new APIMethod_NeedsAuthentication();
 			}
 		}
 
-		public function get($matches) {
-			if (isset($matches['recordid'])) {
-				return $this->getRecordID($matches['domain'], $matches['recordid']);
-			} else if (isset($matches['records'])) {
-				return $this->getRecords($matches['domain']);
-			} else if (isset($matches['domain'])) {
-				return $this->getDomainInfo($matches['domain']);
+		public function get($params) {
+			if (isset($params['recordid'])) {
+				return $this->getRecordID($params['domain'], $params['recordid']);
+			} else if (isset($params['records'])) {
+				return $this->getRecords($params['domain']);
+			} else if (isset($params['domain'])) {
+				return $this->getDomainInfo($params['domain']);
 			} else {
 				return $this->getDomainList();
 			}
@@ -21,33 +21,33 @@
 			return FALSE;
 		}
 
-		public function post($matches) {
-			if (isset($matches['recordid'])) {
-				return $this->updateRecordID($matches['domain'], $matches['recordid']);
-			} else if (isset($matches['records'])) {
-				return $this->updateRecords($matches['domain']);
+		public function post($params) {
+			if (isset($params['recordid'])) {
+				return $this->updateRecordID($params['domain'], $params['recordid']);
+			} else if (isset($params['records'])) {
+				return $this->updateRecords($params['domain']);
 			}
 
 			return FALSE;
 		}
 
-		public function delete($matches) {
-			if (isset($matches['recordid'])) {
-				return $this->deleteRecordID($matches['domain'], $matches['recordid']);
-			} else if (isset($matches['records'])) {
-				return $this->deleteRecords($matches['domain']);
-			} else if (isset($matches['domain'])) {
-				return $this->deleteDomain($matches['domain']);
+		public function delete($params) {
+			if (isset($params['recordid'])) {
+				return $this->deleteRecordID($params['domain'], $params['recordid']);
+			} else if (isset($params['records'])) {
+				return $this->deleteRecords($params['domain']);
+			} else if (isset($params['domain'])) {
+				return $this->deleteDomain($params['domain']);
 			}
 
 			return FALSE;
 		}
 
 		private function getRecordID($domain, $record) {
-			$dom = $this->getContextKey('user')->getDomainByName($this->getContextKey('db'), $domain);
+			$dom = $this->getContextKey('user')->getDomainByName($domain);
 			if ($dom === FALSE) { $this->getContextKey('response')->sendError('Unknown domain: ' . $domain); }
 
-			$rec = $dom->getRecord($this->getContextKey('db'), $record);
+			$rec = $dom->getRecord($record);
 			if ($rec === FALSE) { $this->getContextKey('response')->sendError('Unknown record id for domain ' . $domain . ' : ' . $record); }
 
 			$r = $rec->toArray();
@@ -59,10 +59,10 @@
 		}
 
 		private function getRecords($domain) {
-			$dom = $this->getContextKey('user')->getDomainByName($this->getContextKey('db'), $domain);
+			$dom = $this->getContextKey('user')->getDomainByName($domain);
 			if ($dom === FALSE) { $this->getContextKey('response')->sendError('Unknown domain: ' . $domain); }
 
-			$records = $dom->getRecords($this->getContextKey('db'));
+			$records = $dom->getRecords();
 			$list = [];
 			foreach ($records as $record) {
 				$r = $record->toArray();
@@ -75,7 +75,7 @@
 		}
 
 		private function getDomainInfo($domain) {
-			$dom = $this->getContextKey('user')->getDomainByName($this->getContextKey('db'), $domain);
+			$dom = $this->getContextKey('user')->getDomainByName($domain);
 			if ($dom === FALSE) { $this->getContextKey('response')->sendError('Unknown domain: ' . $domain); }
 
 			$r = $dom->toArray();
@@ -87,7 +87,7 @@
 		}
 
 		private function getDomainList() {
-			$domains = $this->getContextKey('user')->getDomains($this->getContextKey('db'));
+			$domains = $this->getContextKey('user')->getDomains();
 			$list = [];
 			foreach ($domains as $domain) {
 				$list[] = $domain->getDomain();

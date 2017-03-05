@@ -57,16 +57,4 @@ class DB {
 	public function getLastError() {
 		return $this->pdo->errorInfo();
 	}
-
-	public function save($dbObject) {
-		return $dbObject->save($this);
-	}
-
-	public function load($dbObject) {
-		return $dbObject->load($this);
-	}
-
-	public function delete($dbObject) {
-		return $dbObject->delete($this);
-	}
 }
