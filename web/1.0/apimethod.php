@@ -68,7 +68,7 @@ abstract class APIMethod {
 	/**
 	 * Handle calling this method.
 	 *
-	 * @param $requestMethod How was this method called (GET/POST/PUT/DELETE)
+	 * @param $requestMethod How was this method called (GET/POST/DELETE)
 	 * @param $matches The URL matches when finding the route.
 	 * @return true if the method was handled, else false.
 	 */
@@ -77,7 +77,6 @@ abstract class APIMethod {
 			case "GET":
 				$this->check("GET", $matches);
 				return $this->get($matches);
-			case "PUT":
 			case "POST":
 				$this->check("POST", $matches);
 				return $this->post($matches);

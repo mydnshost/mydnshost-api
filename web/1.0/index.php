@@ -18,6 +18,7 @@
 	$resp->method($method);
 
 	$requestMethod = $_SERVER['REQUEST_METHOD'];
+	if ($requestMethod == "PUT") { $requestMethod = "POST"; }
 
 	// Now retrieve the data
 	$postdata = file_get_contents("php://input");
@@ -32,9 +33,16 @@
 			$resp->sendError('Error with input.');
 		}
 		$resp->reqid($postdata['reqid']);
+	} else {
+		$postdata = array();
 	}
 
-	$context = ['response' => $resp];
+	// Get some headers.
+	if (isset($_SERVER['HTTP_X_IMPERSONATE'])) {
+		$postdata['impersonate'] = $_SERVER['HTTP_X_IMPERSONATE'];
+	}
+
+	$context = ['response' => $resp, 'data' => $postdata, 'db' => DB::get()];
 
 	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 		$user = User::loadFromEmail(DB::get(), $_SERVER['PHP_AUTH_USER']);
@@ -42,11 +50,29 @@
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
 			$context['user'] = $user;
 		}
+
+		if (isset($postdata['impersonate'])) {
+			if ($user->isAdmin()) {
+				$impersonating = User::loadFromEmail(DB::get(), $postdata['impersonate']);
+				if ($impersonating !== FALSE) {
+					// All the API Methods only look for user.
+					$context['user'] = $impersonating;
+					$context['impersonator'] = $user;
+					$resp->setHeader('impersonator', $user->getEmail());
+					$resp->setHeader('impersonating', $impersonating->getEmail());
+				} else {
+					$resp->sendError('No such user to impersonate.');
+				}
+			} else {
+				$resp->sendError('Access denied.');
+			}
+		}
 	}
 
 	list($apimethod, $matches) = $router->findRoute($requestMethod,  '/' . $method);
 	if ($apimethod !== FALSE) {
 		$apimethod->setContext($context);
+
 		try {
 			if ($apimethod->call($requestMethod, $matches)) {
 				$resp->send();

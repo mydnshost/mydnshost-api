@@ -13,7 +13,7 @@
 			$apiData = ['version' => '1.0'];
 
 			if ($user->isAdmin()) {
-				$apiData['gitversion'] = `git describe --tags 2>&1`;
+				$apiData['gitversion'] = trim(`git describe --tags 2>&1`);
 			}
 
 			$this->getContextKey('response')->data($apiData);
