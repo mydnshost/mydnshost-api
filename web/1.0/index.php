@@ -36,11 +36,27 @@
 
 	$context = ['response' => $resp];
 
+	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+		$user = User::loadFromEmail(DB::get(), $_SERVER['PHP_AUTH_USER']);
+
+		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
+			$context['user'] = $user;
+		}
+	}
+
 	list($apimethod, $matches) = $router->findRoute($requestMethod,  '/' . $method);
 	if ($apimethod !== FALSE) {
 		$apimethod->setContext($context);
-		if ($apimethod->call($requestMethod, $matches)) {
-			$resp->send();
+		try {
+			if ($apimethod->call($requestMethod, $matches)) {
+				$resp->send();
+			}
+		} catch (APIMethod_NeedsAuthentication $ex) {
+			header('WWW-Authenticate: Basic realm="API"');
+			header('HTTP/1.1 401 Unauthorized');
+			$resp->sendError('Authentication required.');
+		} catch (APIMethod_AccessDenied $ex) {
+			$resp->sendError('Access denied.');
 		}
 
 		$resp->sendError('Unsupported request method (' . $requestMethod . ').');

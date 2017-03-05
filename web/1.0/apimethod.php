@@ -4,6 +4,16 @@ abstract class APIMethod {
 	private $context;
 
 	/**
+	 * Called before get()/post()/delete() to check that we are in a valid
+	 * context for calling this method.
+	 *
+	 * @param $requestMethod How was this method called (GET/POST/DELETE)
+	 * @param $matches The URL matches when finding the route.
+	 * @throws An exception if we are not in a position to call this method.
+	 */
+	public function check($requestMethod, $matches) { }
+
+	/**
 	 * Called for a GET request that has been routed to this object.
 	 *
 	 * @param $matches The URL matches when finding the route.
@@ -30,10 +40,20 @@ abstract class APIMethod {
 	/**
 	 * Get the API Context for this method.
 	 *
-	 * @param The API context for this method.
+	 * @return The API context for this method.
 	 */
 	public function getContext() {
 		return $this->context;
+	}
+
+	/**
+	 * Get the part of the API Context for this method.
+	 *
+	 * @param $key The key to get.
+	 * @return The value of $key in this context, or NULL if not set.
+	 */
+	public function getContextKey($key) {
+		return array_key_exists($key, $this->context) ? $this->context[$key] : NULL;
 	}
 
 	/**
@@ -55,14 +75,21 @@ abstract class APIMethod {
 	public final function call($requestMethod, $matches) {
 		switch (strtoupper($requestMethod)) {
 			case "GET":
+				$this->check("GET", $matches);
 				return $this->get($matches);
 			case "PUT":
 			case "POST":
+				$this->check("POST", $matches);
 				return $this->post($matches);
 			case "DELETE":
+				$this->check("DELETE", $matches);
 				return $this->delete($matches);
 			default:
 				return FALSE;
 		}
 	}
 }
+
+class APIMethod_NeedsAuthentication extends Exception { }
+
+class APIMethod_AccessDenied extends Exception { }

@@ -10,4 +10,4 @@
 		}
 	}
 
-	$router->addRoute('GET /ping(?:/(?P<time>.+))?', 'Ping');
+	$router->addRoute('GET /ping(?:/(?P<time>.+))?', new Ping());

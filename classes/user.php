@@ -47,4 +47,20 @@ class User extends DBObject {
 	public function isAdmin() {
 		return parseBool($this->getData('admin'));
 	}
+
+	/**
+	 * Load an object from the database based on email address.
+	 *
+	 * @param $db Database object to load from.
+	 * @param $address Address to look for.
+	 * @return FALSE if no object exists, else the object.
+	 */
+	public static function loadFromEmail($db, $address) {
+		$result = static::find($db, ['email' => $address]);
+		if ($result) {
+			return $result[0];
+		} else {
+			return FALSE;
+		}
+	}
 }

@@ -17,7 +17,7 @@
 
 			foreach ($this->knownRoutes as $k => $v) {
 				if (preg_match('#^' . $k . '$#', $testString, $matches)) {
-					return [new $v(), $matches];
+					return [$v, $matches];
 				}
 			}
 
