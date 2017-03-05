@@ -45,12 +45,15 @@ abstract class DBObject {
 	 *
 	 * @param $key Data key (field name)
 	 * @param $value Data value.
+	 * @return $this for chaining.
 	 */
 	protected function setData($key, $value) {
 		if (static::isField($key)) {
-			$this->changed = !$this->hasData($key) || ($this->data[$key] != $value);
+			$this->changed = $this->changed || !$this->hasData($key) || ($this->data[$key] != $value);
 			$this->data[$key] = $value;
 		}
+
+		return $this;
 	}
 
 	/**
@@ -195,6 +198,16 @@ abstract class DBObject {
 	}
 
 	/**
+	 * Verify that this object is good for saving.
+	 * This is called after pre-save, before attempting to save.
+	 *
+	 * @return True if ok to save, else false or throw a ValidationFailed
+	 *         exception with a reason.
+	 * @throws ValidationFailed exception if validation failed.
+	 */
+	public function validate() { return TRUE; }
+
+	/**
 	 * Save this object to the database.
 	 * This will attempt an INSERT if isKnown() is false, else an UPDATE.
 	 *
@@ -202,6 +215,11 @@ abstract class DBObject {
 	 */
 	public function save() {
 		$this->presave();
+		try {
+			if (!$this->validate()) { return FALSE; }
+		} catch (Exception $ex) {
+			return FALSE;
+		}
 		if (!$this->changed) { return TRUE; }
 
 		$keys = [];
@@ -293,3 +311,5 @@ abstract class DBObject {
 	/** Hook for after the object is saved to the database. */
 	public function postSave($result) { }
 }
+
+class ValidationFailed extends Exception { }

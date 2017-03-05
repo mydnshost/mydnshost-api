@@ -14,15 +14,15 @@ class Domain extends DBObject {
 	}
 
 	public function setDomain($value) {
-		$this->setData('domain', $value);
+		return $this->setData('domain', $value);
 	}
 
 	public function setOwner($value) {
-		$this->setData('owner', $value);
+		return $this->setData('owner', $value);
 	}
 
 	public function setDisabled($value) {
-		$this->setData('disabled', parseBool($value) ? 'true' : 'false');
+		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function getID() {
@@ -68,7 +68,50 @@ class Domain extends DBObject {
 	 * @return Record object if found else FALSE.
 	 */
 	public function getSOARecord() {
-		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA']);
-		return ($result) ? $result[0] : FALSE;
+		$soa = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA']);
+
+		if ($soa === FALSE) {
+			$soa = new Record($this->getDB());
+			$soa->setDomainID($this->getID());
+			$soa->setName('');
+			$soa->setType('SOA');
+			$soa->setContent(sprintf('ns1.%s. dnsadmin.%s. 0 86400 7200 2419200 60', $this->getDomain(), $this->getDomain()));
+			$soa->setTTL(86400);
+			$soa->setChangedAt(time());
+			$soa->save();
+			return $soa;
+		} else {
+			return $soa[0];
+		}
+	}
+
+	/**
+	 * Update the domain serial.
+	 *
+	 * @param $serial Serial to set. Use null to auto-generate.
+	 * @return Record object if found else FALSE.
+	 */
+	public function updateSerial($serial = null) {
+		$soa = $this->getSOARecord();
+		$parsed = $soa->parseSOA();
+
+		if ($serial == NULL) {
+			$oldSerial = $parsed['serial'];
+			$serial = date('Ymd').'00';
+			$diff = ($oldSerial - $serial);
+
+			// If we already have a serial for today, the difference will be
+			// >= 0. Older days serials are < 0.
+			if ($diff >= 0) {
+				$serial += ($diff + 1);
+			}
+		}
+
+		$parsed['serial'] = $serial;
+		$soa->updateSOAContent($parsed);
+
+		$soa->save();
+
+		return $serial;
 	}
 }

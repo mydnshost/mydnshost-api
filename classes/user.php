@@ -15,19 +15,19 @@ class User extends DBObject {
 	}
 
 	public function setEmail($value) {
-		$this->setData('email', $value);
+		return $this->setData('email', $value);
 	}
 
 	public function setRealName($value) {
-		$this->setData('realname', $value);
+		return $this->setData('realname', $value);
 	}
 
 	public function setPassword($value) {
-		$this->setData('password', bcrypt::hash($value));
+		return $this->setData('password', bcrypt::hash($value));
 	}
 
 	public function setAdmin($value) {
-		$this->setData('admin', parseBool($value) ? 'true' : 'false');
+		return $this->setData('admin', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function getID() {

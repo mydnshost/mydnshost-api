@@ -21,43 +21,43 @@ class Record extends DBObject {
 	}
 
 	public function setDomainID($value) {
-		$this->setData('domain_id', $value);
+		return $this->setData('domain_id', $value);
 	}
 
 	public function setName($value) {
-		$this->setData('name', $value);
+		return $this->setData('name', $value);
 	}
 
 	public function setType($value) {
-		$this->setData('type', $value);
+		return $this->setData('type', $value);
 	}
 
 	public function setContent($value) {
-		$this->setData('content', $value);
+		return $this->setData('content', $value);
 	}
 
 	public function setTTL($value) {
-		$this->setData('ttl', $value);
+		return $this->setData('ttl', $value);
 	}
 
 	public function setPriority($value) {
-		$this->setData('priority', $value);
+		return $this->setData('priority', $value);
 	}
 
 	public function setChangedAt($value) {
-		$this->setData('changed_at', $value);
+		return $this->setData('changed_at', $value);
 	}
 
 	public function setChangedBy($value) {
-		$this->setData('changed_by', $value);
+		return $this->setData('changed_by', $value);
 	}
 
 	public function setDisabled($value) {
-		$this->setData('disabled', parseBool($value) ? 'true' : 'false');
+		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function setSynced($value) {
-		$this->setData('synced', parseBool($value) ? 'true' : 'false');
+		return $this->setData('synced', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function getID() {
@@ -69,31 +69,31 @@ class Record extends DBObject {
 	}
 
 	public function getName() {
-		$this->getData('name');
+		return $this->getData('name');
 	}
 
 	public function getType() {
-		$this->getData('type');
+		return $this->getData('type');
 	}
 
 	public function getContent() {
-		$this->getData('content');
+		return $this->getData('content');
 	}
 
 	public function getTTL() {
-		$this->getData('ttl');
+		return $this->getData('ttl');
 	}
 
 	public function getPriority() {
-		$this->getData('priority');
+		return $this->getData('priority');
 	}
 
 	public function getChangedAt() {
-		$this->getData('changed_at');
+		return $this->getData('changed_at');
 	}
 
 	public function getChangedBy() {
-		$this->getData('changed_by');
+		return $this->getData('changed_by');
 	}
 
 	public function isDisabled() {
@@ -102,5 +102,81 @@ class Record extends DBObject {
 
 	public function isSynced() {
 		return parseBool($this->getData('synced'));
+	}
+
+	public function parseSOA() {
+		if ($this->getType() != 'SOA') { return FALSE; }
+
+		$bits = explode(' ', $this->getContent());
+		$result = array();
+
+		$result['primaryNS'] = $bits[0];
+		$result['adminAddress'] = $bits[1];
+		$result['serial'] = $bits[2];
+		$result['refresh'] = $bits[3];
+		$result['retry'] = $bits[4];
+		$result['expire'] = $bits[5];
+		$result['minttl'] = $bits[6];
+
+		return $result;
+	}
+
+	public function updateSOAContent($parsed) {
+		if ($this->getType() != 'SOA') { return FALSE; }
+
+		$content = sprintf('%s %s %s %s %s %s %s', $parsed['primaryNS'], $parsed['adminAddress'], $parsed['serial'], $parsed['refresh'], $parsed['retry'], $parsed['expire'], $parsed['minttl']);
+
+		$this->setContent($content);
+	}
+
+	public function validate() {
+		$type = $this->getType();
+		$content = $this->getContent();
+
+		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT'])) {
+			throw new ValidationFailed('Unknown record type: '. $type);
+		}
+
+		if ($type == 'SOA' && !preg_match('#^[^\s]+ [^\s]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+$#', $content, $m)) {
+			throw new ValidationFailed('SOA is invalid.');
+		}
+
+		if ($type == 'MX' || $type == 'SRV') {
+			if ($this->getPriority() === NULL || $this->getPriority() === '') {
+				throw new ValidationFailed('Records of '. $type . ' require a priority.');
+			} else if (!preg_match('#^[0-9]+$#', $this->getPriority())) {
+				throw new ValidationFailed('Priority must be numeric.');
+			}
+		}
+
+		if (!preg_match('#^[0-9]+$#', $this->getTTL())) {
+			throw new ValidationFailed('TTL must be numeric.');
+		}
+
+		if ($type == 'A' && filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === FALSE) {
+			throw new ValidationFailed('Content must be a valid IPv4 Address.');
+		}
+
+		if ($type == 'AAAA' && filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === FALSE) {
+			throw new ValidationFailed('Content must be a valid IPv4 Address.');
+		}
+
+		if ($type == 'MX' || $type == 'CNAME') {
+			if (filter_var($content, FILTER_VALIDATE_IP) !== FALSE) {
+				throw new ValidationFailed('Content must be a name not an IP.');
+			}
+		}
+
+		if ($type == 'SRV') {
+			if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+				if (filter_var($m[1], FILTER_VALIDATE_IP) !== FALSE) {
+					throw new ValidationFailed('Target must be a name not an IP.');
+				}
+			} else {
+				throw new ValidationFailed('SRV Record content should have the format: <weight> <port> <target>');
+			}
+		}
+
+		return TRUE;
 	}
 }

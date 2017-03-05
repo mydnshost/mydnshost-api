@@ -121,6 +121,7 @@
 				$list[] = $r;
 			}
 			$this->getContextKey('response')->set('records', $list);
+			$this->getContextKey('response')->set('soa', $domain->getSOARecord()->parseSOA());
 
 			return true;
 		}
@@ -130,11 +131,7 @@
 			unset($r['owner']);
 
 			$soa = $domain->getSOARecord();
-			if ($soa !== FALSE) {
-				$soa = $soa->toArray();
-				unset($soa['domain_id']);
-			}
-			$r['SOA'] = $soa;
+			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
 			$this->getContextKey('response')->data($r);
 
@@ -153,15 +150,115 @@
 		}
 
 		private function updateRecordID($domain, $record) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			$record = $this->doUpdateRecord($record, $data['data']);
+
+			try {
+				$record->validate();
+				$record->save();
+				$serial = $domain->updateSerial();
+			} catch (ValidationFailed $ex) {
+				$this->getContextKey('response')->sendError('Error updating record.', $ex->getMessage());
+			}
+
+			$r = $record->toArray();
+			unset($r['domain_id']);
+
+			$this->getContextKey('response')->data($r);
+
 			return true;
 		}
 
 		private function updateRecords($domain) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			$errors = array();
+			$recordsToBeSaved = array();
+			$recordsToBeDeleted = array();
+
+			if (isset($data['data']['records'])) {
+				for ($i = 0; $i < count($data['data']['records']); $i++) {
+					$r = $data['data']['records'][$i];
+
+					$record = isset($r['id']) ? $domain->getRecord($r['id']) : (new Record($domain->getDB()))->setDomainID($domain->getID());
+					if ($record === FALSE) {
+						$errors[$i] = 'No such record ID: ' . $r['id'];
+						continue;
+					}
+
+					if (isset($r['delete']) && parseBool($r['delete'])) {
+						if ($record->isKnown()) {
+							$recordsToBeDeleted[] = $record;
+						}
+					} else {
+						$this->doUpdateRecord($record, $r);
+						try {
+							$record->validate();
+							$recordsToBeSaved[] = $record;
+						} catch (ValidationFailed $ex) {
+							$errors[$i] = 'Unable to validate record: ' . $ex->getMessage();
+							continue;
+						}
+					}
+				}
+			}
+
+			if (count($errors) > 0) {
+				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
+			}
+
+			$result = array();
+			foreach ($recordsToBeSaved as $record) {
+				$r = $record->toArray();
+				unset($r['domain_id']);
+				$r['updated'] = $record->save();
+				$r['id'] = $record->getID();
+				$result[] = $r;
+			}
+
+			foreach ($recordsToBeDeleted as $record) {
+				$result[] = ['id' => $record->getID(), 'deleted' => $record->delete()];
+			}
+
+			$serial = $domain->updateSerial();
+
+			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;
+		}
+
+		private function doUpdateRecord($record, $data) {
+			$keys = array('name' => 'setName',
+			              'type' => 'setType',
+			              'content' => 'setContent',
+			              'ttl' => 'setTTL',
+			              'priority' => 'setPriority',
+			              'disabled' => 'setDisabled',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$record->$f($data[$k]);
+				}
+			}
+
+			$record->setSynced(false);
+			$record->setChangedAt(time());
+			$record->setChangedBy($this->getContextKey('user')->getID());
+
+			return $record;
 		}
 
 		private function deleteRecordID($domain, $record) {
 			$this->getContextKey('response')->data('deleted', $record->delete() ? 'true' : 'false');
+			$serial = $domain->updateSerial();
+			$this->getContextKey('response')->set('serial', $serial);
 			return true;
 		}
 
@@ -172,6 +269,8 @@
 				if ($record->delete()) { $count++; }
 			}
 			$this->getContextKey('response')->set('deleted', $count);
+			$serial = $domain->updateSerial();
+			$this->getContextKey('response')->set('serial', $serial);
 
 			return true;
 		}
