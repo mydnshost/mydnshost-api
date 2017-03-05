@@ -106,7 +106,7 @@ CREATE TABLE `records` (
   `type` varchar(10) NOT NULL,
   `content` varchar(8192) NOT NULL,
   `ttl` int(11) NOT NULL,
-  `priority` int(11) NOT NULL,
+  `priority` int(11),
   `changed_at` int(11) NOT NULL,
   `changed_by` int(11),
   `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false',

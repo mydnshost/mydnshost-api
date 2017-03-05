@@ -8,13 +8,17 @@ class Record extends DBObject {
 	                             'content' => NULL,
 	                             'ttl' => NULL,
 	                             'priority' => NULL,
-	                             'changed_at' => NULL,
+	                             'changed_at' => 0,
 	                             'changed_by' => NULL,
 	                             'disabled' => false,
 	                             'synced' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'records';
+
+	public function setDomainID($value) {
+		$this->setData('domain_id', $value);
+	}
 
 	public function setName($value) {
 		$this->setData('name', $value);

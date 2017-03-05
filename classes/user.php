@@ -63,4 +63,39 @@ class User extends DBObject {
 			return FALSE;
 		}
 	}
+
+	/**
+	 * Get all the domains for this user.
+	 *
+	 * @param $db Database instance to look in.
+	 * @return List of domain objects for this user.
+	 */
+	public function getDomains($db) {
+		$result = Domain::find($db, ['owner' => $this->getID()]);
+		return ($result) ? $result : [];
+	}
+
+	/**
+	 * Get a specific domain if it is owned by this user.
+	 *
+	 * @param $db Database instance to look in.
+	 * @param $id Domain ID to look for.
+	 * @return Domain object if found else FALSE.
+	 */
+	public function getDomainByID($db, $id) {
+		$result = Domain::find($db, ['owner' => $this->getID(), 'id' => $id]);
+		return ($result) ? $result[0] : FALSE;
+	}
+
+	/**
+	 * Get a specific domain if it is owned by this user.
+	 *
+	 * @param $db Database instance to look in.
+	 * @param $id Domain ID to look for.
+	 * @return Domain object if found else FALSE.
+	 */
+	public function getDomainByName($db, $name) {
+		$result = Domain::find($db, ['owner' => $this->getID(), 'domain' => $name]);
+		return ($result) ? $result[0] : FALSE;
+	}
 }

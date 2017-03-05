@@ -10,6 +10,8 @@ abstract class DBObject {
 	protected static $_key = 'id';
 	/** Table name for this object. */
 	protected static $_table = NULL;
+	/** last error for this class. */
+	protected static $lastStaticError = NULL;
 
 	/** Known database values for this object. */
 	private $data = [];
@@ -97,6 +99,20 @@ abstract class DBObject {
 	}
 
 	/**
+	 * Get the data fields for this object as an array.
+	 *
+	 * @return An array with all the field values in it as they are currently
+	 *         known. (This will display defaults.)
+	 */
+	public function toArray() {
+		$result = array();
+		foreach (array_keys(static::$_fields) as $key) {
+			$result[$key] = $this->getData($key);
+		}
+		return $result;
+	}
+
+	/**
 	 * Set the data fields as per the given array.
 	 * Fields that are not known will be ignored.
 	 *
@@ -133,7 +149,7 @@ abstract class DBObject {
 			$params[':' . $key] = $value;
 		}
 
-		$query = sprintf('SELECT %s FROM %s WHERE %s', implode(',', $keys), static::$_table, implode('AND', $where));
+		$query = sprintf('SELECT %s FROM %s WHERE %s', implode(',', $keys), static::$_table, implode(' AND ', $where));
 		$statement = $db->getPDO()->prepare($query);
 		$result = $statement->execute($params);
 		if ($result) {
@@ -141,17 +157,18 @@ abstract class DBObject {
 
 			$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
 			foreach ($rows as $row) {
-				$u = new User();
-				$u->setFromArray($row);
-				$u->postLoad();
-				$u->changed = false;
+				$class = get_called_class();
+				$obj = new $class();
+				$obj->setFromArray($row);
+				$obj->postLoad();
+				$obj->changed = false;
 
-				$return[] = $u;
+				$return[] = $obj;
 			}
 
 			return $return;
 		} else {
-			$this->lastError = $statement->errorInfo();
+			static::$lastStaticError = $statement->errorInfo();
 		}
 
 		return FALSE;
@@ -181,6 +198,7 @@ abstract class DBObject {
 			$sets[] = '`' . $key . '` = :' . $key;
 
 			$params[':' . $key] = $this->getData($key);
+			if (is_bool($params[':' . $key])) { $params[':' . $key] = $params[':' . $key] ? 'true' : 'false'; }
 		}
 
 		if ($this->isKnown()) {
@@ -237,6 +255,15 @@ abstract class DBObject {
 	 */
 	public function getLastError() {
 		return $this->lastError;
+	}
+
+	/**
+	 * Get the last error we encountered with the database.
+	 *
+	 * @return last error.
+	 */
+	public static function getLastStaticError() {
+		return static::$lastStaticError;
 	}
 
 	/** Hook for after data has been loaded into the object. */
