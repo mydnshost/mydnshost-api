@@ -1,4 +1,9 @@
 RewriteEngine On
 
+# Allowed
+RewriteRule ^(docs)/index.apib$ - [L]
+RewriteRule ^(docs)/index.html$ - [L]
+RewriteRule ^(docs)/$ - [L]
+
 # Everything Else
 RewriteRule ^(.*)$ index.php [L]

@@ -411,7 +411,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		private function deleteRecordID($domain, $record) {
-			$this->getContextKey('response')->data('deleted', $record->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->set('deleted', $record->delete() ? 'true' : 'false');
 			$serial = $domain->updateSerial();
 			$this->getContextKey('response')->set('serial', $serial);
 			return true;
@@ -443,7 +443,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		private function deleteDomain($domain) {
-			$this->getContextKey('response')->data('deleted', $domain->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted', $domain->delete() ? 'true' : 'false']);
 			return true;
 		}
 

@@ -12,6 +12,9 @@
 		private $error;
 		private $errorData = array();
 
+		private $errorCode = '400';
+		private $errorDescription = 'Bad Request';
+
 		public function __construct($reqid = '', $method = '', $data = array(), $headers = array()) {
 			$this->respid = uniqid();
 
@@ -19,6 +22,11 @@
 			$this->method = $method;
 			$this->data = $data;
 			$this->headers = $headers;
+		}
+
+		public function setErrorCode($code, $description) {
+			$this->errorCode = $code;
+			$this->errorDescription = $description;
 		}
 
 		public function error($errorMessage, $errorData = array()) {
@@ -96,13 +104,18 @@
 		}
 
 		public function send() {
-			$data = array('reqid' => $this->reqid, 'respid' => $this->respid, 'method' => $this->method);
+			$data = array();
+			if (!empty($this->reqid)) { $data['reqid'] = $this->reqid; }
+			if (!empty($this->respid)) { $data['respid'] = $this->respid; }
+			if (!empty($this->method)) { $data['method'] = $this->method; }
 
 			if (count($this->data) > 0) {
 				$data['response'] = $this->data;
 			}
 
 			if (!empty($this->error)) {
+				header('HTTP/1.1 ' . $this->errorCode . ' ' . $this->errorDescription);
+
 				$data['error'] = $this->error;
 				if (count($this->errorData) > 0) {
 					$data['errorData'] = $this->errorData;

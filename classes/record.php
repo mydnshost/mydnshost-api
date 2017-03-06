@@ -133,7 +133,7 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
-		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT'])) {
+		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS'])) {
 			throw new ValidationFailed('Unknown record type: '. $type);
 		}
 
