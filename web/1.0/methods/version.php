@@ -1,18 +1,10 @@
 <?php
 
 	class Version extends APIMethod {
-		public function check($requestMethod, $matches) {
-			if ($this->getContextKey('user') == NULL) {
-				throw new APIMethod_NeedsAuthentication();
-			}
-		}
-
 		public function get($matches) {
-			$user = $this->getContextKey('user');
-
 			$apiData = ['version' => '1.0'];
 
-			if ($user->isAdmin()) {
+			if ($this->getContextKey('user') != NULL && $this->getContextKey('user')->isAdmin()) {
 				$apiData['gitversion'] = trim(`git describe --tags 2>&1`);
 			}
 
