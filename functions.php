@@ -14,7 +14,6 @@
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
 	DB::get()->setPDO($pdo);
 
-
 	function parseBool($input) {
 		$in = strtolower($input);
 		return ($in === true || $in == 'true' || $in == '1' || $in == 'on' || $in == 'yes');
