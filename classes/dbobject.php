@@ -172,7 +172,11 @@ abstract class DBObject {
 			$params[':' . $key] = $value;
 		}
 
-		$query = sprintf('SELECT %s FROM %s WHERE %s', implode(',', $keys), static::$_table, implode(' AND ', $where));
+		if (count($where) > 0) {
+			$query = sprintf('SELECT %s FROM %s WHERE %s', implode(',', $keys), static::$_table, implode(' AND ', $where));
+		} else {
+			$query = sprintf('SELECT %s FROM %s', implode(',', $keys), static::$_table);
+		}
 		$statement = $db->getPDO()->prepare($query);
 		$result = $statement->execute($params);
 		if ($result) {
@@ -207,6 +211,14 @@ abstract class DBObject {
 	 */
 	public function validate() { return TRUE; }
 
+
+	/**
+	 * Has this object changed?
+	 *
+	 * @return True if we have changed.
+	 */
+	public function hasChanged() { return $this->changed; }
+
 	/**
 	 * Save this object to the database.
 	 * This will attempt an INSERT if isKnown() is false, else an UPDATE.
@@ -220,7 +232,7 @@ abstract class DBObject {
 		} catch (Exception $ex) {
 			return FALSE;
 		}
-		if (!$this->changed) { return TRUE; }
+		if (!$this->hasChanged()) { return TRUE; }
 
 		$keys = [];
 		$placeholders = [];

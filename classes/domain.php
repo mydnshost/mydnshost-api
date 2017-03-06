@@ -9,6 +9,9 @@ class Domain extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'domains';
 
+	// SOA for unknown objects.
+	protected $_soa = FALSE;
+
 	public function __construct($db) {
 		parent::__construct($db);
 	}
@@ -65,10 +68,14 @@ class Domain extends DBObject {
 	/**
 	 * Get the SOA record for this domain.
 	 *
+	 * @param $fresh Get a fresh copy from the DB rather than using our cached copy.
 	 * @return Record object if found else FALSE.
 	 */
-	public function getSOARecord() {
-		$soa = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA']);
+	public function getSOARecord($fresh = FALSE) {
+		$soa = $this->_soa;
+		if (($soa === FALSE || $fresh) && $this->isKnown()) {
+			$soa = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA']);
+		}
 
 		if ($soa === FALSE) {
 			$soa = new Record($this->getDB());
@@ -78,9 +85,13 @@ class Domain extends DBObject {
 			$soa->setContent(sprintf('ns1.%s. dnsadmin.%s. 0 86400 7200 2419200 60', $this->getDomain(), $this->getDomain()));
 			$soa->setTTL(86400);
 			$soa->setChangedAt(time());
-			$soa->save();
+			if ($this->isKnown()) {
+				$soa->save();
+			}
+			$this->_soa = [$soa];
 			return $soa;
 		} else {
+			$this->_soa = $soa;
 			return $soa[0];
 		}
 	}
@@ -113,5 +124,16 @@ class Domain extends DBObject {
 		$soa->save();
 
 		return $serial;
+	}
+
+	public function validate() {
+		$required = ['domain', 'owner'];
+		foreach ($required as $r) {
+			if (!$this->hasData($r)) {
+				throw new ValidationFailed('Missing required field: '. $r);
+			}
+		}
+
+		return TRUE;
 	}
 }

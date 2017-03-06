@@ -100,4 +100,15 @@ class User extends DBObject {
 		$result = Domain::find($this->getDB(), ['owner' => $this->getID(), 'domain' => $name]);
 		return ($result) ? $result[0] : FALSE;
 	}
+
+	public function validate() {
+		$required = ['password', 'email', 'realname'];
+		foreach ($required as $r) {
+			if (!$this->hasData($r)) {
+				throw new ValidationFailed('Missing required field: '. $r);
+			}
+		}
+
+		return TRUE;
+	}
 }

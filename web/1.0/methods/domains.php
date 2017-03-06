@@ -79,6 +79,10 @@
 				return $this->updateRecordID($domain, $record);
 			} else if (isset($params['records'])) {
 				return $this->updateRecords($domain);
+			} else if ($domain !== FALSE) {
+				return $this->updateDomain($domain);
+			} else {
+				return $this->createDomain();
 			}
 
 			return FALSE;
@@ -103,6 +107,13 @@
 			return FALSE;
 		}
 
+		/**
+		 * Get information about a record.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $record Record object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function getRecordID($domain, $record) {
 			$r = $record->toArray();
 			unset($r['domain_id']);
@@ -112,6 +123,12 @@
 			return true;
 		}
 
+		/**
+		 * Get all records for this domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function getRecords($domain) {
 			$records = $domain->getRecords();
 			$list = [];
@@ -126,6 +143,12 @@
 			return true;
 		}
 
+		/**
+		 * Get information about this domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function getDomainInfo($domain) {
 			$r = $domain->toArray();
 			unset($r['owner']);
@@ -138,6 +161,11 @@
 			return true;
 		}
 
+		/**
+		 * Get our list of domains.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
 		private function getDomainList() {
 			$domains = $this->getContextKey('user')->getDomains();
 			$list = [];
@@ -149,10 +177,117 @@
 			return true;
 		}
 
+		/**
+		 * Create a new domain.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		private function createDomain() {
+			if (!$this->getContextKey('user')->isAdmin()) {
+				$this->getContextKey('response')->sendError('Access denied.');
+			}
+
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for create.');
+			}
+
+			$domain = new Domain($this->getContextKey('user')->getDB());
+			$domain->setOwner($this->getContextKey('user')->getID());
+
+			if (isset($data['data']['domain'])) {
+				$domain->setDomain($data['data']['domain']);
+			} else {
+				$this->getContextKey('response')->sendError('No domain name provided for create.');
+			}
+
+			return $this->updateDomain($domain);
+		}
+
+		/**
+		 * Update this domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
+		private function updateDomain($domain) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			$this->doUpdateDomain($domain, $data['data'], (false && $this->getContextKey('user')->isAdmin()));
+
+			try {
+				$domain->validate();
+				$domain->getSOARecord()->validate();
+
+				if (!$domain->save()) {
+					throw new ValidationFailed($domain->getLastError()[2]);
+				}
+				$domain->getSOARecord()->setDomainID($domain->getID());
+				if (!$domain->getSOARecord()->save()) {
+					throw new ValidationFailed($domain->getSOARecord()->getLastError()[2]);
+				}
+			} catch (ValidationFailed $ex) {
+				$this->getContextKey('response')->sendError('Error updating domain.', $ex->getMessage());
+			}
+
+			$r = $domain->toArray();
+			unset($r['owner']);
+
+			$soa = $domain->getSOARecord();
+			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
+
+			$this->getContextKey('response')->data($r);
+			return true;
+		}
+
+		/**
+		 * Actually handle doing to update for the domain object.
+		 *
+		 * @param $domain Domain object to update
+		 * @param $data Array of data to use to modify this object.
+		 * @param $allowSetName (Default: false) Allow us to change the name of the domain?
+		 * @return $domain object after modification
+		 */
+		private function doUpdateDomain($domain, $data, $allowSetName = false) {
+			$keys = array('disabled' => 'setDisabled',
+			             );
+
+			if ($allowSetName) {
+				$keys['domain'] = 'setDomain';
+			}
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$domain->$f($data[$k]);
+				}
+			}
+
+			if (isset($data['SOA'])) {
+				$soa = $domain->getSOARecord();
+				$soa->updateSOAContent(array_merge($soa->parseSOA(), $data['SOA']));
+			}
+
+			return $domain;
+		}
+
+		/**
+		 * Update an individual record.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $record Record object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function updateRecordID($domain, $record) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if (isset($data['delete']) && parseBool($data['delete'])) {
+				return $this->deleteRecordID($domain, $record);
 			}
 
 			$record = $this->doUpdateRecord($record, $data['data']);
@@ -173,6 +308,12 @@
 			return true;
 		}
 
+		/**
+		 * Update multiple records on a domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function updateRecords($domain) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
@@ -233,6 +374,13 @@
 			return true;
 		}
 
+		/**
+		 * Actually update a record.
+		 *
+		 * @param $record Record object to update.
+		 * @param $data Data to use to update the record.
+		 * @return The record after being updated.
+		 */
 		private function doUpdateRecord($record, $data) {
 			$keys = array('name' => 'setName',
 			              'type' => 'setType',
@@ -255,6 +403,13 @@
 			return $record;
 		}
 
+		/**
+		 * Delete an individual record.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $record Record object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function deleteRecordID($domain, $record) {
 			$this->getContextKey('response')->data('deleted', $record->delete() ? 'true' : 'false');
 			$serial = $domain->updateSerial();
@@ -262,6 +417,12 @@
 			return true;
 		}
 
+		/**
+		 * Delete all records for a domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function deleteRecords($domain) {
 			$records = $domain->getRecords();
 			$count = 0;
@@ -275,6 +436,12 @@
 			return true;
 		}
 
+		/**
+		 * Delete a domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
 		private function deleteDomain($domain) {
 			$this->getContextKey('response')->data('deleted', $domain->delete() ? 'true' : 'false');
 			return true;
@@ -282,7 +449,7 @@
 
 	}
 
-	$router->addRoute('GET /domains', new Domains());
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)', new Domains());
+	$router->addRoute('(GET|POST) /domains', new Domains());
+	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', new Domains());
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', new Domains());
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', new Domains());
