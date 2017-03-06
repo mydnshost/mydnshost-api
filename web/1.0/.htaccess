@@ -1,4 +1,8 @@
 RewriteEngine On
+RewriteBase /1.0
+
+# Rewrite help to docs
+RewriteRule ^help/?(.*)$ /docs/$1 [R=301,L]
 
 # Allowed
 RewriteRule ^(docs)/index.apib$ - [L]
