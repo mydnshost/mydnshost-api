@@ -6,3 +6,7 @@
 	$database['username'] = getEnvOrDefault('DB_SERVER_USERNAME', 'dnsapi');
 	$database['password'] = getEnvOrDefault('DB_SERVER_PASSWORD', 'dnsapi');
 	$database['database'] = getEnvOrDefault('DB_SERVER_DATABASE', 'dnsapi');
+
+	if (file_exists(dirname(__FILE__) . '/config.local.php')) {
+		include(dirname(__FILE__) . '/config.local.php');
+	}
