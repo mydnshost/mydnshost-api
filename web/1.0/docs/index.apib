@@ -1,0 +1,712 @@
+FORMAT: 1A
+HOST: https://api.mydnshost.co.uk/1.0
+
+# MyDNSHost API
+This document describes the current API (Version 1.0) for MyDNSHost.
+
+## Request-ID
+For any of the requests, you can pass a X-Request-ID header:
+
+```http
+X-Request-ID: SomeUniqueID
+```
+
+Which will be returned in the body of any reponse as a `reqid` field.
+
+## User Authentication
+Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
+
+## API Keys
+If you have a valid API Key, this can be used instead of Basic Auth (NOT IMPLEMENTED YET)
+
+```http
+X-API-User: SomeUser@example.org
+X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
+```
+
+# Group General
+General API Endpoints.
+
+## API Ping [/ping]
+### Ping the API [GET]
+This tests that the API is up and running. The API will respond with a non-error, this does not require authentication.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb5a0c03cc",
+                "method": "ping"
+            }
+
+
+## API Ping with time [/ping/{time}]
+### Ping the API [GET]
+This tests that the API is up and running. The API will respond with a non-error and include the time provided, this does not require authentication.
+
++ Parameters
+
+    + time: `123456` (required, number) - The current time, will be echoed back.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb5e953b5d",
+                "method": "ping/123456",
+                "response":{
+                    "time": "123456"
+                }
+            }
+
+## Get the current user information [/userdata]
+### Get User information [GET]
+This lets you see what user you are authenticated as
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb98d67ba3",
+                "method": "userdata",
+                "response":{
+                    "user":{
+                        "id": "2",
+                        "email": "user@example.org",
+                        "realname": "Some User"
+                    }
+                }
+            }
+
+## Get the current api version [/version]
+### Get version information [GET]
+This is used to see what version of the API you are accessing, this does not require authentication.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb9e378fd6",
+                "method": "version",
+                "response":{
+                    "version": "1.0"
+                }
+            }
+
+# Group Users
+Endpoints for dealing with user accounts
+
+## User list [/users]
+### Get the list of known users [GET]
+For an admin user, this will return all the known users. Non-Admin users will just see themselves.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "users",
+                "response":[
+                    {
+                        "id": "2",
+                        "email": "user@example.org",
+                        "realname": "Some User",
+                        "admin": "false"
+                    }
+                ],
+            }
+
+## Manipulate Users [/users/{userid}]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+
+### Get information about a specific user [GET]
+Returns complete information about the requested user.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "users",
+                "response": {
+                    "id": "2",
+                    "email": "user@example.org",
+                    "realname": "Some User",
+                    "admin": "false"
+                }
+            }
+
+### Update information about a specific user [POST]
+Allows updating user information. Any fields that are passed in will be updated, fields not passed will be ignored.
+
++ Request Change realname and Password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "realname": "Some Real User",
+                    "password": "NewPassword"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bcbc34234e3",
+                "method": "users/2",
+                "response":{
+                    "id": "2",
+                    "email": "user@example.org",
+                    "realname": "Some Real Name",
+                    "admin": "false",
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error you will get an `error` key rather than a `response` key in the output
+    + Body
+
+            {
+                "respid": "58bcbcc7dc8d1",
+                "method": "users/2",
+                "error": "Error updating user: 2"
+            }
+
+### Delete a specific user [DELETE]
+This is an admin-only endpoint that will delete the user specified. You can not delete the current user.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/5",
+                "response":[
+                    "deleted"
+                ]
+            }
+
+
+## Create a user [/users/create]
+### Create a user [POST]
+This is an admin-only end-point. This behaves similarily to the update user except that you must pass in `password`, `email` and `realname` fields.
+Allows updating user information. Any fields that are passed in will be updated, fields not passed will be ignored.
+
++ Request Change realname and Password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "newuser@example.org",
+                    "realname": "Some new User",
+                    "password": "NewPassword"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after creation.
+    + Body
+
+            {
+                "respid": "58bcbe6b76cee",
+                "method": "users/create",
+                "response":{
+                    "id": "6",
+                    "email": "newuser@example.org",
+                    "realname": "Some new User",
+                    "admin": false,
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    On error, you will get an `error` rather than a `response`
+    + Body
+
+            {
+                "respid": "58bcbe8c7ac06",
+                "method": "users/create",
+                "error": "Error creating user."
+            }
+
+# Group Domains
+Endpoints for dealing with domains.
+
+## Get or create domains [/domains]
+
+### Get list of known domains [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc0357e7eb",
+                "method": "domains",
+                "response":[
+                    "example.org"
+                ]
+            }
+
+### Create a new domain [POST]
+This is an admin-only endpoint to create a new domain.
+
++ Request Create a domain (application/json)
+    + Body
+
+            {
+                "data": {
+                    "domain": "example.net",
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-created domain.
+    + Body
+
+            {
+                "respid": "58bcc0c377913",
+                "method": "domains",
+                "response":{
+                    "id": "9",
+                    "domain": "example.net",
+                    "disabled": false,
+                    "SOA":{
+                        "primaryNS": "ns1.example.net.",
+                        "adminAddress": "dnsadmin.example.net.",
+                        "serial": "0",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "58bcc115b3601",
+                "method": "domains",
+                "error": "Error updating domain.",
+                "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
+            }
+
+## Specific domain infomation [/domains/{domain}]
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get information about a domain [GET]
+
++ Response 200 (application/json)
+    A successful response will display information about the domain.
+    + Body
+
+            {
+                "respid": "58bcc18455fac",
+                "method": "domains/example.org",
+                "response":{
+                    "id": "3",
+                    "domain": "example.org",
+                    "disabled": "false",
+                    "SOA":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "2017030500",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` rather than the `response`
+    + Body
+
+            {
+                "respid": "58bcc1a902ddd",
+                "method": "domains/example.example",
+                "error": "Unknown domain: example.example"
+            }
+
+### Update information about a domain [POST]
+This allows changing the domain enabled/disabled status or updating the SOA fields.
+
+As with other update methods, only fields that are provided will be changed, you do not need to provide a complete object.
+
+Changes made with this end point do not automatically increment the domain serial.
+
++ Request Disable domain and update the serial (application/json)
+    + Body
+
+            {
+                "data": {
+                    "disabled": "true",
+                    "SOA":{
+                        "serial": "999"
+                    }
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-updated domain.
+    + Body
+
+            {
+                "respid": "58bcc2a9b4b77",
+                "method": "domains/example.org",
+                "response":{
+                    "id": "3",
+                    "domain": "example.org",
+                    "disabled": "true",
+                    "SOA":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "999",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
+### Delete a domain [DELETE]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc2d6e7515",
+                "method": "domains/example.org",
+                "response":[
+                   "deleted"
+                ]
+            }
+
+## Domain records [/domains/{domain}/records]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get all domain records [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc3059365b",
+                "method": "domains/example.org/records",
+                "response":{
+                    "records":[
+                        {
+                            "id": "18",
+                            "name": "",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "19",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "20",
+                            "name": "",
+                            "type": "AAAA",
+                            "content": "::1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "21",
+                            "name": "www",
+                            "type": "AAAA",
+                            "content": "::1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "22",
+                            "name": "txt",
+                            "type": "TXT",
+                            "content": "Some Text Record",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "23",
+                            "name": "",
+                            "type": "MX",
+                            "content": "",
+                            "ttl": "86400",
+                            "priority": "10",
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        },
+                        {
+                            "id": "24",
+                            "name": "",
+                            "type": "MX",
+                            "content": "test",
+                            "ttl": "86400",
+                            "priority": "50",
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false",
+                            "synced": "false"
+                        }
+                    ],
+                    "soa":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "999",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
+### Update domain records [POST]
+This can update/delete specifically named records, or add new records all in one go.
+
+You can not edit the SOA from here, and the serial will be incremented automatically.
+
+As with other update methods, only fields that are provided will be changed, you do not need to provide a complete object.
+
++ Request update content for ID 18/19, delete 20 and add a new A record. (application/json)
+    + Body
+
+            {
+                "data": {
+                    "records":[
+                        {
+                            "id": "18",
+                            "content": "127.0.0.18"
+                        },
+                        {
+                            "id": "19",
+                            "content": "127.0.0.18"
+                        },
+                        {
+                            "id": "20",
+                            "delete": true
+                        },
+                        {
+                            "name": "localhost",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400"
+                        }
+                    ]
+                }
+            }
+
++ Response 200 (application/json)
+    A success response will show the records that were changed, and any new records that were added, along with the new domain serial.
+    + Body
+
+            {
+                "respid": "58bcc593acecc",
+                "method": "domains/example.org/records",
+                "response":{
+                    "serial": "2017030600",
+                    "changed":[
+                        {
+                            "id": "18",
+                            "name": "",
+                            "type": "A",
+                            "content": "127.0.0.18",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": "false",
+                            "synced": "false",
+                            "updated": true
+                        },
+                        {
+                            "id": "19",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.18",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": "false",
+                            "synced": "false",
+                            "updated": true
+                        },
+                        {
+                            "id": "35",
+                            "name": "localhost",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": false,
+                            "synced": "false",
+                            "updated": true
+                        },
+                        {
+                            "id": "20",
+                            "deleted": true
+                        }
+                    ]
+                }
+            }
+
++ Response 400 (application/json)
+    A response will contain errorData to show errors related to specific records passed in. If there are any errors, no changes are made.
+    + Body
+
+            {
+                "respid": "58bcc54aca077",
+                "method": "domains/example.org/records",
+                "error": "There was errors with the records provided.",
+                "errorData":{
+                    "1": "Unable to validate record: Content must be a valid IPv4 Address."
+                }
+            }
+
+### Delete all domain records [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc5e696495",
+                "method": "domains/example.org/records",
+                "response":{
+                    "deleted": 7,
+                    "serial": 2017030601
+                }
+            }
+
+
+## Specific domain record information [/domains/{domain}/records/{recordid}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + recordid: `21` (required, number) - The record id
+
+### Get specific record information [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc673f3c17",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "id": "21",
+                    "name": "www",
+                    "type": "A",
+                    "content": "127.0.0.1",
+                    "ttl": "86400",
+                    "priority": null,
+                    "changed_at": "1488766474",
+                    "changed_by": null,
+                    "disabled": "false",
+                    "synced": "false"
+                }
+            }
+
+### Update a specific record [POST]
++ Request Update content(application/json)
+    + Body
+
+            {
+                "data": {
+                    "content": "127.0.0.18"
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc6cb79998",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "id": "21",
+                    "name": "www",
+                    "type": "A",
+                    "content": "127.0.0.18",
+                    "ttl": "86400",
+                    "priority": null,
+                    "changed_at": 1488766667,
+                    "changed_by": "2",
+                    "disabled": "false",
+                    "synced": "false"
+                }
+            }
+
++ Response 400 (application/json)
+    If there is a validation error, you will get `error` and `errorData` rather than `response`
+    + Body
+
+            {
+                "respid": "58bcc6df9bd2d",
+                "method": "domains/example.org/records/21",
+                "error": "Error updating record.",
+                "errorData": "Content must be a valid IPv4 Address."
+            }
+
+
+### Delete a specific record [DELETE]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc701e70d7",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "deleted": "true",
+                    "serial": 2017030601
+                }
+            }
+
++ Response 400 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc75e10e3a",
+                "method": "domains/example.org/records/21",
+                "error": "Unknown record id for domain example.org : 21"
+            }
+
