@@ -1,5 +1,107 @@
 <?php
 
+	class AdminDomains extends Domains {
+		public function check($requestMethod, $params) {
+			if ($this->getContextKey('user') == NULL) {
+				throw new APIMethod_NeedsAuthentication();
+			}
+			if (!$this->getContextKey('user')->isAdmin()) {
+				throw new APIMethod_AccessDenied();
+			}
+		}
+
+		/**
+		 * Admin getDomainFromParam looks for the domain without checking
+		 * that the current user can see it.
+		 */
+		protected function getDomainFromParam($params) {
+			if (isset($params['domain'])) {
+				$domain = Domain::loadFromDomain($this->getContextKey('db'), $params['domain']);
+				if ($domain === FALSE) {
+					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
+				}
+			} else {
+				$domain = FALSE;
+			}
+
+			return $domain;
+		}
+
+		public function post($params) {
+			$parent = parent::post($params);
+
+			if ($parent === FALSE && !isset($params['domain'])) {
+				return $this->createDomain();
+			}
+
+			return $parent;
+		}
+
+		/**
+		 * Create a new domain.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		protected function createDomain() {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for create.');
+			}
+
+			$domain = new Domain($this->getContextKey('user')->getDB());
+			$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
+
+			if (isset($data['data']['domain'])) {
+				$domain->setDomain($data['data']['domain']);
+			} else {
+				$this->getContextKey('response')->sendError('No domain name provided for create.');
+			}
+
+			return $this->updateDomain($domain);
+		}
+
+		/**
+		 * Admin's always have access.
+		 */
+		protected function checkAccess($domain, $required) {
+			return true;
+		}
+
+		/**
+		 * Admin's can change anything.
+		 */
+		protected function validAccessChange($domain, $email, $access, $self) {
+			return true;
+		}
+
+		/**
+		 * Get list of all domains.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainList() {
+			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled']);
+			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
+			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
+			$s->select('users', 'email', 'user');
+			$s->select('domain_access', 'level', 'level');
+			$rows = $s->getRows();
+
+			$domains = [];
+			foreach ($rows as $row) {
+				if (!array_key_exists($row['domain'], $domains)) {
+					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => []];
+				}
+
+				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
+			}
+
+			$this->getContextKey('response')->data($domains);
+
+			return true;
+		}
+	}
+
 	class Domains extends APIMethod {
 		public function check($requestMethod, $params) {
 			if ($this->getContextKey('user') == NULL) {
@@ -16,7 +118,7 @@
 		 * @param $params Params array.
 		 * @return Domain object or FALSE if no domain provided or found.
 		 */
-		private function getDomainFromParam($params) {
+		protected function getDomainFromParam($params) {
 			if (isset($params['domain'])) {
 				$domain = $this->getContextKey('user')->getDomainByName($params['domain']);
 				if ($domain === FALSE) {
@@ -39,7 +141,7 @@
 		 * @param $params Params array.
 		 * @return Domain object or FALSE if no domain provided or found.
 		 */
-		private function getRecordFromParam($domain, $params) {
+		protected function getRecordFromParam($domain, $params) {
 			if (isset($params['recordid'])) {
 				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
 				if ($record === FALSE) {
@@ -52,6 +154,23 @@
 			return $record;
 		}
 
+		/**
+		 * Check if the current user has sufficient access to this domain.
+		 * This will throw an API error if the user does not have access, else
+		 * return true.
+		 *
+		 * @param $domain Domain object to check. (if FALSE, return true)
+		 * @param $required Array of valid access levels.
+		 * @return True
+		 */
+		protected function checkAccess($domain, $required) {
+			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')->getID()), $required)) {
+				$this->getContextKey('response')->sendError('You do not have the required access to the domain: ' . $domain->getDomain());
+			}
+
+			return true;
+		}
+
 		public function get($params) {
 			$domain = $this->getDomainFromParam($params);
 
@@ -61,6 +180,8 @@
 				return $this->getRecordID($domain, $record);
 			} else if (isset($params['records'])) {
 				return $this->getRecords($domain);
+			} else if (isset($params['access'])) {
+				return $this->getDomainAccess($domain);
 			} else if (isset($params['domain'])) {
 				return $this->getDomainInfo($domain);
 			} else {
@@ -73,16 +194,18 @@
 		public function post($params) {
 			$domain = $this->getDomainFromParam($params);
 
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+
 			if (isset($params['recordid'])) {
 				$record = $this->getRecordFromParam($domain, $params);
 
 				return $this->updateRecordID($domain, $record);
 			} else if (isset($params['records'])) {
 				return $this->updateRecords($domain);
+			} else if (isset($params['access'])) {
+				return $this->updateDomainAccess($domain);
 			} else if ($domain !== FALSE) {
 				return $this->updateDomain($domain);
-			} else {
-				return $this->createDomain();
 			}
 
 			return FALSE;
@@ -90,6 +213,8 @@
 
 		public function delete($params) {
 			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			if (isset($params['recordid'])) {
 				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
@@ -101,6 +226,7 @@
 			} else if (isset($params['records'])) {
 				return $this->deleteRecords($domain);
 			} else if (isset($params['domain'])) {
+				$this->checkAccess($domain, ['owner']);
 				return $this->deleteDomain($domain);
 			}
 
@@ -114,7 +240,7 @@
 		 * @param $record Record object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function getRecordID($domain, $record) {
+		protected function getRecordID($domain, $record) {
 			$r = $record->toArray();
 			unset($r['domain_id']);
 
@@ -129,7 +255,7 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function getRecords($domain) {
+		protected function getRecords($domain) {
 			$records = $domain->getRecords();
 			$list = [];
 			foreach ($records as $record) {
@@ -149,9 +275,8 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function getDomainInfo($domain) {
+		protected function getDomainInfo($domain) {
 			$r = $domain->toArray();
-			unset($r['owner']);
 
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
@@ -162,46 +287,90 @@
 		}
 
 		/**
-		 * Get our list of domains.
+		 * Get access information about this domain.
 		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function getDomainList() {
-			$domains = $this->getContextKey('user')->getDomains();
-			$list = [];
-			foreach ($domains as $domain) {
-				$list[] = $domain->getDomain();
-			}
-			$this->getContextKey('response')->data($list);
+		protected function getDomainAccess($domain) {
+			$r = $domain->toArray();
+			$r['access'] = $domain->getAccessUsers();
 
+			$this->getContextKey('response')->data($r);
 			return true;
 		}
 
 		/**
-		 * Create a new domain.
+		 * Update access information about this domain.
 		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function createDomain() {
-			if (!$this->getContextKey('user')->isAdmin()) {
-				$this->getContextKey('response')->sendError('Access denied.');
-			}
+		protected function updateDomainAccess($domain) {
+			$this->checkAccess($domain, ['admin', 'owner']);
 
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
-				$this->getContextKey('response')->sendError('No data provided for create.');
+				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
-			$domain = new Domain($this->getContextKey('user')->getDB());
-			$domain->setOwner($this->getContextKey('user')->getID());
+			$users = User::findByAddress($this->getContextKey('db'), array_keys($data['data']['access']));
+			$self = $this->getContextKey('user');
 
-			if (isset($data['data']['domain'])) {
-				$domain->setDomain($data['data']['domain']);
-			} else {
-				$this->getContextKey('response')->sendError('No domain name provided for create.');
+			foreach ($data['data']['access'] as $email => $access) {
+				if (!array_key_exists($email, $users)) {
+					$this->getContextKey('response')->sendError('No such user: ' . $user);
+				}
+				$this->validAccessChange($domain, $email, $access, $self);
+
+				$domain->setAccess($users[$email]->getID(), $access);
 			}
+			$domain->save();
 
-			return $this->updateDomain($domain);
+			$r = $domain->toArray();
+			$r['access'] = $domain->getAccessUsers();
+
+			$this->getContextKey('response')->data($r);
+			return true;
+		}
+
+		/**
+		 * Check if this is a valid access-change.
+		 *  - Don't allow changing own access
+		 *  - Don't allow setting access higher than own access level.
+		 *
+		 * @param $domain Domain object we are changing.
+		 * @param $email Wanted email
+		 * @param $access Wanted access
+		 * @param $self Self object.
+		 * @return True if valid, or send an api error.
+		 */
+		protected function validAccessChange($domain, $email, $access, $self) {
+			$selfAccess = $domain->getAccess($self->getID());
+			$levels = ['none', 'read', 'write', 'admin', 'owner'];
+
+			if ($email == $self->getEmail()) {
+				$this->getContextKey('response')->sendError('You can\'t change your own access level');
+			}
+			if (array_search($access, $levels) >= array_search($selfAccess, $levels)) {
+				$this->getContextKey('response')->sendError('You can\'t set an access level greater or equal to your own.');
+			}
+		}
+
+		/**
+		 * Get our list of domains.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainList() {
+			$domains = $this->getContextKey('user')->getDomains();
+			$list = [];
+			foreach ($domains as $domain) {
+				$list[$domain->getDomain()] = $domain->getAccess($this->getContextKey('user')->getID());
+			}
+			$this->getContextKey('response')->data($list);
+
+			return true;
 		}
 
 		/**
@@ -210,7 +379,7 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function updateDomain($domain) {
+		protected function updateDomain($domain) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -234,7 +403,6 @@
 			}
 
 			$r = $domain->toArray();
-			unset($r['owner']);
 
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
@@ -251,7 +419,7 @@
 		 * @param $allowSetName (Default: false) Allow us to change the name of the domain?
 		 * @return $domain object after modification
 		 */
-		private function doUpdateDomain($domain, $data, $allowSetName = false) {
+		protected function doUpdateDomain($domain, $data, $allowSetName = false) {
 			$keys = array('disabled' => 'setDisabled',
 			             );
 
@@ -280,7 +448,7 @@
 		 * @param $record Record object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function updateRecordID($domain, $record) {
+		protected function updateRecordID($domain, $record) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -314,7 +482,7 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function updateRecords($domain) {
+		protected function updateRecords($domain) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -381,7 +549,7 @@
 		 * @param $data Data to use to update the record.
 		 * @return The record after being updated.
 		 */
-		private function doUpdateRecord($record, $data) {
+		protected function doUpdateRecord($record, $data) {
 			$keys = array('name' => 'setName',
 			              'type' => 'setType',
 			              'content' => 'setContent',
@@ -410,7 +578,7 @@
 		 * @param $record Record object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function deleteRecordID($domain, $record) {
+		protected function deleteRecordID($domain, $record) {
 			$this->getContextKey('response')->set('deleted', $record->delete() ? 'true' : 'false');
 			$serial = $domain->updateSerial();
 			$this->getContextKey('response')->set('serial', $serial);
@@ -423,7 +591,7 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function deleteRecords($domain) {
+		protected function deleteRecords($domain) {
 			$records = $domain->getRecords();
 			$count = 0;
 			foreach ($records as $record) {
@@ -442,14 +610,24 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		private function deleteDomain($domain) {
+		protected function deleteDomain($domain) {
 			$this->getContextKey('response')->data(['deleted', $domain->delete() ? 'true' : 'false']);
 			return true;
 		}
 
 	}
 
-	$router->addRoute('(GET|POST) /domains', new Domains());
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', new Domains());
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', new Domains());
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', new Domains());
+	$domainsHandler = new Domains();
+	$router->addRoute('(GET) /domains', $domainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', $domainsHandler);
+	$router->addRoute('(GET|POST) /domains/(?P<domain>[^/]+)/(?P<access>access)', $domainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', $domainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $domainsHandler);
+
+
+	$adminDomainsHandler = new AdminDomains();
+	$router->addRoute('(GET|POST) /admin/domains', $adminDomainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)', $adminDomainsHandler);
+	$router->addRoute('(GET|POST) /admin/domains/(?P<domain>[^/]+)/(?P<access>access)', $adminDomainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)', $adminDomainsHandler);
+	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $adminDomainsHandler);

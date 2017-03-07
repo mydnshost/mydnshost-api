@@ -3,7 +3,6 @@
 class Domain extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'domain' => NULL,
-	                             'owner' => NULL,
 	                             'disabled' => false,
 	                            ];
 	protected static $_key = 'id';
@@ -11,6 +10,8 @@ class Domain extends DBObject {
 
 	// SOA for unknown objects.
 	protected $_soa = FALSE;
+	// Access levels for unknown objects.
+	protected $_access = [];
 
 	public function __construct($db) {
 		parent::__construct($db);
@@ -20,12 +21,86 @@ class Domain extends DBObject {
 		return $this->setData('domain', $value);
 	}
 
-	public function setOwner($value) {
-		return $this->setData('owner', $value);
-	}
-
 	public function setDisabled($value) {
 		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
+	}
+
+	/**
+	 * Load an object from the database based on domain name.
+	 *
+	 * @param $db Database object to load from.
+	 * @param $name Name to look for.
+	 * @return FALSE if no object exists, else the object.
+	 */
+	public static function loadFromDomain($db, $name) {
+		$result = static::find($db, ['domain' => $name]);
+		if ($result) {
+			return $result[0];
+		} else {
+			return FALSE;
+		}
+	}
+
+	public function getAccess($user) {
+		return array_key_exists($user, $this->_access) ? $this->_access[$user] : 'none';
+	}
+
+	public function setAccess($user, $level) {
+		$level = strtolower($level);
+		if (in_array($level, ['none', 'read', 'write', 'admin', 'owner'])) {
+			$this->_access[$user] = $level;
+			$this->setChanged();
+		}
+		return $this;
+	}
+
+	public function getAccessUsers() {
+		$users = User::findByID(DB::get(), array_keys($this->_access));
+
+		$result = [];
+		foreach ($this->_access as $k => $v) {
+			if (isset($users[$k]) && $v != 'none') {
+				$result[$users[$k]->getEmail()] = $v;
+			}
+		}
+
+		return $result;
+	}
+
+	public function postSave($result) {
+		if ($result) {
+			// Persist access changes
+			$setQuery = 'INSERT INTO domain_access (`user_id`, `domain_id`, `level`) VALUES (:user, :domain, :level) ON DUPLICATE KEY UPDATE `level` = :level';
+			$setStatement = $this->getDB()->getPDO()->prepare($setQuery);
+
+			$removeQuery = 'DELETE FROM domain_access WHERE `user_id` = :user AND `domain_id` = :domain';
+			$removeStatement = $this->getDB()->getPDO()->prepare($removeQuery);
+
+			$params = [':domain' => $this->getID()];
+			foreach ($this->_access as $user => $access) {
+				$params[':user'] = $user;
+				$params[':level'] = $access;
+				if ($access == 'none') {
+					unset($params[':level']);
+					$removeStatement->execute($params);
+				} else {
+					$setStatement->execute($params);
+				}
+			}
+		}
+	}
+
+	public function postLoad() {
+		// Get access levels;
+		$query = 'SELECT `user_id`,`level` FROM domain_access WHERE `domain_id` = :domain';
+		$params = [':domain' => $this->getID()];
+		$statement = $this->getDB()->getPDO()->prepare($query);
+		$statement->execute($params);
+		$result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach ($result as $row) {
+			$this->setAccess($row['user_id'], $row['level']);
+		}
 	}
 
 	public function getID() {
@@ -34,10 +109,6 @@ class Domain extends DBObject {
 
 	public function getDomain() {
 		return $this->getData('domain');
-	}
-
-	public function getOwner() {
-		return $this->getData('owner');
 	}
 
 	public function isDisabled() {
@@ -127,7 +198,7 @@ class Domain extends DBObject {
 	}
 
 	public function validate() {
-		$required = ['domain', 'owner'];
+		$required = ['domain'];
 		foreach ($required as $r) {
 			if (!$this->hasData($r)) {
 				throw new ValidationFailed('Missing required field: '. $r);

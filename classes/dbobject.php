@@ -10,8 +10,6 @@ abstract class DBObject {
 	protected static $_key = 'id';
 	/** Table name for this object. */
 	protected static $_table = NULL;
-	/** last error for this class. */
-	protected static $lastStaticError = NULL;
 
 	/** Known database values for this object. */
 	private $data = [];
@@ -49,7 +47,7 @@ abstract class DBObject {
 	 */
 	protected function setData($key, $value) {
 		if (static::isField($key)) {
-			$this->changed = $this->changed || !$this->hasData($key) || ($this->data[$key] != $value);
+			$this->setChanged($this->changed || !$this->hasData($key) || ($this->data[$key] != $value));
 			$this->data[$key] = $value;
 		}
 
@@ -156,49 +154,16 @@ abstract class DBObject {
 	 * @return FALSE if we were able to find objects, else an array of objects.
 	 */
 	public static function find($db, $fields, $comparators = []) {
-		if (!is_array($fields)) { return FALSE; }
+		return self::getSearch($db)->search($fields, $comparators);
+	}
 
-		$keys = [];
-		foreach (array_keys(static::$_fields) as $key) {
-			$keys[] = '`' . $key . '`';
-		}
-
-		$where = [];
-		$params = [];
-		foreach ($fields as $key => $value) {
-			$comparator = isset($comparators[$key]) ? $comparators[$key] : '=';
-
-			$where[] = sprintf('`%s` %s :%s', $key, $comparator, $key);
-			$params[':' . $key] = $value;
-		}
-
-		if (count($where) > 0) {
-			$query = sprintf('SELECT %s FROM %s WHERE %s', implode(',', $keys), static::$_table, implode(' AND ', $where));
-		} else {
-			$query = sprintf('SELECT %s FROM %s', implode(',', $keys), static::$_table);
-		}
-		$statement = $db->getPDO()->prepare($query);
-		$result = $statement->execute($params);
-		if ($result) {
-			$return = [];
-
-			$rows = $statement->fetchAll(PDO::FETCH_ASSOC);
-			foreach ($rows as $row) {
-				$class = get_called_class();
-				$obj = new $class($db);
-				$obj->setFromArray($row);
-				$obj->postLoad();
-				$obj->changed = false;
-
-				$return[] = $obj;
-			}
-
-			return $return;
-		} else {
-			static::$lastStaticError = $statement->errorInfo();
-		}
-
-		return FALSE;
+	/**
+	 * Get a Search class for this object.
+	 *
+	 * @return new Search class that finds instances of this object.
+	 */
+	public static function getSearch($db) {
+		return new SearchToObject($db, static::$_table, static::$_fields, get_called_class());
 	}
 
 	/**
@@ -218,6 +183,13 @@ abstract class DBObject {
 	 * @return True if we have changed.
 	 */
 	public function hasChanged() { return $this->changed; }
+
+	/**
+	 * Set that this object has changed.
+	 *
+	 * @param $changed Value for changed (Default: true)
+	 */
+	public function setChanged($changed = true) { $this->changed = $changed; }
 
 	/**
 	 * Save this object to the database.
@@ -267,7 +239,7 @@ abstract class DBObject {
 				$this->setData(static::$_key, $this->myDB->getPDO()->lastInsertId());
 			}
 			$this->postSave($result);
-			$this->changed = false;
+			$this->setChanged(false);
 			return TRUE;
 		} else {
 			$this->lastError = $statement->errorInfo();
@@ -303,15 +275,6 @@ abstract class DBObject {
 	 */
 	public function getLastError() {
 		return $this->lastError;
-	}
-
-	/**
-	 * Get the last error we encountered with the database.
-	 *
-	 * @return last error.
-	 */
-	public static function getLastStaticError() {
-		return static::$lastStaticError;
 	}
 
 	/** Hook for after data has been loaded into the object. */

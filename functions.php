@@ -6,6 +6,8 @@
 	}
 	require_once(dirname(__FILE__) . '/config.php');
 	require_once(dirname(__FILE__) . '/classes/db.php');
+	require_once(dirname(__FILE__) . '/classes/search.php');
+	require_once(dirname(__FILE__) . '/classes/searchtoobject.php');
 	require_once(dirname(__FILE__) . '/classes/dbobject.php');
 	require_once(dirname(__FILE__) . '/classes/domain.php');
 	require_once(dirname(__FILE__) . '/classes/record.php');

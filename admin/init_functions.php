@@ -91,11 +91,9 @@ CREATE TABLE `users` (
 CREATE TABLE `domains` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `domain` varchar(255) NOT NULL,
-  `owner` int(11),
   `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `domain_domain_unique` (`domain`),
-  CONSTRAINT `domains_owner` FOREIGN KEY (`owner`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  UNIQUE KEY `domain_domain_unique` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -120,7 +118,7 @@ CREATE TABLE `records` (
 CREATE TABLE `domain_access` (
   `user_id` int(11) NOT NULL,
   `domain_id` int(11) NOT NULL,
-  `level` ENUM('read', 'write', 'admin') NOT NULL DEFAULT 'read',
+  `level` ENUM('read', 'write', 'admin', 'owner') NOT NULL DEFAULT 'read',
   PRIMARY KEY (`user_id`,`domain_id`),
   CONSTRAINT `domain_access_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `domain_access_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE

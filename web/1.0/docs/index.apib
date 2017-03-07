@@ -27,27 +27,16 @@ X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
 # Group General
 General API Endpoints.
 
-## API Ping [/ping]
+## API Ping [/ping/{time}]
 ### Ping the API [GET]
-This tests that the API is up and running. The API will respond with a non-error, this does not require authentication.
-+ Response 200 (application/json)
-    + Body
-
-            {
-                "respid": "58bcb5a0c03cc",
-                "method": "ping"
-            }
-
-
-## API Ping with time [/ping/{time}]
-### Ping the API [GET]
-This tests that the API is up and running. The API will respond with a non-error and include the time provided, this does not require authentication.
+This tests that the API is up and running. The API will respond with a non-error and include the time if provided, this does not require authentication.
 
 + Parameters
 
-    + time: `123456` (required, number) - The current time, will be echoed back.
+    + time: `123456` (optional, number) - The current time, will be echoed back.
 
 + Response 200 (application/json)
+    If the time is not provided, then the response field is ommited entirely.
     + Body
 
             {
@@ -233,65 +222,22 @@ Allows updating user information. Any fields that are passed in will be updated,
 # Group Domains
 Endpoints for dealing with domains.
 
-## Get or create domains [/domains]
+## Get domains [/domains]
 
 ### Get list of known domains [GET]
+See what domains you have access to, and what level of access to each.
 + Response 200 (application/json)
     + Body
 
             {
                 "respid": "58bcc0357e7eb",
                 "method": "domains",
-                "response":[
-                    "example.org"
-                ]
-            }
-
-### Create a new domain [POST]
-This is an admin-only endpoint to create a new domain.
-
-+ Request Create a domain (application/json)
-    + Body
-
-            {
-                "data": {
-                    "domain": "example.net",
-                }
-            }
-
-
-+ Response 200 (application/json)
-    A successful response will display the newly-created domain.
-    + Body
-
-            {
-                "respid": "58bcc0c377913",
-                "method": "domains",
                 "response":{
-                    "id": "9",
-                    "domain": "example.net",
-                    "disabled": false,
-                    "SOA":{
-                        "primaryNS": "ns1.example.net.",
-                        "adminAddress": "dnsadmin.example.net.",
-                        "serial": "0",
-                        "refresh": "86400",
-                        "retry": "7200",
-                        "expire": "2419200",
-                        "minttl": "60"
-                    }
+                    "test1.com": "owner",
+                    "test2.com": "owner",
+                    "example1.org": "write",
+                    "example2.org": "read"
                 }
-            }
-
-+ Response 400 (application/json)
-    An error will include an `error` and possibly `errorData` information.
-    + Body
-
-            {
-                "respid": "58bcc115b3601",
-                "method": "domains",
-                "error": "Error updating domain.",
-                "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
             }
 
 ## Specific domain infomation [/domains/{domain}]
@@ -386,6 +332,82 @@ Changes made with this end point do not automatically increment the domain seria
                 "response":[
                    "deleted"
                 ]
+            }
+
+## Domain access levels [/domains/{domain}/access]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get all users with access to the domain [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bdf7472d255",
+                "method": "domains/example2.org/access",
+                "response":{
+                    "id": "7",
+                    "domain": "example2.org",
+                    "disabled": "false",
+                    "access":{
+                       "admin@example.org": "write",
+                        "user2@example.org": "owner"
+                    }
+                }
+            }
+
+### Update domain access  [POST]
+This allows changing user access levels on the domain.
+
+As a general rule of thumb, you can not edit your own access level, and you can not set people to have an access level equal or above your own (Thus only site-admin users can set domain owners.)
+
+There are 5 levels of access (each level has all the access of those below it):
+ - owner - Owner has full control over the domain, there can only be 1. Only the owner can delete the domain.
+ - admin - Domain admins can grant other users write access to the domain.
+ - write - Write allows changing domain records
+ - read - Read allows reading domain records but not changing
+ - none - No access to the domain (Default)
+
++ Request Give user1 write access (application/json)
+    + Body
+
+            {
+                "data":{
+                    "access":{
+                        "user1@example.org": "write"
+                    }
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-updated access list.
+    + Body
+
+            {
+                "respid": "58bdf89ebc587",
+                "method": "domains/example2.org/access",
+                "response":{
+                    "id": "7",
+                    "domain": "example2.org",
+                    "disabled": "false",
+                    "access":{
+                        "admin@example.org": "write",
+                        "user2@example.org": "owner",
+                        "user1@example.org": "write"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error changing any of the requested access, the whole change will be aborted with an error message explaining why.
+    + Body
+
+            {
+                "respid": "58bdf83ed6cd5",
+                "method": "domains/example2.org/access",
+                "error": "You do not have the required access to the domain: example2.org"
             }
 
 ## Domain records [/domains/{domain}/records]
@@ -710,3 +732,162 @@ As with other update methods, only fields that are provided will be changed, you
                 "error": "Unknown record id for domain example.org : 21"
             }
 
+
+# Group Domains Admin
+Admin Endpoints for dealing with domains.
+
+As a general rule, anything that exists under `/domains` also exists under `/admin/domains` but in a less-restricted fashion. (ie, behaves as if the user had `owner` access to all domains)
+As such, to prevent documentation duplication, this section only lists methods where the result is different.
+
+## Get domains [/admin/domains]
+
+### Get list of all known domains  [GET]
+See what domains exist and user access levels for each.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bdf3b15c33b",
+                "method": "admin/domains",
+                "response":{
+                    "test1.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "test2.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "test3.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "test4.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "test5.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "example1.org":{
+                        "disabled": "false",
+                        "users":{
+                            "user1@example.org": "owner"
+                        }
+                    },
+                    "example2.org":{
+                    "disabled": "false",
+                        "users":{
+                            "admin@example.org": "write",
+                            "user2@example.org": "owner"
+                        }
+                    },
+                    "example3.org":{
+                        "disabled": "false",
+                        "users":{
+                            "user3@example.org": "owner"
+                        }
+                    },
+                    "example4.org":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "write",
+                            "user4@example.org": "owner"
+                        }
+                    },
+                    "example5.org":{
+                        "disabled": "false",
+                        "users":{
+                            "user5@example.org": "owner"
+                        }
+                    },
+                    "unowned1.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "owner"
+                        }
+                    },
+                    "unowned2.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "read"
+                        }
+                    },
+                    "unowned3.com":{
+                        "disabled": "false",
+                        "users":{
+                            null
+                        }
+                    },
+                    "unowned4.com":{
+                        "disabled": "false",
+                        "users":{
+                            "admin@example.org": "read"
+                        }
+                    },
+                    "unowned5.com":{
+                        "disabled": "false",
+                        "users":{
+                            null
+                        }
+                    }
+                }
+            }
+
+### Create a new domain [POST]
+Create a new domain.
+
++ Request Create a domain (application/json)
+    + Body
+
+            {
+                "data": {
+                    "domain": "example.net",
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-created domain.
+    + Body
+
+            {
+                "respid": "58bcc0c377913",
+                "method": "domains",
+                "response":{
+                    "id": "9",
+                    "domain": "example.net",
+                    "disabled": false,
+                    "SOA":{
+                        "primaryNS": "ns1.example.net.",
+                        "adminAddress": "dnsadmin.example.net.",
+                        "serial": "0",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "58bcc115b3601",
+                "method": "domains",
+                "error": "Error updating domain.",
+                "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
+            }

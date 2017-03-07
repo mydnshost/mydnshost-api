@@ -1,8 +1,11 @@
 RewriteEngine On
-RewriteBase /1.0
+
+# Apache sucks a bit...
+RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+RewriteRule ^(.*)$ - [E=BASE:%1]
 
 # Rewrite help to docs
-RewriteRule ^help/?(.*)$ docs/$1 [R=301,L]
+RewriteRule ^help/?(.*)$ %{ENV:BASE}docs/$1 [R,L]
 
 # Allowed
 RewriteRule ^(docs)/index.apib$ - [L]

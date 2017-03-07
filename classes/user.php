@@ -69,12 +69,52 @@ class User extends DBObject {
 	}
 
 	/**
+	 * Find all objects that match an array of IDs.
+	 *
+	 * @param $db Database object to load from.
+	 * @param $id Array of IDs to find.
+	 * @return FALSE if no objects exist, else the objects.
+	 */
+	public static function findByID($db, $id) {
+		$userSearch = User::getSearch($db);
+		$userSearch->where('id', $id);
+		return $userSearch->find('id');
+	}
+
+	/**
+	 * Find all objects that match an array of IDs.
+	 *
+	 * @param $db Database object to load from.
+	 * @param $id Array of IDs to find.
+	 * @return FALSE if no objects exist, else the objects.
+	 */
+	public static function findByAddress($db, $address) {
+		$userSearch = User::getSearch($db);
+		$userSearch->where('email', $address);
+		return $userSearch->find('email');
+	}
+
+	/**
+	 * Get a domain searcher that limits us to domains we have access to.
+	 */
+	private function getDomainSearch() {
+		$domainSearch = Domain::getSearch($this->getDB());
+		$domainSearch->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
+		$domainSearch->select('domain_access', 'level');
+		$domainSearch->select('domain_access', 'user_id');
+		$domainSearch->where('user_id', $this->getID());
+
+		return $domainSearch;
+	}
+
+	/**
 	 * Get all the domains for this user.
 	 *
 	 * @return List of domain objects for this user.
 	 */
 	public function getDomains() {
-		$result = Domain::find($this->getDB(), ['owner' => $this->getID()]);
+		$result = $this->getDomainSearch()->find();
+
 		return ($result) ? $result : [];
 	}
 
@@ -85,7 +125,8 @@ class User extends DBObject {
 	 * @return Domain object if found else FALSE.
 	 */
 	public function getDomainByID($id) {
-		$result = Domain::find($this->getDB(), ['owner' => $this->getID(), 'id' => $id]);
+		$result = $this->getDomainSearch()->where('id', $id)->find();
+
 		return ($result) ? $result[0] : FALSE;
 	}
 
@@ -97,7 +138,7 @@ class User extends DBObject {
 	 * @return Domain object if found else FALSE.
 	 */
 	public function getDomainByName($name) {
-		$result = Domain::find($this->getDB(), ['owner' => $this->getID(), 'domain' => $name]);
+		$result = $this->getDomainSearch()->where('domain', $name)->find();
 		return ($result) ? $result[0] : FALSE;
 	}
 
