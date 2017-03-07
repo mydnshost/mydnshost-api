@@ -9,6 +9,7 @@
 	$pdo->exec('DROP TABLE domains;');
 	$pdo->exec('DROP TABLE domain_access;');
 	$pdo->exec('DROP TABLE records;');
+	$pdo->exec('DROP TABLE apikeys;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
@@ -17,6 +18,12 @@
 
 	$admin = new User(DB::get());
 	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setAdmin(true)->save();
+
+	$adminKey = new APIKey(DB::get());
+	$adminKey->setKey('F4C108DA-4070-45A4-8223-8C5DDFB96A51')->setDescription('Test Key')->setUserID($admin->getID());
+	$adminKey->setDomainRead(true)->setDomainWrite(true);
+	$adminKey->setUserRead(true)->setUserWrite(true);
+	$adminKey->save();
 
 	for ($i = 1; $i <= 5; $i++) {
 		$domain = new Domain(DB::get());

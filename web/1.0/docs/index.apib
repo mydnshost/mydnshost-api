@@ -4,6 +4,28 @@ HOST: https://api.mydnshost.co.uk/1.0
 # MyDNSHost API
 This document describes the current API (Version 1.0) for MyDNSHost.
 
+## User Authentication
+Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
+
+Authentication via Basic Auth gives you full access to the account (Same as an API Key with all permissions set to true)
+
+## API Key Authentication
+If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.
+
+API Keys can be limited as to what they can see/do.
+
+ - **domains_read**: Has access to `GET` on `/domains` end-points
+ - **domains_write**: Has access to `POST` or `DELETE` on `/domains` end-points
+ - **user_read**: Has access to `GET` on `/users` end-points
+ - **user_write**: Has access to `POST` or `DELETE` on `/users` end-points
+
+You can log in using an API Key by adding the following headers:
+
+```http
+X-API-User: SomeUser@example.org
+X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
+```
+
 ## Request-ID
 For any of the requests, you can pass a X-Request-ID header:
 
@@ -12,17 +34,6 @@ X-Request-ID: SomeUniqueID
 ```
 
 Which will be returned in the body of any reponse as a `reqid` field.
-
-## User Authentication
-Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
-
-## API Keys
-If you have a valid API Key, this can be used instead of Basic Auth (NOT IMPLEMENTED YET)
-
-```http
-X-API-User: SomeUser@example.org
-X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
-```
 
 # Group General
 General API Endpoints.
@@ -49,7 +60,7 @@ This tests that the API is up and running. The API will respond with a non-error
 
 ## Get the current user information [/userdata]
 ### Get User information [GET]
-This lets you see what user you are authenticated as
+This lets you see what user you are authenticated as and your current access level based on your authentication.
 + Response 200 (application/json)
     + Body
 
@@ -61,6 +72,12 @@ This lets you see what user you are authenticated as
                         "id": "2",
                         "email": "user@example.org",
                         "realname": "Some User"
+                    },
+                    "access":{
+                        "domains_read": true,
+                        "domains_write": false,
+                        "user_read": false,
+                        "user_write": false
                     }
                 }
             }
@@ -176,7 +193,6 @@ This is an admin-only endpoint that will delete the user specified. You can not 
                 ]
             }
 
-
 ## Create a user [/users/create]
 ### Create a user [POST]
 This is an admin-only end-point. This behaves similarily to the update user except that you must pass in `password`, `email` and `realname` fields.
@@ -218,6 +234,140 @@ Allows updating user information. Any fields that are passed in will be updated,
                 "method": "users/create",
                 "error": "Error creating user."
             }
+
+## API Keys [/users/{userid}/keys]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known API Keys [GET]
+Returns the list of known API Keys and their description/permissions.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf2439319ea",
+                "method": "users/self/keys",
+                "response":{
+                    "F4C108DA-4070-45A4-8223-8C5DDFB96A51":{
+                        "description": "Test Key",
+                        "domains_read": "true",
+                        "domains_write": "true",
+                        "user_read": "true",
+                        "user_write": "true"
+                    },
+                    "60B56841-508D-4037-9A16-B234B9E849A0":{
+                        "description": "Domains Read-Only Key",
+                        "domains_read": "true",
+                        "domains_write": "false",
+                        "user_read": "false",
+                        "user_write": "false"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new API Key. The key itself will be randomly generated and returned.
+
++ Request Create a key that has read-only access to just /domains (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Domains Read-Only Key",
+                    "domains_read": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "58bf24e7d5638",
+                "method": "users/self/keys",
+                "response":{
+                    "60B56841-508D-4037-9A16-B234B9E849A0":{
+                        "description": "Domains Read-Only Key",
+                        "domains_read": "true",
+                        "domains_write": false,
+                        "user_read": false,
+                        "user_write": false,
+                        "updated": true
+                    }
+                }
+            }
+
+
+## Manipulate specific API Key [/users/{userid}/keys/{keyid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `00413A9B-E086-4AD7-AC82-FF061B28D176` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf257073446",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":{
+                    "description": "Domains Read-Only Key",
+                    "domains_read": "true",
+                    "domains_write": "false",
+                    "user_read": "false",
+                    "user_write": "false"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Full-Access Key",
+                    "domains_read": "true",
+                    "domains_write": "true",
+                    "user_read": "true",
+                    "user_write": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bf24e7d5638",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":{
+                    "description": "Full-Access Key",
+                    "domains_read": "true",
+                    "domains_write": "true",
+                    "user_read": "true",
+                    "user_write": "true",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf2602687cc",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":[
+                   "deleted"
+                ]
+            }
+
 
 # Group Domains
 Endpoints for dealing with domains.

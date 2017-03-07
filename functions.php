@@ -12,6 +12,7 @@
 	require_once(dirname(__FILE__) . '/classes/domain.php');
 	require_once(dirname(__FILE__) . '/classes/record.php');
 	require_once(dirname(__FILE__) . '/classes/user.php');
+	require_once(dirname(__FILE__) . '/classes/apikey.php');
 
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
 	DB::get()->setPDO($pdo);
@@ -20,6 +21,10 @@
 		$in = strtolower($input);
 		return ($in === true || $in == 'true' || $in == '1' || $in == 'on' || $in == 'yes');
 	}
+
+    function genUUID() {
+		return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+    }
 
 	class bcrypt {
 		const defaultWorkFactor = 8;

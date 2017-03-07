@@ -93,7 +93,7 @@ CREATE TABLE `domains` (
   `domain` varchar(255) NOT NULL,
   `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `domain_domain_unique` (`domain`)
+  UNIQUE INDEX `domains_domain_unique` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -135,8 +135,13 @@ CREATE TABLE `apikeys` (
   `apikey` VARCHAR(250) NOT NULL,
   `user_id` int(11) NOT NULL,
   `description` VARCHAR(250) NOT NULL,
+  `domains_read` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  `domains_write` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  `user_read` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  `user_write` ENUM('false', 'true') NOT NULL DEFAULT 'false',
   PRIMARY KEY (`id`),
   CONSTRAINT `apikeys_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `apikeys_apikey_user` (`apikey` ASC, `user_id` ASC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 MYSQLQUERY
 );

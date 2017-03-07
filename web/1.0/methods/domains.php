@@ -2,9 +2,8 @@
 
 	class AdminDomains extends Domains {
 		public function check($requestMethod, $params) {
-			if ($this->getContextKey('user') == NULL) {
-				throw new APIMethod_NeedsAuthentication();
-			}
+			parent::check($requestMethod, $params);
+
 			if (!$this->getContextKey('user')->isAdmin()) {
 				throw new APIMethod_AccessDenied();
 			}
@@ -172,6 +171,8 @@
 		}
 
 		public function get($params) {
+			$this->checkPermissions(['domains_read']);
+
 			$domain = $this->getDomainFromParam($params);
 
 			if (isset($params['recordid'])) {
@@ -192,6 +193,7 @@
 		}
 
 		public function post($params) {
+			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($params);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
@@ -212,6 +214,7 @@
 		}
 
 		public function delete($params) {
+			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($params);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);

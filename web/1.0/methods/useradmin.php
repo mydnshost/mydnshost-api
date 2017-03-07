@@ -6,6 +6,7 @@
 			if ($user == NULL) {
 				throw new APIMethod_NeedsAuthentication();
 			}
+
 			if ($user->isAdmin()) { return true; }
 
 			if (isset($params['userid']) && ($params['userid'] != 'self' && $params['userid'] != $user->getID())) {
@@ -20,20 +21,38 @@
 		protected function getUserFromParam($params) {
 			$user = FALSE;
 			if (isset($params['userid'])) {
-				if ($params['userid'] == 'self') {
-					$params['userid'] = $this->getContextKey('user')->getID();
-				}
+				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
 
-				$user = User::load($this->getContextKey('db'), $params['userid']);
+				$user = User::load($this->getContextKey('db'), $userid);
+				if ($user === FALSE) {
+					$this->getContextKey('response')->sendError('Unknown userid: ' . $params['userid']);
+				}
 			}
 
 			return $user;
 		}
 
+		protected function getKeyFromParam($params) {
+			$key = FALSE;
+			if (isset($params['keyid'])) {
+				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
+				$key = APIKey::loadFromUserKey($this->getContextKey('db'), $userid, $params['keyid']);
+				if ($key === FALSE) {
+					$this->getContextKey('response')->sendError('Unknown apikey: ' . $params['keyid']);
+				}
+			}
+
+			return $key;
+		}
+
 		public function get($params) {
+			$this->checkPermissions(['user_read']);
 			$user = $this->getUserFromParam($params);
 
-			if (isset($params['userid']) && isset($params['keys'])) {
+			if (isset($params['keyid'])) {
+				$key = $this->getKeyFromParam($params);
+				return $this->getAPIKey($user, $key);
+			} else if (isset($params['keys'])) {
 				return $this->getAPIKeys($user);
 			} else if (isset($params['userid'])) {
 				return $this->getUserData($user);
@@ -45,10 +64,12 @@
 		}
 
 		public function post($params) {
+			$this->checkPermissions(['user_write']);
 			$user = $this->getUserFromParam($params);
 
 			if (isset($params['keyid'])) {
-				return $this->updateAPIKey($user);
+				$key = $this->getKeyFromParam($params);
+				return $this->updateAPIKey($user, $key);
 			} else if (isset($params['keys'])) {
 				return $this->createAPIKey($user);
 			} else if (isset($params['create'])) {
@@ -61,10 +82,12 @@
 		}
 
 		public function delete($params) {
+			$this->checkPermissions(['user_write']);
 			$user = $this->getUserFromParam($params);
 
 			if (isset($params['keyid'])) {
-				return $this->deleteAPIKey($user);
+				$key = $this->getKeyFromParam($params);
+				return $this->deleteAPIKey($user, $key);
 			} else if (isset($params['userid'])) {
 				return $this->deleteUser($user);
 			}
@@ -163,10 +186,6 @@
 		}
 
 		public function deleteUser($user) {
-			if ($user === FALSE) {
-				$this->getContextKey('response')->sendError('Unknown User ID: ' . $params['userid']);
-			}
-
 			if ($this->getContextKey('user')->getID() === $user->getID()) {
 				$this->getContextKey('response')->sendError('You can not delete yourself.');
 			}
@@ -176,19 +195,98 @@
 		}
 
 		protected function getAPIKeys($user) {
+			$keys = APIKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->find('apikey');
 
+			$result = [];
+			foreach ($keys as $k => $v) {
+				$result[$k] = $v->toArray();
+				unset($result[$k]['id']);
+				unset($result[$k]['user_id']);
+				unset($result[$k]['apikey']);
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
+		protected function getAPIKey($user, $key) {
+			$k = $key->toArray();
+			unset($k['id']);
+			unset($k['user_id']);
+			unset($k['apikey']);
+
+			$this->getContextKey('response')->data($k);
+
+			return TRUE;
 		}
 
 		protected function createAPIKey($user) {
-
+			$key = (new APIKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID());
+			return $this->updateAPIKey($user, $key, true);
 		}
 
-		protected function updateAPIKey($user, $key) {
+		protected function updateAPIKey($user, $key, $isCreate = false) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
 
+			if ($key !== FALSE) {
+				$this->doUpdateKey($key, $data['data']);
+
+				try {
+					$key->validate();
+				} catch (ValidationFailed $ex) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $params['keyid'], $ex->getMessage());
+					}
+				}
+
+				$k = $key->toArray();
+				unset($k['id']);
+				unset($k['user_id']);
+				unset($k['apikey']);
+				$k['updated'] = $key->save();
+				if (!$k['updated']) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $params['keyid'], $ex->getMessage());
+					}
+				} else if ($isCreate) {
+					$this->getContextKey('response')->data([$key->getKey() => $k]);
+				} else {
+					$this->getContextKey('response')->data($k);
+				}
+
+				return TRUE;
+
+			}
+		}
+
+		private function doUpdateKey($key, $data) {
+			$keys = array('description' => 'setDescription',
+			              'domains_read' => 'setDomainRead',
+			              'domains_write' => 'setDomainWrite',
+			              'user_read' => 'setUserRead',
+			              'user_write' => 'setUserWrite',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$key->$f($data[$k]);
+				}
+			}
+
+			return $key;
 		}
 
 		protected function deleteAPIKey($user, $key) {
-
+			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			return TRUE;
 		}
 	}
 
@@ -196,6 +294,6 @@
 	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)', new UserAdmin());
 
 	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)', new UserAdmin());
-	$router->addRoute('(POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<key>[^/]+)', new UserAdmin());
+	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[^/]+)', new UserAdmin());
 
 	$router->addRoute('POST /users/(?P<create>create)', new UserAdmin());

@@ -72,20 +72,40 @@
 	// Look for authentication.
 	// This can either be USER/PASSWORD Basic auth, or in future API Keys.
 	//
-	// Basic auth takes priority.
-	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+	// API Key auth takes priority.
+	$user = FALSE;
+
+	if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
+		$user = User::loadFromEmail($context['db'], $_SERVER['HTTP_X_API_USER']);
+		if ($user != FALSE) {
+			$key = APIKey::loadFromUserKey($context['db'], $user->getID(), $_SERVER['HTTP_X_API_KEY']);
+
+			if ($key != FALSE) {
+				$context['user'] = $user;
+				$context['access'] = ['domains_read' => $key->getDomainRead(),
+				                      'domains_write' => $key->getDomainWrite(),
+				                      'user_read' => $key->getUserRead(),
+				                      'user_write' => $key->getUserWrite(),
+				                     ];
+			} else {
+				// Invalid Key, reset user.
+				$user = FALSE;
+			}
+		}
+	} else if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 		$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
 			$context['user'] = $user;
+			$context['access'] = ['domains_read' => true,
+			                      'domains_write' => true,
+			                      'user_read' => true,
+			                      'user_write' => true,
+			                     ];
 		} else {
+			// Failed password check, reset user.
 			$user = FALSE;
 		}
-	} else if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
-		// TODO: Not supported yet.
-		$user = FALSE;
-		$resp->setErrorCode('403', 'Forbidden');
-		$resp->sendError('Access denied.');
 	}
 
 	// Handle impersonation.
@@ -129,6 +149,9 @@
 		} catch (APIMethod_AccessDenied $ex) {
 			$resp->setErrorCode('403', 'Forbidden');
 			$resp->sendError('Access denied.');
+		} catch (APIMethod_PermissionDenied $ex) {
+			$resp->setErrorCode('403', 'Forbidden');
+			$resp->sendError('Permission Denied', 'You do not have the required permission: ' . $ex->getMessage());
 		} catch (Exception $ex) {
 			$resp->setErrorCode('500', 'Internal Server Error');
 			$resp->sendError('Internal Server Error.');
