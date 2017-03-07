@@ -20,7 +20,7 @@
 	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setAdmin(true)->save();
 
 	$adminKey = new APIKey(DB::get());
-	$adminKey->setKey('F4C108DA-4070-45A4-8223-8C5DDFB96A51')->setDescription('Test Key')->setUserID($admin->getID());
+	$adminKey->setKey('69299C29-5BED-447D-B2F9-840DD01FE0B5')->setDescription('Test Key')->setUserID($admin->getID());
 	$adminKey->setDomainRead(true)->setDomainWrite(true);
 	$adminKey->setUserRead(true)->setUserWrite(true);
 	$adminKey->save();
