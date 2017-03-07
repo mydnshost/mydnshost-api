@@ -125,3 +125,18 @@ CREATE TABLE `domain_access` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 MYSQLQUERY
 );
+
+  // ------------------------------------------------------------------------
+  // API Keys
+  // ------------------------------------------------------------------------
+	$dataChanges[3] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `apikeys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `apikey` VARCHAR(250) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `description` VARCHAR(250) NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `apikeys_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
