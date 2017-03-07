@@ -56,7 +56,7 @@
 				$this->getContextKey('response')->sendError('No domain name provided for create.');
 			}
 
-			return $this->updateDomain($domain);
+			return $this->updateDomain($domain, true);
 		}
 
 		/**
@@ -382,7 +382,7 @@
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @return TRUE if we handled this method.
 		 */
-		protected function updateDomain($domain) {
+		protected function updateDomain($domain, $isCreate = false) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -394,11 +394,24 @@
 				$domain->validate();
 				$domain->getSOARecord()->validate();
 
-				if (!$domain->save()) {
+				if ($domain->save()) {
+					if ($isCreate) {
+						HookManager::get()->handle('add_domain', [$domain]);
+					} else {
+						HookManager::get()->handle('update_domain', [$domain]);
+					}
+				} else {
 					throw new ValidationFailed($domain->getLastError()[2]);
 				}
 				$domain->getSOARecord()->setDomainID($domain->getID());
-				if (!$domain->getSOARecord()->save()) {
+				if ($domain->getSOARecord()->save()) {
+					if ($isCreate) {
+						HookManager::get()->handle('add_record', [$domain, $domain->getSOARecord()]);
+					} else {
+						HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+					}
+					HookManager::get()->handle('records_changed', [$domain]);
+				} else {
 					throw new ValidationFailed($domain->getSOARecord()->getLastError()[2]);
 				}
 			} catch (ValidationFailed $ex) {
@@ -466,7 +479,10 @@
 			try {
 				$record->validate();
 				$record->save();
+				HookManager::get()->handle('update_record', [$domain, $record]);
 				$serial = $domain->updateSerial();
+				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+				HookManager::get()->handle('records_changed', [$domain]);
 			} catch (ValidationFailed $ex) {
 				$this->getContextKey('response')->sendError('Error updating record.', $ex->getMessage());
 			}
@@ -533,13 +549,17 @@
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
 				$result[] = $r;
+				HookManager::get()->handle('update_record', [$domain, $record]);
 			}
 
 			foreach ($recordsToBeDeleted as $record) {
 				$result[] = ['id' => $record->getID(), 'deleted' => $record->delete()];
+				HookManager::get()->handle('delete_record', [$domain, $record]);
 			}
 
 			$serial = $domain->updateSerial();
+			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+			HookManager::get()->handle('records_changed', [$domain]);
 
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;
@@ -582,8 +602,14 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function deleteRecordID($domain, $record) {
-			$this->getContextKey('response')->set('deleted', $record->delete() ? 'true' : 'false');
+			$deleted = $record->delete();
+			$this->getContextKey('response')->set('deleted', $deleted ? 'true' : 'false');
+			if ($deleted) {
+				HookManager::get()->handle('delete_record', [$domain, $record]);
+			}
 			$serial = $domain->updateSerial();
+			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+			HookManager::get()->handle('records_changed', [$domain]);
 			$this->getContextKey('response')->set('serial', $serial);
 			return true;
 		}
@@ -598,10 +624,15 @@
 			$records = $domain->getRecords();
 			$count = 0;
 			foreach ($records as $record) {
-				if ($record->delete()) { $count++; }
+				if ($record->delete()) {
+					$count++;
+					HookManager::get()->handle('delete_record', [$domain, $record]);
+				}
 			}
 			$this->getContextKey('response')->set('deleted', $count);
 			$serial = $domain->updateSerial();
+			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+			HookManager::get()->handle('records_changed', [$domain]);
 			$this->getContextKey('response')->set('serial', $serial);
 
 			return true;
@@ -614,7 +645,11 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function deleteDomain($domain) {
-			$this->getContextKey('response')->data(['deleted', $domain->delete() ? 'true' : 'false']);
+			$deleted = $domain->delete();
+			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
+			if ($deleted) {
+				HookManager::get()->handle('delete_domain', [$domain]);
+			}
 			return true;
 		}
 
