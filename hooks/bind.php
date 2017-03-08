@@ -2,8 +2,8 @@
 	if (isset($config['bind']['enabled']) && parseBool($config['bind']['enabled'])) {
 		// Default config settings
 		$config['bind']['defaults']['zonedir'] = '/etc/bind/zones';
-		$config['bind']['defaults']['addZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc rndc addzone %s \'{type master; file "%s";};\' >/dev/null 2>&1';
-		$config['bind']['defaults']['reloadZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc reload %s >/dev/null 2>&1';
+		$config['bind']['defaults']['addZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
+		$config['bind']['defaults']['reloadZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 
 		foreach ($config['bind']['defaults'] as $setting => $value) {
 			if (!isset($config['bind'][$setting])) {
@@ -58,7 +58,7 @@
 		HookManager::get()->addHook('bind_zone_changed', function($domain, $bind) use ($bindConfig) {
 			list($filename, $filename2) = $bind->getFileNames();
 
-			$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($domain->getDomain()));
+			$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($domain->getDomain()), $filename);
 			exec($cmd);
 		});
 	}
