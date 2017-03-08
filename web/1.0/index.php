@@ -6,6 +6,8 @@
 	require_once(dirname(__FILE__) . '/response.php');
 	require_once(dirname(__FILE__) . '/routes.php');
 
+	recursiveLoadFiles(__DIR__ . '/methods');
+
 	// Initial response object.
 	$resp = new api_response();
 

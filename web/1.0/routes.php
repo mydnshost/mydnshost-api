@@ -26,11 +26,3 @@
 	}
 
 	$router = new MethodRouter();
-
-	// A bit horrible.
-	$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/methods', RecursiveDirectoryIterator::SKIP_DOTS));
-	foreach($it as $file) {
-	    if (pathinfo($file, PATHINFO_EXTENSION) == "php") {
-	        include_once($file);
-	    }
-	}

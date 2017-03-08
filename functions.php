@@ -27,11 +27,15 @@
 	HookManager::get()->addHookType('update_record');
 	HookManager::get()->addHookType('delete_record');
 
-	// Load hook files
-	$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/hooks', RecursiveDirectoryIterator::SKIP_DOTS));
-	foreach($it as $file) {
-		if (pathinfo($file, PATHINFO_EXTENSION) == "php") {
-			include_once($file);
+	if (file_exists(__DIR__ . '/hooks')) { recursiveLoadFiles(__DIR__ . '/hooks'); }
+	if (file_exists(__DIR__ . '/hooks.local')) { recursiveLoadFiles(__DIR__ . '/hooks.local'); }
+
+	public function recursiveLoadFiles($dir) {
+		$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
+		foreach($it as $file) {
+			if (pathinfo($file, PATHINFO_EXTENSION) == "php") {
+				include_once($file);
+			}
 		}
 	}
 
