@@ -153,7 +153,7 @@ class Domain extends DBObject {
 			$soa->setDomainID($this->getID());
 			$soa->setName('');
 			$soa->setType('SOA');
-			$soa->setContent(sprintf('ns1.%s. dnsadmin.%s. 0 86400 7200 2419200 60', $this->getDomain(), $this->getDomain()));
+			$soa->setContent(sprintf('ns1.%s. dnsadmin.%s. %d 86400 7200 2419200 60', $this->getDomain(), $this->getDomain(), $this->getNextSerial()));
 			$soa->setTTL(86400);
 			$soa->setChangedAt(time());
 			if ($this->isKnown()) {
@@ -168,6 +168,25 @@ class Domain extends DBObject {
 	}
 
 	/**
+	 * Get the next serial number to use.
+	 *
+	 * @param $oldSerial Current serial to ensure we are greater than.
+	 * @return New serial to use.
+	 */
+	function getNextSerial($oldSerial = 0) {
+		$serial = date('Ymd').'00';
+		$diff = ($oldSerial - $serial);
+
+		// If we already have a serial for today, the difference will be
+		// >= 0. Older days serials are < 0.
+		if ($diff >= 0) {
+			$serial += ($diff + 1);
+		}
+
+		return $serial;
+	}
+
+	/**
 	 * Update the domain serial.
 	 *
 	 * @param $serial Serial to set. Use null to auto-generate.
@@ -177,17 +196,7 @@ class Domain extends DBObject {
 		$soa = $this->getSOARecord();
 		$parsed = $soa->parseSOA();
 
-		if ($serial == NULL) {
-			$oldSerial = $parsed['serial'];
-			$serial = date('Ymd').'00';
-			$diff = ($oldSerial - $serial);
-
-			// If we already have a serial for today, the difference will be
-			// >= 0. Older days serials are < 0.
-			if ($diff >= 0) {
-				$serial += ($diff + 1);
-			}
-		}
+		$serial = $this->getNextSerial($parsed['serial']);
 
 		$parsed['serial'] = $serial;
 		$soa->updateSOAContent($parsed);

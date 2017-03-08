@@ -37,7 +37,7 @@
 
 			foreach ($this->hooks[$hook] as $callable) {
 				try {
-					call_user_func($callable, $args);
+					call_user_func_array($callable, $args);
 				} catch (Exception $ex) { }
 			}
 		}

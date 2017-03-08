@@ -29,6 +29,8 @@
 		$domain = new Domain(DB::get());
 		$domain->setDomain('test' . $i . '.com')->setAccess($admin->getID(), 'Owner')->save();
 		$domains[] = $domain;
+		HookManager::get()->handle('delete_domain', [$domain]);
+		HookManager::get()->handle('add_domain', [$domain]);
 	}
 
 	for ($i = 1; $i <= 5; $i++) {
@@ -41,6 +43,8 @@
 			$domain->setAccess($admin->getID(), 'Write')->save();
 		}
 		$domains[] = $domain;
+		HookManager::get()->handle('delete_domain', [$domain]);
+		HookManager::get()->handle('add_domain', [$domain]);
 	}
 
 
@@ -51,6 +55,8 @@
 			$domain->setAccess($admin->getID(), 'Read')->save();
 		}
 		$domains[] = $domain;
+		HookManager::get()->handle('delete_domain', [$domain]);
+		HookManager::get()->handle('add_domain', [$domain]);
 	}
 
 	foreach ($domains as $domain) {
@@ -63,6 +69,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -72,6 +79,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -81,6 +89,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -90,6 +99,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -99,6 +109,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -108,6 +119,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -117,6 +129,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -127,6 +140,7 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -137,6 +151,9 @@
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
+
+		HookManager::get()->handle('records_changed', [$domain]);
 	}
 
 	exit(0);

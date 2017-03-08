@@ -34,10 +34,9 @@
 		}
 
 		private function rowsToObject($rows) {
+			if (!is_array($rows)) { return FALSE; }
+
 			$return = array();
-
-			if (!is_array($rows)) { return $return; }
-
 			foreach ($rows as $key => $row) {
 				$class = $this->_object;
 				$obj = new $class($this->_db);
