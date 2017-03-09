@@ -16,7 +16,7 @@
 		$writeZoneFile = function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
-			$new = file_exists($filename);
+			$new = !file_exists($filename);
 			$bind->clearRecords();
 
 			$soa = $domain->getSOARecord()->parseSOA();
