@@ -68,8 +68,8 @@
 
 		class BindCommandRunner {
 			private $command;
-			public __construct($command) { $this->command = $command; }
-			public run($domain, $bind) {
+			public function __construct($command) { $this->command = $command; }
+			public function run($domain, $bind) {
 				list($filename, $filename2) = $bind->getFileNames();
 
 				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), $filename);
