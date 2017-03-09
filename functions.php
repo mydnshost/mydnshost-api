@@ -50,6 +50,20 @@
 		return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
 	}
 
+	function startsWith($haystack, $needle) {
+		$length = strlen($needle);
+		return (substr($haystack, 0, $length) === $needle);
+	}
+
+	function endsWith($haystack, $needle) {
+		$length = strlen($needle);
+		if ($length == 0) {
+			return true;
+		}
+
+		return (substr($haystack, -$length) === $needle);
+	}
+
 	class bcrypt {
 		const defaultWorkFactor = 8;
 

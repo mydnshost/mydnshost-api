@@ -31,7 +31,15 @@
 			$bind->setSOA($bindSOA);
 
 			foreach ($domain->getRecords() as $record) {
-				$bind->setRecord($record->getName(), $record->getType(), $record->getContent(), $record->getTTL(), $record->getPriority());
+				$name = $record->getName();
+				// $name = endsWith($name, '.') ? $name : $name '.' . $domain->getDomain() . '.';
+
+				$content = $record->getContent();
+				if ($record->getType() == "TXT") {
+					$content = '"' . $record->getContent() . '"';
+				}
+
+				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 			}
 
 			$bind->saveZoneFile();
