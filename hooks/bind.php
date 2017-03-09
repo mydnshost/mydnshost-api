@@ -4,6 +4,7 @@
 		$config['bind']['defaults']['zonedir'] = '/etc/bind/zones';
 		$config['bind']['defaults']['addZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
 		$config['bind']['defaults']['reloadZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
+		$config['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
 
 		foreach ($config['bind']['defaults'] as $setting => $value) {
 			if (!isset($config['bind'][$setting])) {
@@ -52,23 +53,33 @@
 
 		HookManager::get()->addHookType('bind_zone_added');
 		HookManager::get()->addHookType('bind_zone_changed');
+		HookManager::get()->addHookType('bind_zone_removed');
 
 		HookManager::get()->addHook('add_domain', $writeZoneFile);
+		HookManager::get()->addHook('update_domain', $writeZoneFile);
 		HookManager::get()->addHook('records_changed', $writeZoneFile);
 
-		HookManager::get()->addHook('bind_zone_added', function($domain, $bind) use ($bindConfig) {
+		HookManager::get()->addHook('delete_domain', function($domain) use ($bindConfig) {
+			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
-
-			$cmd = sprintf($bindConfig['addZoneCommand'], escapeshellarg($domain->getDomain()), $filename);
-			exec($cmd);
+			unlink($filename);
+			HookManager::get()->handle('bind_zone_removed', [$domain, $bind]);
 		});
 
-		HookManager::get()->addHook('bind_zone_changed', function($domain, $bind) use ($bindConfig) {
-			list($filename, $filename2) = $bind->getFileNames();
+		class BindCommandRunner {
+			private $command;
+			public __construct($command) { $this->command = $command; }
+			public run($domain, $bind) {
+				list($filename, $filename2) = $bind->getFileNames();
 
-			$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($domain->getDomain()), $filename);
-			exec($cmd);
-		});
+				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), $filename);
+				exec($cmd);
+			}
+		}
+
+		HookManager::get()->addHook('bind_zone_added', [new BindCommandRunner($bindConfig['addZoneCommand'])]);
+		HookManager::get()->addHook('bind_zone_changed', [new BindCommandRunner($bindConfig['reloadZoneCommand'])]);
+		HookManager::get()->addHook('bind_zone_removed', [new BindCommandRunner($bindConfig['delZoneCommand'])]);
 	}
 
 
