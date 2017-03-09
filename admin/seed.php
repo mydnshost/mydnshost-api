@@ -146,7 +146,7 @@
 		$record->setName('');
 		$record->setType('MX');
 		$record->setPriority('10');
-		$record->setContent($domain->getDomain());
+		$record->setContent($domain->getDomain() . '.');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
@@ -157,7 +157,7 @@
 		$record->setName('');
 		$record->setType('MX');
 		$record->setPriority('50');
-		$record->setContent('test');
+		$record->setContent('www');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();

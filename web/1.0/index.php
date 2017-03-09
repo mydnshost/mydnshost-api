@@ -6,7 +6,7 @@
 	require_once(dirname(__FILE__) . '/response.php');
 	require_once(dirname(__FILE__) . '/routes.php');
 
-	recursiveLoadFiles(__DIR__ . '/methods');
+	foreach (recursiveFindFiles(__DIR__ . '/methods') as $file) { include_once($file); }
 
 	// Initial response object.
 	$resp = new api_response();
