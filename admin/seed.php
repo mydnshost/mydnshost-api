@@ -74,6 +74,16 @@
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
 		$record->setName('');
+		$record->setType('NS');
+		$record->setContent('dev.mydnshost.co.uk.');
+		$record->setTTL(86400);
+		$record->setChangedAt(time());
+		$record->save();
+		HookManager::get()->handle('add_record', [$domain, $record]);
+
+		$record = new Record(DB::get());
+		$record->setDomainID($domain->getID());
+		$record->setName('');
 		$record->setType('A');
 		$record->setContent('127.0.0.1');
 		$record->setTTL(86400);
@@ -136,7 +146,7 @@
 		$record->setName('');
 		$record->setType('MX');
 		$record->setPriority('10');
-		$record->setContent('');
+		$record->setContent($domain->getDomain());
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
 		$record->save();
