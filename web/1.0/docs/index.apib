@@ -26,6 +26,14 @@ X-API-User: SomeUser@example.org
 X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
 ```
 
+## Session Authentication
+
+You can obtain a session token from the `/session` end point, and then use it for future requests by passing the X-SESSION-ID header instead of any other authentication headers.
+
+```http
+X-SESSION-ID: 9pbobqkbiqvhll2ngia8bg0ijd
+```
+
 ## Request-ID
 For any of the requests, you can pass a X-Request-ID header:
 
@@ -95,6 +103,34 @@ This is used to see what version of the API you are accessing, this does not req
                     "version": "1.0"
                 }
             }
+
+## Session tokens [/session]
+### Open a new session and get a session token [GET]
+This will obtain a new session token for use in future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58c33b3ec880c",
+                "method": "session",
+                "response":{
+                    "session": "rgmc55ghpbhjmv1qg7ub6q3879"
+                }
+            }
+
+### Close the current session [DELETE]
+This will close the current session to prevent any future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58c33b714169b",
+                "method": "session",
+                "response":{
+                    "session": ""
+                }
+            }
+
 
 # Group Users
 Endpoints for dealing with user accounts

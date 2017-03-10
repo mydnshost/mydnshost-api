@@ -69,7 +69,17 @@ abstract class APIMethod {
 	 * @return The value of $key in this context, or NULL if not set.
 	 */
 	public function getContextKey($key) {
-		return array_key_exists($key, $this->context) ? $this->context[$key] : NULL;
+		return $this->hasContextKey($key) ? $this->context[$key] : NULL;
+	}
+
+	/**
+	 * Check if the context has a given key.
+	 *
+	 * @param $key The key to check.
+	 * @return TRUE if the context has an entry for this key, else false.
+	 */
+	public function hasContextKey($key) {
+		return array_key_exists($key, $this->context);
 	}
 
 	/**

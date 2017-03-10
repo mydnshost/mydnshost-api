@@ -72,12 +72,29 @@
 	           ];
 
 	// Look for authentication.
-	// This can either be USER/PASSWORD Basic auth, or in future API Keys.
+	// This can either be a session ID from a previous login, or for new logins
+	// this can be a USER/PASSWORD Basic auth, or an API Key.
 	//
-	// API Key auth takes priority.
+	// Priority:
+	//   - Session
+	//   - API Keys
+	//   - Basic Auth
+	//
+	// If you attempt to use multiple, then we only try the first one.
 	$user = FALSE;
 
-	if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
+	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
+		session_id($_SERVER['HTTP_X_SESSION_ID']);
+		session_start(['use_cookies' => '0', 'cache_limiter' => '', 'read_and_close'  => true]);
+
+		if (isset($_SESSION['userid']) && isset($_SESSION['access'])) {
+			$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+			$context['access'] = $_SESSION['access'];
+			$user = User::load($context['db'], $_SESSION['userid']);
+			$context['user'] = $user;
+			session_commit();
+		}
+	} else if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
 		$user = User::loadFromEmail($context['db'], $_SERVER['HTTP_X_API_USER']);
 		if ($user != FALSE) {
 			$key = APIKey::loadFromUserKey($context['db'], $user->getID(), $_SERVER['HTTP_X_API_KEY']);
