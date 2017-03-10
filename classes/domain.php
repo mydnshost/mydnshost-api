@@ -214,6 +214,14 @@ class Domain extends DBObject {
 			}
 		}
 
+		if (!self::validDomainName($this->getDomain())) {
+			throw new ValidationFailed($this->getDomain() . 'is not a valid domain name');
+		}
+
 		return TRUE;
+	}
+
+	public static function validDomainName($name) {
+		return preg_match('#^[a-z0-9-.]+[a-z]+$#i', $name);
 	}
 }

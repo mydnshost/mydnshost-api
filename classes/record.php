@@ -133,6 +133,10 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
+		if (!preg_match('#^[a-z0-9-._]$#i', $this->getName())) {
+			throw new ValidationFailed('Invalid name: ' . $this->getName());
+		}
+
 		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS'])) {
 			throw new ValidationFailed('Unknown record type: '. $type);
 		}
@@ -147,6 +151,8 @@ class Record extends DBObject {
 			} else if (!preg_match('#^[0-9]+$#', $this->getPriority())) {
 				throw new ValidationFailed('Priority must be numeric.');
 			}
+		} else if ($this->getPriority() !== NULL && $this->getPriority() === '') {
+			throw new ValidationFailed('Priority should not be set for records of type: ' . $type);
 		}
 
 		if (!preg_match('#^[0-9]+$#', $this->getTTL())) {
@@ -161,9 +167,11 @@ class Record extends DBObject {
 			throw new ValidationFailed('Content must be a valid IPv4 Address.');
 		}
 
-		if ($type == 'MX' || $type == 'CNAME') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			if (filter_var($content, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
+			} else if (!preg_match('#^[a-z0-9-._]$#i', $content)) {
+				throw new ValidationFailed('Content must be a valid name.');
 			}
 		}
 

@@ -15,6 +15,10 @@
 		 */
 		protected function getDomainFromParam($params) {
 			if (isset($params['domain'])) {
+				if (!Domain::validDomainName($params['domain'])) {
+					$this->getContextKey('response')->sendError('Invalid domain: ' . $params['domain']);
+				}
+
 				$domain = Domain::loadFromDomain($this->getContextKey('db'), $params['domain']);
 				if ($domain === FALSE) {
 					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
@@ -51,6 +55,10 @@
 			$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
 
 			if (isset($data['data']['domain'])) {
+				if (!Domain::validDomainName($data['data']['domain'])) {
+					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
+				}
+
 				$domain->setDomain($data['data']['domain']);
 			} else {
 				$this->getContextKey('response')->sendError('No domain name provided for create.');
@@ -119,6 +127,10 @@
 		 */
 		protected function getDomainFromParam($params) {
 			if (isset($params['domain'])) {
+				if (!Domain::validDomainName($params['domain'])) {
+					$this->getContextKey('response')->sendError('Invalid domain: ' . $params['domain']);
+				}
+
 				$domain = $this->getContextKey('user')->getDomainByName($params['domain']);
 				if ($domain === FALSE) {
 					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
