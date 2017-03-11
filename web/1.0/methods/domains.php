@@ -489,12 +489,16 @@
 			$record = $this->doUpdateRecord($record, $data['data']);
 
 			try {
-				$record->validate();
-				$record->save();
-				HookManager::get()->handle('update_record', [$domain, $record]);
-				$serial = $domain->updateSerial();
-				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
-				HookManager::get()->handle('records_changed', [$domain]);
+				if ($record->hasChanged()) {
+					$record->validate();
+					if ($record->save()) {
+						HookManager::get()->handle('update_record', [$domain, $record]);
+
+						$serial = $domain->updateSerial();
+						HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+						HookManager::get()->handle('records_changed', [$domain]);
+					}
+				}
 			} catch (ValidationFailed $ex) {
 				$this->getContextKey('response')->sendError('Error updating record.', $ex->getMessage());
 			}
@@ -540,8 +544,10 @@
 					} else {
 						$this->doUpdateRecord($record, $r);
 						try {
-							$record->validate();
-							$recordsToBeSaved[] = $record;
+							if ($record->hasChanged()) {
+								$record->validate();
+								$recordsToBeSaved[] = $record;
+							}
 						} catch (ValidationFailed $ex) {
 							$errors[$i] = 'Unable to validate record: ' . $ex->getMessage();
 							continue;
@@ -554,6 +560,8 @@
 				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
 			}
 
+			$changeCount = 0;
+
 			$result = array();
 			foreach ($recordsToBeSaved as $record) {
 				$r = $record->toArray();
@@ -561,17 +569,28 @@
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
 				$result[] = $r;
-				HookManager::get()->handle('update_record', [$domain, $record]);
+				if ($r['updated']) {
+					HookManager::get()->handle('update_record', [$domain, $record]);
+					$changeCount++;
+				}
 			}
 
 			foreach ($recordsToBeDeleted as $record) {
-				$result[] = ['id' => $record->getID(), 'deleted' => $record->delete()];
-				HookManager::get()->handle('delete_record', [$domain, $record]);
+				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
+				$result[] = $r;
+				if ($r['deleted']) {
+					HookManager::get()->handle('delete_record', [$domain, $record]);
+					$changeCount++;
+				}
 			}
 
-			$serial = $domain->updateSerial();
-			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
-			HookManager::get()->handle('records_changed', [$domain]);
+			if ($changeCount > 0) {
+				$serial = $domain->updateSerial();
+				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+				HookManager::get()->handle('records_changed', [$domain]);
+			} else {
+				$serial = $domain->getSOARecord()->parseSOA()['serial'];
+			}
 
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;
@@ -599,9 +618,11 @@
 				}
 			}
 
-			$record->setSynced(false);
-			$record->setChangedAt(time());
-			$record->setChangedBy($this->getContextKey('user')->getID());
+			if ($record->hasChanged()) {
+				$record->setSynced(false);
+				$record->setChangedAt(time());
+				$record->setChangedBy($this->getContextKey('user')->getID());
+			}
 
 			return $record;
 		}

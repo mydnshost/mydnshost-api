@@ -47,8 +47,12 @@ abstract class DBObject {
 	 */
 	protected function setData($key, $value) {
 		if (static::isField($key)) {
-			$this->setChanged($this->changed || !$this->hasData($key) || ($this->data[$key] != $value));
-			$this->data[$key] = $value;
+			$this->setChanged($this->changed || $this->getData($key) !== $value);
+			if ($value === NULL) {
+				unset($this->data[$key]);
+			} else {
+				$this->data[$key] = $value;
+			}
 		}
 
 		return $this;
@@ -60,7 +64,7 @@ abstract class DBObject {
 	 * @param $key Data key (field name)
 	 * @return Value for $key (Or the default value if not-known).
 	 */
-	protected function getData($key) {
+	public function getData($key) {
 		return static::isField($key) ? ($this->hasData($key) ? $this->data[$key] : static::$_fields[$key]) : NULL;
 	}
 
@@ -199,6 +203,7 @@ abstract class DBObject {
 	 */
 	public function save() {
 		$this->presave();
+
 		try {
 			if (!$this->validate()) { return FALSE; }
 		} catch (Exception $ex) {

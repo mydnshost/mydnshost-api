@@ -6,7 +6,7 @@ class Record extends DBObject {
 	                             'name' => NULL,
 	                             'type' => NULL,
 	                             'content' => NULL,
-	                             'ttl' => NULL,
+	                             'ttl' => '86400',
 	                             'priority' => NULL,
 	                             'changed_at' => 0,
 	                             'changed_by' => NULL,
@@ -133,7 +133,7 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
-		if (!preg_match('#^[a-z0-9-._]$#i', $this->getName())) {
+		if (!preg_match('#^[a-z0-9-._]*$#i', $this->getName())) {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 
@@ -151,11 +151,15 @@ class Record extends DBObject {
 			} else if (!preg_match('#^[0-9]+$#', $this->getPriority())) {
 				throw new ValidationFailed('Priority must be numeric.');
 			}
-		} else if ($this->getPriority() !== NULL && $this->getPriority() === '') {
+		} else if (empty($this->getPriority())) {
+			$this->setPriority(NULL);
+		} else if ($this->getPriority() !== NULL) {
 			throw new ValidationFailed('Priority should not be set for records of type: ' . $type);
 		}
 
-		if (!preg_match('#^[0-9]+$#', $this->getTTL())) {
+		if (empty($this->getTTL())) {
+			$this->setTTL(NULL);
+		} else if (!preg_match('#^[0-9]+$#', $this->getTTL())) {
 			throw new ValidationFailed('TTL must be numeric.');
 		}
 
