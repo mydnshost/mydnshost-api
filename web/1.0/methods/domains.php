@@ -334,7 +334,7 @@
 
 			foreach ($data['data']['access'] as $email => $access) {
 				if (!array_key_exists($email, $users)) {
-					$this->getContextKey('response')->sendError('No such user: ' . $user);
+					$this->getContextKey('response')->sendError('No such user: ' . $email);
 				}
 				$this->validAccessChange($domain, $email, $access, $self);
 
