@@ -141,8 +141,19 @@ class Record extends DBObject {
 			throw new ValidationFailed('Unknown record type: '. $type);
 		}
 
-		if ($type == 'SOA' && !preg_match('#^[^\s]+ [^\s]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+$#', $content, $m)) {
-			throw new ValidationFailed('SOA is invalid.');
+		if ($type == 'SOA') {
+			if (preg_match('#^[^\s]+ [^\s]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+$#', $content, $m)) {
+				$soa = $this->parseSOA();
+				if (!preg_match('#^[a-z0-9-._]+\.$#i', $soa['primaryNS'])) {
+					throw new ValidationFailed('Primary Nameserver in SOA does not look valid.');
+				}
+
+				if (!preg_match('#^[a-z0-9-._]+\.[a-z0-9-._]+\.[a-z]+\.$#i', $soa['adminAddress'])) {
+					throw new ValidationFailed('Admin address in SOA does not look valid.');
+				}
+			} else {
+				throw new ValidationFailed('SOA is invalid.');
+			}
 		}
 
 		if ($type == 'MX' || $type == 'SRV') {
