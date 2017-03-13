@@ -145,3 +145,11 @@ CREATE TABLE `apikeys` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 MYSQLQUERY
 );
+
+  // ------------------------------------------------------------------------
+  // Suspendable Users
+  // ------------------------------------------------------------------------
+	$dataChanges[4] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `users` ADD COLUMN `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `admin`;
+MYSQLQUERY
+);

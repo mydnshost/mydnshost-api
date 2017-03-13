@@ -127,6 +127,17 @@
 		}
 	}
 
+	// Is this account disabled?
+	if ($user != FALSE && $user->isDisabled()) {
+		$user = FALSE;
+
+		// Accounts are currently silently disabled, and act as if
+		// authentication failed. If this changes, uncomment the below 2 lines.
+		//
+		// $resp->setErrorCode('403', 'Forbidden');
+		// $resp->sendError('Access denied.');
+	}
+
 	// Handle impersonation.
 	if ($user != FALSE && array_key_exists('user', $context) && isset($postdata['impersonate'])) {
 		if ($user->isAdmin()) {

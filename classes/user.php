@@ -6,6 +6,7 @@ class User extends DBObject {
 	                             'password' => NULL,
 	                             'realname' => NULL,
 	                             'admin' => false,
+	                             'disabled' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'users';
@@ -30,6 +31,10 @@ class User extends DBObject {
 		return $this->setData('admin', parseBool($value) ? 'true' : 'false');
 	}
 
+	public function setDisabled($value) {
+		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -50,6 +55,10 @@ class User extends DBObject {
 
 	public function isAdmin() {
 		return parseBool($this->getData('admin'));
+	}
+
+	public function isDisabled() {
+		return parseBool($this->getData('disabled'));
 	}
 
 	/**

@@ -173,7 +173,12 @@
 			             );
 
 			if ($this->getContextKey('user')->isAdmin()) {
-				$keys['admin'] = 'setAdmin';
+				// Don't allow admins to disable their own accounts or remove
+				// their admin access.
+				if ($this->getContextKey('user')->getID() !== $user->getID()) {
+					$keys['admin'] = 'setAdmin';
+					$keys['disabled'] = 'setDisabled';
+				}
 			}
 
 			foreach ($keys as $k => $f) {
