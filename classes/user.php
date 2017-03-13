@@ -150,6 +150,10 @@ class User extends DBObject {
 			}
 		}
 
+		if (filter_var($this->getEmail(), FILTER_VALIDATE_EMAIL) === FALSE) {
+			throw new ValidationFailed('Email address is invalid.');
+		}
+
 		return TRUE;
 	}
 }
