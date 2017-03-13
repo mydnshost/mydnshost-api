@@ -62,7 +62,9 @@
 
 	// Look for impersonation header.
 	if (isset($_SERVER['HTTP_X_IMPERSONATE'])) {
-		$postdata['impersonate'] = $_SERVER['HTTP_X_IMPERSONATE'];
+		$postdata['impersonate'] = ['email', $_SERVER['HTTP_X_IMPERSONATE']];
+	} else if (isset($_SERVER['HTTP_X_IMPERSONATE_ID'])) {
+		$postdata['impersonate'] = ['id', $_SERVER['HTTP_X_IMPERSONATE_ID']];
 	}
 
 	// Set the execution context, used by API Methods.
@@ -141,7 +143,13 @@
 	// Handle impersonation.
 	if ($user != FALSE && array_key_exists('user', $context) && isset($postdata['impersonate'])) {
 		if ($user->isAdmin()) {
-			$impersonating = User::loadFromEmail($context['db'], $postdata['impersonate']);
+			if ($postdata['impersonate'][0] == 'id') {
+				$impersonating = User::load($context['db'], $postdata['impersonate'][1]);
+			} else if ($postdata['impersonate'][0] == 'email') {
+				$impersonating = User::loadFromEmail($context['db'], $postdata['impersonate'][1]);
+			} else {
+				$impersonating = false;
+			}
 
 			if ($impersonating !== FALSE) {
 				// All the API Methods only look for user, so change it.
