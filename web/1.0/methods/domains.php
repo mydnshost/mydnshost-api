@@ -52,7 +52,19 @@
 			}
 
 			$domain = new Domain($this->getContextKey('user')->getDB());
-			$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
+			if (isset($data['data']['owner'])) {
+				if (!empty($data['data']['owner'])) {
+					$newOwner = User::loadFromEmail($this->getContextKey('db'), $data['data']['owner']);
+
+					if ($newOwner === FALSE) {
+						$this->getContextKey('response')->sendError('Invalid owner specified: ' . $data['data']['owner']);
+					} else {
+						$domain->setAccess($newOwner->getID(), 'Owner');
+					}
+				}
+			} else {
+				$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
+			}
 
 			if (isset($data['data']['domain'])) {
 				if (!Domain::validDomainName($data['data']['domain'])) {
