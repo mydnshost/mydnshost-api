@@ -1036,12 +1036,17 @@ See what domains exist and user access levels for each.
 ### Create a new domain [POST]
 Create a new domain.
 
+If owner is not specified, then the current user will be set as the owner.
+
+If owner is blank, no owner will be set.
+
 + Request Create a domain (application/json)
     + Body
 
             {
                 "data": {
                     "domain": "example.net",
+                    "owner": "someone@example.net",
                 }
             }
 
