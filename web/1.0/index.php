@@ -87,15 +87,16 @@
 
 	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
 		session_id($_SERVER['HTTP_X_SESSION_ID']);
-		session_start(['use_cookies' => '0', 'cache_limiter' => '', 'read_and_close'  => true]);
+		session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 
 		if (isset($_SESSION['userid']) && isset($_SESSION['access'])) {
 			$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
 			$context['access'] = $_SESSION['access'];
 			$user = User::load($context['db'], $_SESSION['userid']);
 			$context['user'] = $user;
-			session_commit();
 		}
+
+		session_commit();
 	} else if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
 		$user = User::loadFromEmail($context['db'], $_SERVER['HTTP_X_API_USER']);
 		if ($user != FALSE) {
