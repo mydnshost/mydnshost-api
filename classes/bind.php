@@ -127,8 +127,9 @@
 							$thisttl = $bits[$pos];
 							$pos++;
 							if (strtoupper($bits[$pos]) != 'IN') {
-								print_r($bits);
-								throw new Exception('Invalid zone file. (Got: "'.$bits[$pos].'", expected "IN", {'.$line.'})');
+								// print_r($bits);
+								// throw new Exception('Invalid zone file. (Got: "'.$bits[$pos].'", expected "IN", {'.$line.'})');
+								$pos--;
 							}
 						}
 					}
@@ -168,14 +169,21 @@
 
 					switch ($type) {
 						case 'SOA':
-							// SOAs span multiple lines.
+							// SOAs can span multiple lines.
 							$info['Nameserver'] = $bits[$pos++];
 							$info['Email'] = $bits[$pos++];
 							$soabits = array();
+							$multiLine = ($bits[$pos] == '(');
 							while (count($soabits) < 5) {
-								$line = trim($file[++$i]);
-								$bits = preg_split('/\s+/', $line);
-								$soabits[] = $bits[0];
+								if ($multiLine) {
+									$line = trim($file[++$i]);
+									$bits = preg_split('/\s+/', $line);
+									foreach ($bits as $bit) {
+										$soabits[] = $bit;
+									}
+								} else {
+									$soabits[] = $bits[$pos++];
+								}
 							}
 							$info['Serial'] = $soabits[0];
 							$info['Refresh'] = $soabits[1];

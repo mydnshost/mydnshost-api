@@ -151,7 +151,7 @@ class Domain extends DBObject {
 		if ($soa === FALSE) {
 			$soa = new Record($this->getDB());
 			$soa->setDomainID($this->getID());
-			$soa->setName('');
+			$soa->setName($this->getDomain());
 			$soa->setType('SOA');
 			$soa->setContent(sprintf('ns1.%s. dnsadmin.%s. %d 86400 7200 2419200 60', $this->getDomain(), $this->getDomain(), $this->getNextSerial()));
 			$soa->setTTL(86400);
