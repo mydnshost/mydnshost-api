@@ -18,12 +18,14 @@
 
 	// Prepare the hook manager.
 	HookManager::get()->addHookType('add_domain');
-	HookManager::get()->addHookType('update_domain');
+	HookManager::get()->addHookType('rename_domain');
 	HookManager::get()->addHookType('delete_domain');
-	HookManager::get()->addHookType('records_changed');
+
 	HookManager::get()->addHookType('add_record');
 	HookManager::get()->addHookType('update_record');
 	HookManager::get()->addHookType('delete_record');
+
+	HookManager::get()->addHookType('records_changed');
 
 	// Load the hooks
 	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }

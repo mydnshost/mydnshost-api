@@ -70,8 +70,20 @@
 		HookManager::get()->addHookType('bind_zone_removed');
 
 		HookManager::get()->addHook('add_domain', $writeZoneFile);
-		HookManager::get()->addHook('update_domain', $writeZoneFile);
 		HookManager::get()->addHook('records_changed', $writeZoneFile);
+
+		HookManager::get()->addHook('rename_domain', function($oldName, $domain) {
+			$bind = new Bind($oldName, $bindConfig['zonedir']);
+			list($filename, $filename2) = $bind->getFileNames();
+			if (file_exists($filename)) {
+				@unlink($filename);
+			}
+			$oldDomain = $domain->clone()->setDomain($oldName);
+			HookManager::get()->handle('bind_zone_removed', [$oldDomain, $bind]);
+
+			call_user_func_array($writeZoneFile, [$domain]);
+		});
+
 
 		HookManager::get()->addHook('delete_domain', function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);

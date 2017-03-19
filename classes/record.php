@@ -11,7 +11,6 @@ class Record extends DBObject {
 	                             'changed_at' => 0,
 	                             'changed_by' => NULL,
 	                             'disabled' => false,
-	                             'synced' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'records';
@@ -57,10 +56,6 @@ class Record extends DBObject {
 		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
 	}
 
-	public function setSynced($value) {
-		return $this->setData('synced', parseBool($value) ? 'true' : 'false');
-	}
-
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -101,10 +96,6 @@ class Record extends DBObject {
 		return parseBool($this->getData('disabled'));
 	}
 
-	public function isSynced() {
-		return parseBool($this->getData('synced'));
-	}
-
 	public function parseSOA() {
 		if ($this->getType() != 'SOA') { return FALSE; }
 
@@ -134,7 +125,7 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
-		if (!preg_match('#^[a-z0-9-._]*$#i', $this->getName())) {
+		if (!preg_match('#^[a-z0-9-._*]*$#i', $this->getName())) {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 

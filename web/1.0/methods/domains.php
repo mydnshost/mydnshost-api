@@ -207,6 +207,10 @@
 				return $this->getRecords($domain);
 			} else if (isset($params['access'])) {
 				return $this->getDomainAccess($domain);
+			} else if (isset($params['sync'])) {
+				return $this->getDomainSync($domain);
+			} else if (isset($params['export'])) {
+				return $this->getDomainExport($domain);
 			} else if (isset($params['domain'])) {
 				return $this->getDomainInfo($domain);
 			} else {
@@ -230,6 +234,8 @@
 				return $this->updateRecords($domain);
 			} else if (isset($params['access'])) {
 				return $this->updateDomainAccess($domain);
+			} else if (isset($params['import'])) {
+				return $this->doDomainImport($domain);
 			} else if ($domain !== FALSE) {
 				return $this->updateDomain($domain);
 			}
@@ -313,6 +319,184 @@
 
 			return true;
 		}
+
+
+
+		/**
+		 * Force domain to re sync.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainSync($domain) {
+			HookManager::get()->handle('records_changed', [$domain]);
+			return true;
+		}
+
+		/**
+		 * Get zone data in BIND format.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainExport($domain) {
+			$bind = new Bind($domain->getDomain(), '');
+			$bind->clearRecords();
+
+			$soa = $domain->getSOARecord()->parseSOA();
+			$bindSOA = array('Nameserver' => $soa['primaryNS'],
+			                 'Email' => $soa['adminAddress'],
+			                 'Serial' => $soa['serial'],
+			                 'Refresh' => $soa['refresh'],
+			                 'Retry' => $soa['retry'],
+			                 'Expire' => $soa['expire'],
+			                 'MinTTL' => $soa['minttl']);
+
+			$bind->setSOA($bindSOA);
+
+			foreach ($domain->getRecords() as $record) {
+				$name = $record->getName() . '.';
+				$content = $record->getContent();
+				if ($record->getType() == "TXT") {
+					$content = '"' . $record->getContent() . '"';
+				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+					$content = $record->getContent() . '.';
+				}
+
+				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+					$hasNS = true;
+				}
+
+				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
+			}
+
+			$this->getContextKey('response')->data(['zone' => implode("\n", $bind->getParsedZoneFile())]);
+
+			return true;
+		}
+
+		/**
+		 * Import zone data as BIND format.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
+		protected function doDomainImport($domain) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']['zone'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			$tmpname = tempnam('/tmp', 'ZONEIMPORT');
+			if ($tmpname === FALSE) {
+				$this->getContextKey('response')->sendError('Unable to import zone.');
+			}
+
+			file_put_contents($tmpname, $data['data']['zone']);
+
+			$bind = new Bind($domain->getDomain(), '', $tmpname);
+			try {
+				$bind->parseZoneFile();
+				unlink($tmpname);
+			} catch (Exception $ex) {
+				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
+				unlink($tmpname);
+			}
+
+			$domainInfo = $bind->getDomainInfo();
+
+			$bindsoa = $bind->getSOA();
+			$soa = $domain->getSOARecord();
+			$parsedsoa = $soa->parseSOA();
+
+			$parsedsoa['primaryNS'] = $bindsoa['Nameserver'];
+			$parsedsoa['adminAddress'] = $bindsoa['Email'];
+			$parsedsoa['serial'] = $bindsoa['Serial'];
+			$parsedsoa['refresh'] = $bindsoa['Refresh'];
+			$parsedsoa['retry'] = $bindsoa['Retry'];
+			$parsedsoa['expire'] = $bindsoa['Expire'];
+			$parsedsoa['minttl'] = $bindsoa['MinTTL'];
+
+			try {
+				$soa->updateSOAContent($parsedsoa);
+				$soa->validate();
+			} catch (Exception $ex) {
+				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
+			}
+
+			$newRecords = [];
+
+			foreach ($domainInfo as $type => $bits) {
+				if ($type == 'SOA' || $type == ' META ') { continue; }
+
+				foreach ($bits as $rname => $records) {
+					foreach ($records as $record) {
+						$r = (new Record($domain->getDB()))->setDomainID($domain->getID());
+
+						$name = $rname;
+
+						if (!endsWith($name, '.')) {
+							if (!empty($name)) { $name .= '.'; }
+							$name .= $domain->getDomain();
+						}
+
+						if (in_array($type, ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+							if (endsWith($record['Address'], '.')) {
+								$record['Address'] = rtrim($record['Address'], '.');
+							} else {
+								if (!empty($record['Address'])) { $record['Address'] .= '.'; }
+								$record['Address'] .= $domain->getDomain();
+							}
+						}
+
+						$record['TTL'] = $bind->ttlToInt($record['TTL']);
+
+						$r->setName($name);
+						$r->setType($type);
+						$r->setTTL($record['TTL']);
+						$r->setContent($record['Address']);
+						if ($type == 'MX' || $type == 'SRV') {
+							$r->setPriority($record['Priority']);
+						}
+						$r->setChangedAt(time());
+						$r->setChangedBy($this->getContextKey('user')->getID());
+
+						try {
+							$r->validate();
+						} catch (Exception $ex) {
+							$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
+						}
+
+						$newRecords[] = $r;
+					}
+				}
+			}
+
+			// Delete old records.
+			$records = $domain->getRecords();
+			$count = 0;
+			foreach ($records as $record) {
+				if ($record->delete()) {
+					HookManager::get()->handle('delete_record', [$domain, $record]);
+				}
+			}
+
+			foreach ($newRecords as $r) {
+				if ($r->save()) {
+					HookManager::get()->handle('add_record', [$domain, $r]);
+				}
+			}
+
+			if ($soa->save()) {
+				HookManager::get()->handle('update_record', [$domain, $soa]);
+			}
+
+			HookManager::get()->handle('records_changed', [$domain]);
+
+			$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
+			return true;
+		}
+
 
 		/**
 		 * Get access information about this domain.
@@ -413,7 +597,10 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			$oldName = $domain->getDomain();
 			$this->doUpdateDomain($domain, $data['data'], (false && $this->getContextKey('user')->isAdmin()));
+			$newName = $domain->getDomain();
+			$isRename = ($oldName != $newName);
 
 			try {
 				$domain->validate();
@@ -422,8 +609,8 @@
 				if ($domain->save()) {
 					if ($isCreate) {
 						HookManager::get()->handle('add_domain', [$domain]);
-					} else {
-						HookManager::get()->handle('update_domain', [$domain]);
+					} else if ($isRename) {
+						HookManager::get()->handle('rename_domain', [$oldName, $domain]);
 					}
 				} else {
 					throw new ValidationFailed($domain->getLastError()[2]);
@@ -638,7 +825,6 @@
 			}
 
 			if ($record->hasChanged()) {
-				$record->setSynced(false);
 				$record->setChangedAt(time());
 				$record->setChangedBy($this->getContextKey('user')->getID());
 			}
@@ -710,7 +896,12 @@
 	$domainsHandler = new Domains();
 	$router->addRoute('(GET) /domains', $domainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', $domainsHandler);
+
 	$router->addRoute('(GET|POST) /domains/(?P<domain>[^/]+)/(?P<access>access)', $domainsHandler);
+	// $router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<sync>sync)', $domainsHandler);
+	$router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<export>export)', $domainsHandler);
+	$router->addRoute('(POST) /domains/(?P<domain>[^/]+)/(?P<import>import)', $domainsHandler);
+
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', $domainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $domainsHandler);
 
@@ -718,6 +909,11 @@
 	$adminDomainsHandler = new AdminDomains();
 	$router->addRoute('(GET|POST) /admin/domains', $adminDomainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)', $adminDomainsHandler);
+
 	$router->addRoute('(GET|POST) /admin/domains/(?P<domain>[^/]+)/(?P<access>access)', $adminDomainsHandler);
+	$router->addRoute('(GET) /admin/domains/(?P<domain>[^/]+)/(?P<sync>sync)', $adminDomainsHandler);
+	$router->addRoute('(GET) /admin/domains/(?P<domain>[^/]+)/(?P<export>export)', $adminDomainsHandler);
+	$router->addRoute('(POST) /admin/domains/(?P<domain>[^/]+)/(?P<import>import)', $adminDomainsHandler);
+
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)', $adminDomainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $adminDomainsHandler);

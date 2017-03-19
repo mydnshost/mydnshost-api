@@ -42,8 +42,16 @@
 		};
 
 		HookManager::get()->addHook('add_domain', $updateMasterServer);
-		HookManager::get()->addHook('update_domain', $updateMasterServer);
 		HookManager::get()->addHook('records_changed', $updateMasterServer);
+
+		HookManager::get()->addHook('rename_domain', function($oldName, $domain) {
+			foreach (array_merge($pdnsConfig['masters'], $pdnsConfig['slaves']) as $server) {
+				$pdns = new PowerDNS($server, $oldName);
+				$pdns->removeDomain();
+			}
+
+			call_user_func_array($updateMasterServer, [$domain]);
+		});
 
 		HookManager::get()->addHook('delete_domain', function($domain) use ($pdnsConfig) {
 			foreach (array_merge($pdnsConfig['masters'], $pdnsConfig['slaves']) as $server) {

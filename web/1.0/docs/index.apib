@@ -621,8 +621,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": null,
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "19",
@@ -633,8 +632,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": null,
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "20",
@@ -645,8 +643,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": null,
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "21",
@@ -657,8 +654,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": null,
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "22",
@@ -669,8 +665,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": null,
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "23",
@@ -681,8 +676,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": "10",
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         },
                         {
                             "id": "24",
@@ -693,8 +687,7 @@ There are 5 levels of access (each level has all the access of those below it):
                             "priority": "50",
                             "changed_at": "1488755309",
                             "changed_by": null,
-                            "disabled": "false",
-                            "synced": "false"
+                            "disabled": "false"
                         }
                     ],
                     "soa":{
@@ -764,7 +757,6 @@ As with other update methods, only fields that are provided will be changed, you
                             "changed_at": 1488766355,
                             "changed_by": "2",
                             "disabled": "false",
-                            "synced": "false",
                             "updated": true
                         },
                         {
@@ -777,7 +769,6 @@ As with other update methods, only fields that are provided will be changed, you
                             "changed_at": 1488766355,
                             "changed_by": "2",
                             "disabled": "false",
-                            "synced": "false",
                             "updated": true
                         },
                         {
@@ -790,7 +781,6 @@ As with other update methods, only fields that are provided will be changed, you
                             "changed_at": 1488766355,
                             "changed_by": "2",
                             "disabled": false,
-                            "synced": "false",
                             "updated": true
                         },
                         {
@@ -828,6 +818,50 @@ As with other update methods, only fields that are provided will be changed, you
                 }
             }
 
+## Domain export [/domains/{domain}/export]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Export zone as bind zone file [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58cef4d2a5104",
+                "method": "domains/test1.com/export",
+                "response":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN test1.com.\ntest1.com. IN SOA ns1.test1.com. dnsadmin.test1.com. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\ntest1.com. 86400 IN NS dev.mydnshost.co.uk.\ntest1.com. 86400 IN A 127.0.0.1\nwww.test1.com. 86400 IN A 127.0.0.1\ntest1.com. 86400 IN AAAA ::1\nwww.test1.com. 86400 IN AAAA ::1\ntest.test1.com. 86400 IN CNAME www.test1.com.\ntxt.test1.com. 86400 IN TXT \"Some Text Record\"\ntest1.com. 86400 IN MX 10 test1.com.\ntest1.com. 86400 IN MX 50 www.test1.com.\n"
+                }
+            }
+
+## Domain import [/domains/{domain}/import]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Export zone as bind zone file [POST]
++ Request import from zone file(application/json)
+    + Body
+
+            {
+                "data":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN test1.com.\ntest1.com. IN SOA ns1.test1.com. dnsadmin.test1.com. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\ntest1.com. 86400 IN NS dev.mydnshost.co.uk.\ntest1.com. 86400 IN A 127.0.0.1\nwww.test1.com. 86400 IN A 127.0.0.1\ntest1.com. 86400 IN AAAA ::1\nwww.test1.com. 86400 IN AAAA ::1\ntest.test1.com. 86400 IN CNAME www.test1.com.\ntxt.test1.com. 86400 IN TXT \"Some Text Record\"\ntest1.com. 86400 IN MX 10 test1.com.\ntest1.com. 86400 IN MX 50 www.test1.com.\n"
+                }
+            }
+
+
++ Response 200 (application/json)
+If the import is successful, the zone serial will be returned.
+    + Body
+
+            {
+                "respid": "58cef5a9d7216",
+                "method": "domains/test1.com/import",
+                "response":{
+                    "serial": "2017031900"
+                }
+            }
 
 ## Specific domain record information [/domains/{domain}/records/{recordid}]
 
@@ -851,8 +885,7 @@ As with other update methods, only fields that are provided will be changed, you
                     "priority": null,
                     "changed_at": "1488766474",
                     "changed_by": null,
-                    "disabled": "false",
-                    "synced": "false"
+                    "disabled": "false"
                 }
             }
 
@@ -881,8 +914,7 @@ As with other update methods, only fields that are provided will be changed, you
                     "priority": null,
                     "changed_at": 1488766667,
                     "changed_by": "2",
-                    "disabled": "false",
-                    "synced": "false"
+                    "disabled": "false"
                 }
             }
 
@@ -1083,4 +1115,19 @@ If owner is blank, no owner will be set.
                 "method": "domains",
                 "error": "Error updating domain.",
                 "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
+            }
+
+
+## Force backend sync [/admin/domains/{domain}/sync]
+
+### Create a new domain [GET]
+Attempt to resync the domain with the server backends.
+
++ Response 200 (application/json)
+    This will always show a successful response, it only fires the sync hook.
+    + Body
+
+            {
+                "respid": "58cef6194ca63",
+                "method": "domains/test1.com/sync"
             }

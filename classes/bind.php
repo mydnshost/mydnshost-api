@@ -82,6 +82,23 @@
 			return $this->zoneFile;
 		}
 
+		function ttlToInt($ttl) {
+			if (preg_match('#^([0-9]+)([smhdw])$#i', $ttl, $m)) {
+				$ttl = $m[1];
+
+				if ($m[2] == 'm') {
+					$ttl *= 60;
+				} else if ($m[2] == 'h') {
+					$ttl *= 3600;
+				} else if ($m[2] == 'd') {
+					$ttl = 86400;
+				} else if ($m[2] == 'w') {
+					$ttl *= 604800;
+				}
+			}
+
+			return $ttl;
+		}
 
 		/**
 		 * Parse the Zone file.
@@ -95,7 +112,7 @@
 			$domainInfo = $this->domainInfo;
 			for ($i = 0; $i < count($file); $i++) {
 				$line = trim($file[$i]);
-				if ($line[0] == ';' || $line == '' || $line == ')') { continue; }
+				if ((isset($line[0]) && $line[0] == ';') || $line == '' || $line == ')') { continue; }
 
 				$pos = 0;
 

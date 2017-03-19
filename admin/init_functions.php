@@ -108,7 +108,6 @@ CREATE TABLE `records` (
   `changed_at` int(11) NOT NULL,
   `changed_by` int(11),
   `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false',
-  `synced` ENUM('false', 'true') NOT NULL DEFAULT 'false',
   PRIMARY KEY (`id`),
   CONSTRAINT `records_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `records_changed_by` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE

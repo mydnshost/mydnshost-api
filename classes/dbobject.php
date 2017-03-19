@@ -150,6 +150,19 @@ abstract class DBObject {
 	}
 
 	/**
+	 * Create a clone of this object.
+	 *
+	 * @return New clone of this object
+	 */
+	public function clone() {
+		$class = get_called_class();
+		$obj = new $class($this->_db);
+		$obj->setFromArray($this->toArray());
+		$obj->setChanged($this->hasChanged());
+		return $obj;
+	}
+
+	/**
 	 * Find an object from the database.
 	 *
 	 * @param $db Database object to load from.
