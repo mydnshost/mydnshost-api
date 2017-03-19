@@ -1,19 +1,19 @@
 <?php
-	if (isset($config['bind']['enabled']) && parseBool($config['bind']['enabled'])) {
+	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
 		// Default config settings
-		$config['bind']['defaults']['zonedir'] = '/etc/bind/zones';
-		$config['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
-		$config['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-		$config['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['zonedir'] = '/etc/bind/zones';
+		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
 
-		foreach ($config['bind']['defaults'] as $setting => $value) {
-			if (!isset($config['bind'][$setting])) {
-				$config['bind'][$setting] = $value;
+		foreach ($config['hooks']['bind']['defaults'] as $setting => $value) {
+			if (!isset($config['hooks']['bind'][$setting])) {
+				$config['hooks']['bind'][$setting] = $value;
 			}
 		}
 
-		@mkdir($config['bind']['zonedir'], 0777, true);
-		$bindConfig = $config['bind'];
+		@mkdir($config['hooks']['bind']['zonedir'], 0777, true);
+		$bindConfig = $config['hooks']['bind'];
 
 		$writeZoneFile = function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);

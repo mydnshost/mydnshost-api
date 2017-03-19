@@ -1,9 +1,11 @@
 <?php
 
 	// Load Config
-	function getEnvOrDefault($var, $default) {
-		$result = getEnv($var);
-		return $result === FALSE ? $default : $result;
+	if (!function_exists('getEnvOrDefault')) {
+		function getEnvOrDefault($var, $default) {
+			$result = getEnv($var);
+			return $result === FALSE ? $default : $result;
+		}
 	}
 	require_once(dirname(__FILE__) . '/config.php');
 
@@ -17,6 +19,10 @@
 	DB::get()->setPDO($pdo);
 
 	// Prepare the hook manager.
+	if ($config['useBackgroundHooks']) {
+		BackgroundHookManager::install();
+	}
+
 	HookManager::get()->addHookType('add_domain');
 	HookManager::get()->addHookType('rename_domain');
 	HookManager::get()->addHookType('delete_domain');

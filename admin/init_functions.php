@@ -152,3 +152,16 @@ MYSQLQUERY
 ALTER TABLE `users` ADD COLUMN `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `admin`;
 MYSQLQUERY
 );
+
+  // ------------------------------------------------------------------------
+  // Background Hooks
+  // ------------------------------------------------------------------------
+	$dataChanges[5] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `hooks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `hook` varchar(64) NOT NULL,
+  `args` varchar(8192) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);

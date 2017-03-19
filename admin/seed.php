@@ -10,6 +10,7 @@
 	$pdo->exec('DROP TABLE domain_access;');
 	$pdo->exec('DROP TABLE records;');
 	$pdo->exec('DROP TABLE apikeys;');
+	$pdo->exec('DROP TABLE hooks;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());

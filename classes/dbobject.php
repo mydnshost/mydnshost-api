@@ -3,7 +3,7 @@
 /**
  * Class representing a database object.
  */
-abstract class DBObject {
+abstract class DBObject implements Serializable {
 	/** Known database fields for this object. */
 	protected static $_fields = [];
 	/** Key field name for this object. */
@@ -303,6 +303,42 @@ abstract class DBObject {
 
 	/** Hook for after the object is saved to the database. */
 	public function postSave($result) { }
+
+	/**
+	 * Serialise this object.
+	 *
+	 * @return String that can be used to recreate this object.
+	 */
+	public function serialize() {
+		return serialize(['data' => $this->toArray(), 'changed' => $this->hasChanged()]);
+	}
+
+	/**
+	 * Unserialise this object.
+	 *
+	 * @param $data Data from previous serialization to restore this object.
+	 */
+	public function unserialize($data) {
+		$data = unserialize($data);
+		$this->setFromArray($data['data']);
+		$this->setChanged($data['changed']);
+	}
+
+	/**
+	 * Set our database.
+	 * This needs to be used on any unserialised objects as PDO can not be
+	 * serialised.
+	 *
+	 * This can only be called if the DB is null.
+	 *
+	 * @param $db DB to attach this object to.
+	 * @return $this for chaining.
+	 */
+	public function setDB($db) {
+		if ($this->myDB != NULL) { throw new Exception('Database can not be changed.'); }
+		$this->myDB = $db;
+		return $this;
+	}
 }
 
 class ValidationFailed extends Exception { }

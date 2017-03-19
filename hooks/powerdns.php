@@ -1,16 +1,16 @@
 <?php
-	if (isset($config['powerdns']['enabled']) && parseBool($config['powerdns']['enabled'])) {
+	if (isset($config['hooks']['powerdns']['enabled']) && parseBool($config['hooks']['powerdns']['enabled'])) {
 
-		$config['powerdns']['defaults']['masters'] = [];
-		$config['powerdns']['defaults']['slaves'] = [];
+		$config['hooks']['powerdns']['defaults']['masters'] = [];
+		$config['hooks']['powerdns']['defaults']['slaves'] = [];
 
-		foreach ($config['powerdns']['defaults'] as $setting => $value) {
-			if (!isset($config['powerdns'][$setting])) {
-				$config['powerdns'][$setting] = $value;
+		foreach ($config['hooks']['powerdns']['defaults'] as $setting => $value) {
+			if (!isset($config['hooks']['powerdns'][$setting])) {
+				$config['hooks']['powerdns'][$setting] = $value;
 			}
 		}
 
-		$pdnsConfig = $config['powerdns'];
+		$pdnsConfig = $config['hooks']['powerdns'];
 
 		$updateMasterServer = function($domain) use ($pdnsConfig) {
 			if (count($pdnsConfig['masters']) < 1) { return; }
