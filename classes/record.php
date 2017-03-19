@@ -41,6 +41,7 @@ class Record extends DBObject {
 	}
 
 	public function setPriority($value) {
+		if ($value == '') { $value = NULL; }
 		return $this->setData('priority', $value);
 	}
 

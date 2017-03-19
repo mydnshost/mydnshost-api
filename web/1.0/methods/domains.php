@@ -288,6 +288,7 @@
 			foreach ($records as $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
+				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
 				$list[] = $r;
 			}
 			$this->getContextKey('response')->set('records', $list);
@@ -498,7 +499,7 @@
 				return $this->deleteRecordID($domain, $record);
 			}
 
-			$record = $this->doUpdateRecord($record, $data['data']);
+			$record = $this->doUpdateRecord($domain, $record, $data['data']);
 
 			try {
 				if ($record->hasChanged()) {
@@ -554,7 +555,7 @@
 							$recordsToBeDeleted[] = $record;
 						}
 					} else {
-						$this->doUpdateRecord($record, $r);
+						$this->doUpdateRecord($domain, $record, $r);
 						try {
 							if ($record->hasChanged()) {
 								$record->validate();
@@ -611,11 +612,12 @@
 		/**
 		 * Actually update a record.
 		 *
+		 * @param $domain Domain the record belongs to
 		 * @param $record Record object to update.
 		 * @param $data Data to use to update the record.
 		 * @return The record after being updated.
 		 */
-		protected function doUpdateRecord($record, $data) {
+		protected function doUpdateRecord($domain, $record, $data) {
 			$keys = array('name' => 'setName',
 			              'type' => 'setType',
 			              'content' => 'setContent',
@@ -623,6 +625,11 @@
 			              'priority' => 'setPriority',
 			              'disabled' => 'setDisabled',
 			             );
+
+			if (array_key_exists('name', $data)) {
+				if (!empty($data['name'])) { $data['name'] .= '.'; }
+				$data['name'] .= $domain->getDomain();
+			}
 
 			foreach ($keys as $k => $f) {
 				if (array_key_exists($k, $data)) {

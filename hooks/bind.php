@@ -2,8 +2,8 @@
 	if (isset($config['bind']['enabled']) && parseBool($config['bind']['enabled'])) {
 		// Default config settings
 		$config['bind']['defaults']['zonedir'] = '/etc/bind/zones';
-		$config['bind']['defaults']['addZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
-		$config['bind']['defaults']['reloadZoneCommand'] = 'chmod a+r %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
+		$config['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
+		$config['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 		$config['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
 
 		foreach ($config['bind']['defaults'] as $setting => $value) {
@@ -12,6 +12,7 @@
 			}
 		}
 
+		@mkdir($config['bind']['zonedir'], 0777, true);
 		$bindConfig = $config['bind'];
 
 		$writeZoneFile = function($domain) use ($bindConfig) {
@@ -32,12 +33,13 @@
 			$bind->setSOA($bindSOA);
 
 			foreach ($domain->getRecords() as $record) {
-				$name = $record->getName();
-				// $name = endsWith($name, '.') ? $name : $name '.' . $domain->getDomain() . '.';
+				$name = $record->getName() . '.';
 
 				$content = $record->getContent();
 				if ($record->getType() == "TXT") {
 					$content = '"' . $record->getContent() . '"';
+				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+					$content = $record->getContent() . '.';
 				}
 
 				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
@@ -62,7 +64,9 @@
 		HookManager::get()->addHook('delete_domain', function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
-			unlink($filename);
+			if (file_exists($filename)) {
+				@unlink($filename);
+			}
 			HookManager::get()->handle('bind_zone_removed', [$domain, $bind]);
 		});
 

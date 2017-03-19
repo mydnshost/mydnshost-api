@@ -63,103 +63,113 @@
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('SOA');
 		$record->setContent('ns1.mydnshost.co.uk. dnsadmin.dataforce.org.uk. 2017030500 86400 7200 2419200 60');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('NS');
-		$record->setContent('dev.mydnshost.co.uk.');
+		$record->setContent('dev.mydnshost.co.uk');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('A');
 		$record->setContent('127.0.0.1');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('www');
+		$record->setName('www.' . $domain->getDomain());
 		$record->setType('A');
 		$record->setContent('127.0.0.1');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('AAAA');
 		$record->setContent('::1');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('www');
+		$record->setName('www.' . $domain->getDomain());
 		$record->setType('AAAA');
 		$record->setContent('::1');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('test');
+		$record->setName('test.' . $domain->getDomain());
 		$record->setType('CNAME');
-		$record->setContent('www');
+		$record->setContent('www.' . $domain->getDomain());
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('txt');
+		$record->setName('txt.' . $domain->getDomain());
 		$record->setType('TXT');
 		$record->setContent('Some Text Record');
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('MX');
 		$record->setPriority('10');
-		$record->setContent($domain->getDomain() . '.');
+		$record->setContent($domain->getDomain());
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
-		$record->setName('');
+		$record->setName($domain->getDomain());
 		$record->setType('MX');
 		$record->setPriority('50');
-		$record->setContent('www');
+		$record->setContent('www.' .  $domain->getDomain());
 		$record->setTTL(86400);
 		$record->setChangedAt(time());
+		$record->validate();
 		$record->save();
 		HookManager::get()->handle('add_record', [$domain, $record]);
 
