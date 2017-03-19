@@ -32,11 +32,11 @@
 				foreach ($pdnsConfig['masters'] as $server) {
 					$pdns = new PowerDNS($server, $domain->getDomain());
 					if (!$pdns->domainExists()) {
-						$createType = array_key_exists('createType', $server) ? $server['createType'] : 'native';
-
-						$pdns->createDomain($createType);
+						$zonetype = array_key_exists('zonetype', $server) ? $server['zonetype'] : 'native';
+						$pdns->createDomain($zonetype);
 					}
 					$pdns->setRecords($records);
+					$pdns->notify();
 				}
 			}
 		};
@@ -215,6 +215,11 @@
 			         'nameservers' => []];
 
 			return $this->api('zones', 'POST', json_encode($data));
+		}
+
+		public function notify() {
+			$res = $this->api('zones/' . $this->domain . './notify');
+			return $res;
 		}
 
 		public function api($apimethod, $method = 'GET', $data = []) {
