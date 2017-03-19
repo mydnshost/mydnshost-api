@@ -55,7 +55,7 @@
 			//
 			// This means that the zone won't be added until it is actually
 			// valid.
-			if (!$hasNS) {
+			if ($hasNS) {
 				$bind->saveZoneFile();
 				if ($new) {
 					HookManager::get()->handle('bind_zone_added', [$domain, $bind]);
