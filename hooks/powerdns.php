@@ -1,12 +1,19 @@
 <?php
 	if (isset($config['powerdns']['enabled']) && parseBool($config['powerdns']['enabled'])) {
 
+		$config['powerdns']['defaults']['masters'] = [];
+		$config['powerdns']['defaults']['slaves'] = [];
+
+		foreach ($config['powerdns']['defaults'] as $setting => $value) {
+			if (!isset($config['powerdns'][$setting])) {
+				$config['powerdns'][$setting] = $value;
+			}
+		}
+
 		$pdnsConfig = $config['powerdns'];
 
 		$updateMasterServer = function($domain) use ($pdnsConfig) {
-			if (!isset($pdnsConfig['master'])) { return; }
-
-			$pdns = new PowerDNS($pdnsConfig['master'], $domain->getDomain());
+			if (count($pdnsConfig['masters']) < 1) { return; }
 
 			$records = array();
 			$records[] = $domain->getSOARecord()->toArray();
@@ -22,10 +29,15 @@
 			}
 
 			if ($hasNS) {
-				if (!$pdns->domainExists()) {
-					$pdns->createDomain();
+				foreach ($pdnsConfig['masters'] as $server) {
+					$pdns = new PowerDNS($server, $domain->getDomain());
+					if (!$pdns->domainExists()) {
+						$createType = array_key_exists('createType', $server) ? $server['createType'] : 'native';
+
+						$pdns->createDomain($createType);
+					}
+					$pdns->setRecords($records);
 				}
-				$pdns->setRecords($records);
 			}
 		};
 
@@ -34,8 +46,10 @@
 		HookManager::get()->addHook('records_changed', $updateMasterServer);
 
 		HookManager::get()->addHook('delete_domain', function($domain) use ($pdnsConfig) {
-			$pdns = new PowerDNS($pdnsConfig['master'], $domain->getDomain());
-			$pdns->removeDomain();
+			foreach (array_merge($pdnsConfig['masters'], $pdnsConfig['slaves']) as $server) {
+				$pdns = new PowerDNS($server, $domain->getDomain());
+				$pdns->removeDomain();
+			}
 		});
 	}
 

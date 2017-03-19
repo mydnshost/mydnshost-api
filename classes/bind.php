@@ -1,7 +1,5 @@
 <?php
 
-
-
 	/**
 	 * This class allows for manipulating bind zone files.
 	 */
