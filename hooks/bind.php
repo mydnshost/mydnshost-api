@@ -43,7 +43,7 @@
 					$content = $record->getContent() . '.';
 				}
 
-				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain) {
+				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
 					$hasNS = true;
 				}
 
