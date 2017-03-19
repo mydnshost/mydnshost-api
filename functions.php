@@ -1,20 +1,18 @@
 <?php
 
+	// Load Config
 	function getEnvOrDefault($var, $default) {
 		$result = getEnv($var);
 		return $result === FALSE ? $default : $result;
 	}
 	require_once(dirname(__FILE__) . '/config.php');
-	require_once(dirname(__FILE__) . '/classes/hookmanager.php');
-	require_once(dirname(__FILE__) . '/classes/db.php');
-	require_once(dirname(__FILE__) . '/classes/search.php');
-	require_once(dirname(__FILE__) . '/classes/searchtoobject.php');
-	require_once(dirname(__FILE__) . '/classes/dbobject.php');
-	require_once(dirname(__FILE__) . '/classes/domain.php');
-	require_once(dirname(__FILE__) . '/classes/record.php');
-	require_once(dirname(__FILE__) . '/classes/user.php');
-	require_once(dirname(__FILE__) . '/classes/apikey.php');
 
+	// Load main classes
+	require_once(dirname(__FILE__) . '/classes/dbobject.php');
+	require_once(dirname(__FILE__) . '/classes/search.php');
+	foreach (recursiveFindFiles(__DIR__ . '/classes') as $file) { require_once($file); }
+
+	// Prep DB
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
 	DB::get()->setPDO($pdo);
 
@@ -27,9 +25,11 @@
 	HookManager::get()->addHookType('update_record');
 	HookManager::get()->addHookType('delete_record');
 
+	// Load the hooks
 	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }
 	foreach (recursiveFindFiles(__DIR__ . '/hooks.local') as $file) { include_once($file); }
 
+	// Functions
 	function recursiveFindFiles($dir) {
 		if (!file_exists($dir)) { return; }
 
