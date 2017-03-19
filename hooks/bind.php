@@ -32,9 +32,10 @@
 
 			$bind->setSOA($bindSOA);
 
+			$hasNS = false;
+
 			foreach ($domain->getRecords() as $record) {
 				$name = $record->getName() . '.';
-
 				$content = $record->getContent();
 				if ($record->getType() == "TXT") {
 					$content = '"' . $record->getContent() . '"';
@@ -42,14 +43,25 @@
 					$content = $record->getContent() . '.';
 				}
 
+				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain) {
+					$hasNS = true;
+				}
+
 				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 			}
 
-			$bind->saveZoneFile();
-			if ($new) {
-				HookManager::get()->handle('bind_zone_added', [$domain, $bind]);
-			} else {
-				HookManager::get()->handle('bind_zone_changed', [$domain, $bind]);
+			// Bind requires an NS record to load the zone, don't bother
+			// attempting to add/change unless there is one.
+			//
+			// This means that the zone won't be added until it is actually
+			// valid.
+			if (!$hasNS) {
+				$bind->saveZoneFile();
+				if ($new) {
+					HookManager::get()->handle('bind_zone_added', [$domain, $bind]);
+				} else {
+					HookManager::get()->handle('bind_zone_changed', [$domain, $bind]);
+				}
 			}
 		};
 
