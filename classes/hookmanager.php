@@ -47,7 +47,19 @@
 		}
 	}
 
-
+	/**
+	 * Implementation of HookManager that stores hooks in the database to be
+	 * executed at a later date.
+	 *
+	 * There is a script `admin/backgroundHookRunner.php` that should be run
+	 * from a cronjob to run through all the hooks.
+	 *
+	 * It is important to realise that some hooks may behave differently when
+	 * run from the background hook runner. (For example, if a domain has
+	 * records changed twice, both instances of records_changed will do the same
+	 * thing as they only get given the `Domain` object and fetch the actual
+	 * records from the DB when the hook is run (not when it is called))
+	 */
 	class BackgroundHookManager extends HookManager {
 		public static function install() {
 			HookManager::set(new BackgroundHookManager());
@@ -67,6 +79,9 @@
 			}
 		}
 
+		/**
+		 * Runs hooks from the database.
+		 */
 		public function run() {
 			$search = Hook::getSearch(DB::get());
 			$dbhooks = [];
