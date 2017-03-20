@@ -142,7 +142,7 @@
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating user.', $ex->getMessage());
 					} else {
-						$this->getContextKey('response')->sendError('Error updating user: ' . $params['userid'], $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error updating user: ' . $user->getID(), $ex->getMessage());
 					}
 				}
 
@@ -154,7 +154,7 @@
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating user.', $user->getLastError());
 					} else {
-						$this->getContextKey('response')->sendError('Error updating user: ' . $params['userid']);
+						$this->getContextKey('response')->sendError('Error updating user: ' . $user->getID());
 					}
 				} else {
 					$this->getContextKey('response')->data($u);
@@ -256,7 +256,7 @@
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
 					} else {
-						$this->getContextKey('response')->sendError('Error updating key: ' . $params['keyid'], $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
 				}
 
@@ -269,7 +269,7 @@
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
 					} else {
-						$this->getContextKey('response')->sendError('Error updating key: ' . $params['keyid'], $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
 				} else if ($isCreate) {
 					$this->getContextKey('response')->data([$key->getKey() => $k]);
