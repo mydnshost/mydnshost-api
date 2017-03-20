@@ -120,9 +120,13 @@
 
 		if (isset($_SESSION['userid']) && isset($_SESSION['access'])) {
 			$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
-			$context['access'] = $_SESSION['access'];
 			$user = User::load($context['db'], $_SESSION['userid']);
 			$context['user'] = $user;
+			$key = FALSE;
+			if (isset($_SESSION['keyid'])) {
+				$key = APIKey::load($context['db'], $_SESSION['keyid']);
+			}
+			$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
 		}
 
 		session_commit();
@@ -154,6 +158,8 @@
 	// Is this account disabled?
 	if ($user != FALSE && $user->isDisabled()) {
 		$user = FALSE;
+		unset($context['user']);
+		unset($context['access']);
 
 		// Accounts are currently silently disabled, and act as if
 		// authentication failed. If this changes, uncomment the below 2 lines.

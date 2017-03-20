@@ -12,6 +12,9 @@
 			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 			$_SESSION['userid'] = $this->getContextKey('user')->getID();
 			$_SESSION['access'] = $this->getContextKey('access');
+			if ($this->hasContextKey('key')) {
+				$_SESSION['keyid'] = $this->getContextKey('key')->getID();
+			}
 			session_commit();
 
 			$this->getContextKey('response')->data(['session' => session_id()]);
@@ -24,6 +27,7 @@
 				session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 				unset($_SESSION['userid']);
 				unset($_SESSION['access']);
+				unset($_SESSION['keyid']);
 				session_destroy();
 				session_commit();
 
