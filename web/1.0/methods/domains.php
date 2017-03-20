@@ -4,7 +4,7 @@
 		public function check($requestMethod, $params) {
 			parent::check($requestMethod, $params);
 
-			if (!$this->getContextKey('user')->isAdmin()) {
+			if (!$this->checkPermissions(['manage_domains'], true)) {
 				throw new APIMethod_AccessDenied();
 			}
 		}
@@ -28,55 +28,6 @@
 			}
 
 			return $domain;
-		}
-
-		public function post($params) {
-			$parent = parent::post($params);
-
-			if ($parent === FALSE && !isset($params['domain'])) {
-				return $this->createDomain();
-			}
-
-			return $parent;
-		}
-
-		/**
-		 * Create a new domain.
-		 *
-		 * @return TRUE if we handled this method.
-		 */
-		protected function createDomain() {
-			$data = $this->getContextKey('data');
-			if (!isset($data['data']) || !is_array($data['data'])) {
-				$this->getContextKey('response')->sendError('No data provided for create.');
-			}
-
-			$domain = new Domain($this->getContextKey('user')->getDB());
-			if (isset($data['data']['owner'])) {
-				if (!empty($data['data']['owner'])) {
-					$newOwner = User::loadFromEmail($this->getContextKey('db'), $data['data']['owner']);
-
-					if ($newOwner === FALSE) {
-						$this->getContextKey('response')->sendError('Invalid owner specified: ' . $data['data']['owner']);
-					} else {
-						$domain->setAccess($newOwner->getID(), 'Owner');
-					}
-				}
-			} else {
-				$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
-			}
-
-			if (isset($data['data']['domain'])) {
-				if (!Domain::validDomainName($data['data']['domain'])) {
-					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
-				}
-
-				$domain->setDomain($data['data']['domain']);
-			} else {
-				$this->getContextKey('response')->sendError('No domain name provided for create.');
-			}
-
-			return $this->updateDomain($domain, true);
 		}
 
 		/**
@@ -238,6 +189,9 @@
 				return $this->doDomainImport($domain);
 			} else if ($domain !== FALSE) {
 				return $this->updateDomain($domain);
+			} else if ($domain === FALSE) {
+				$this->checkPermissions(['domains_create']);
+				return $this->createDomain();
 			}
 
 			return FALSE;
@@ -586,6 +540,45 @@
 		}
 
 		/**
+		 * Create a new domain.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		protected function createDomain() {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for create.');
+			}
+
+			$domain = new Domain($this->getContextKey('user')->getDB());
+			if (isset($data['data']['owner']) && $this->checkPermissions(['manage_domains'], true)) {
+				if (!empty($data['data']['owner'])) {
+					$newOwner = User::loadFromEmail($this->getContextKey('db'), $data['data']['owner']);
+
+					if ($newOwner === FALSE) {
+						$this->getContextKey('response')->sendError('Invalid owner specified: ' . $data['data']['owner']);
+					} else {
+						$domain->setAccess($newOwner->getID(), 'Owner');
+					}
+				}
+			} else {
+				$domain->setAccess($this->getContextKey('user')->getID(), 'Owner');
+			}
+
+			if (isset($data['data']['domain'])) {
+				if (!Domain::validDomainName($data['data']['domain'])) {
+					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
+				}
+
+				$domain->setDomain($data['data']['domain']);
+			} else {
+				$this->getContextKey('response')->sendError('No domain name provided for create.');
+			}
+
+			return $this->updateDomain($domain, true);
+		}
+
+		/**
 		 * Update this domain.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
@@ -598,7 +591,7 @@
 			}
 
 			$oldName = $domain->getDomain();
-			$this->doUpdateDomain($domain, $data['data'], (false && $this->getContextKey('user')->isAdmin()));
+			$this->doUpdateDomain($domain, $data['data'], $this->checkPermissions(['rename_domains'], true));
 			$newName = $domain->getDomain();
 			$isRename = ($oldName != $newName);
 
@@ -894,11 +887,11 @@
 	}
 
 	$domainsHandler = new Domains();
-	$router->addRoute('(GET) /domains', $domainsHandler);
+	$router->addRoute('(GET|POST) /domains', $domainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', $domainsHandler);
 
 	$router->addRoute('(GET|POST) /domains/(?P<domain>[^/]+)/(?P<access>access)', $domainsHandler);
-	// $router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<sync>sync)', $domainsHandler);
+	$router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<sync>sync)', $domainsHandler);
 	$router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<export>export)', $domainsHandler);
 	$router->addRoute('(POST) /domains/(?P<domain>[^/]+)/(?P<import>import)', $domainsHandler);
 

@@ -85,6 +85,35 @@
 	// If you attempt to use multiple, then we only try the first one.
 	$user = FALSE;
 
+	/**
+	 * What access permissions does this account have?
+	 * If an API Key is provided, a permission is only granted if both the
+	 * user and the key allow it.
+	 * (This only applies in cases where a permission can be set on a key)
+	 *
+	 * @param $user User to get permissions for.
+	 * @param $key (Optional) API Key to limit permissions by.
+	 * @return Array of permissions.
+	 */
+	function getAccessPermissions($user, $key = NULL) {
+		$access = ['domains_read' => ($key == null) ? true : (true && $key->getDomainRead()),
+		           'domains_write' => ($key == null) ? true : (true && $key->getDomainWrite()),
+		           'user_read' => ($key == null) ? true : (true && $key->getUserRead()),
+		           'user_write' => ($key == null) ? true : (true && $key->getUserWrite()),
+		          ];
+
+		if ($user->isAdmin()) {
+			$access['domains_create'] = true;
+			$access['manage_domains'] = true;
+
+			$access['manage_users'] = true;
+			$access['manage_admins'] = true;
+			$access['impersonate_users'] = true;
+		}
+
+		return $access;
+	}
+
 	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
 		session_id($_SERVER['HTTP_X_SESSION_ID']);
 		session_start(['use_cookies' => '0', 'cache_limiter' => '']);
@@ -104,11 +133,7 @@
 
 			if ($key != FALSE) {
 				$context['user'] = $user;
-				$context['access'] = ['domains_read' => $key->getDomainRead(),
-				                      'domains_write' => $key->getDomainWrite(),
-				                      'user_read' => $key->getUserRead(),
-				                      'user_write' => $key->getUserWrite(),
-				                     ];
+				$context['access'] = getAccessPermissions($user, $key);
 			} else {
 				// Invalid Key, reset user.
 				$user = FALSE;
@@ -119,11 +144,7 @@
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
 			$context['user'] = $user;
-			$context['access'] = ['domains_read' => true,
-			                      'domains_write' => true,
-			                      'user_read' => true,
-			                      'user_write' => true,
-			                     ];
+			$context['access'] = getAccessPermissions($user);
 		} else {
 			// Failed password check, reset user.
 			$user = FALSE;
@@ -143,7 +164,7 @@
 
 	// Handle impersonation.
 	if ($user != FALSE && array_key_exists('user', $context) && isset($postdata['impersonate'])) {
-		if ($user->isAdmin()) {
+		if (isset($context['access']['impersonate_users']) && parseBool($context['access']['impersonate_users'])) {
 			if ($postdata['impersonate'][0] == 'id') {
 				$impersonating = User::load($context['db'], $postdata['impersonate'][1]);
 			} else if ($postdata['impersonate'][0] == 'email') {
@@ -156,6 +177,9 @@
 				// All the API Methods only look for user, so change it.
 				$context['user'] = $impersonating;
 				$context['impersonator'] = $user;
+
+				// Reset access to that of the user.
+				$context['access'] = getAccessPermissions($impersonating);
 
 				// Add some extra responses so that it's obvious what is happening.
 				$resp->setHeader('impersonator', $user->getEmail());

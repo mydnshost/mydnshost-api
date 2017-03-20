@@ -42,15 +42,20 @@ abstract class APIMethod {
 	 * Check if the user has all of the required permissions.
 	 *
 	 * @param $permissions Permissions required.
+	 * @param $silent (Default: False) If true the result of the check will be
+	 *                returned, rather than throwing a permission denied exception.
 	 */
-	public function checkPermissions($permissions) {
+	public function checkPermissions($permissions, $silent = false) {
 		$access = $this->getContextKey('access');
 
 		foreach ($permissions as $permission) {
 			if ($access === NULL || !array_key_exists($permission, $access) || !parseBool($access[$permission])) {
+				if ($silent) { return false; }
 				throw new APIMethod_PermissionDenied($permission);
 			}
 		}
+
+		return true;
 	}
 
 	/**

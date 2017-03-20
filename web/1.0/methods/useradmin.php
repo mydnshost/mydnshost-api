@@ -7,7 +7,7 @@
 				throw new APIMethod_NeedsAuthentication();
 			}
 
-			if ($user->isAdmin()) { return true; }
+			if ($this->checkPermissions(['manage_users'], true)) { return true; }
 
 			if (isset($params['userid']) && ($params['userid'] != 'self' && $params['userid'] != $user->getID())) {
 				throw new APIMethod_AccessDenied();
@@ -107,7 +107,7 @@
 		}
 
 		protected function listUsers() {
-			if ($this->getContextKey('user')->isAdmin()) {
+			if ($this->checkPermissions(['manage_users'], true)) {
 				$users = User::find($this->getContextKey('db'), []);
 			} else {
 				$users = [$this->getContextKey('user')];
@@ -172,12 +172,22 @@
 			              'password' => 'setPassword',
 			             );
 
-			if ($this->getContextKey('user')->isAdmin()) {
-				// Don't allow admins to disable their own accounts or remove
-				// their admin access.
+			// Can this user disable/enable user accounts?
+			if ($this->checkPermissions(['manage_users'], true)) {
+				// Don't allow disabling own account.
+				if ($this->getContextKey('user')->getID() !== $user->getID()) {
+					// Only allow disabling admins if the user has the manage_admins permission.
+					if (!$user->isAdmin() || $this->checkPermissions(['manage_admins'], true)) {
+						$keys['disabled'] = 'setDisabled';
+					}
+				}
+			}
+
+			// Can this user promote/demote admins?
+			if ($this->checkPermissions(['manage_admins'], true)) {
+				// Don't allow admins to change their own admin level.
 				if ($this->getContextKey('user')->getID() !== $user->getID()) {
 					$keys['admin'] = 'setAdmin';
-					$keys['disabled'] = 'setDisabled';
 				}
 			}
 
