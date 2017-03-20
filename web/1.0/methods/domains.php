@@ -31,6 +31,13 @@
 		}
 
 		/**
+		 * Admin end point allows setting domain owner.
+		 */
+		protected function canSetOwner() {
+			return $this->checkPermissions(['manage_domains'], true);
+		}
+
+		/**
 		 * Admin's always have access.
 		 */
 		protected function checkAccess($domain, $required) {
@@ -540,6 +547,13 @@
 		}
 
 		/**
+		 * Can we set the domain owner?
+		 */
+		protected function canSetOwner() {
+			return false;
+		}
+
+		/**
 		 * Create a new domain.
 		 *
 		 * @return TRUE if we handled this method.
@@ -551,7 +565,7 @@
 			}
 
 			$domain = new Domain($this->getContextKey('user')->getDB());
-			if (isset($data['data']['owner']) && $this->checkPermissions(['manage_domains'], true)) {
+			if (isset($data['data']['owner']) && $this->canSetOwner()) {
 				if (!empty($data['data']['owner'])) {
 					$newOwner = User::loadFromEmail($this->getContextKey('db'), $data['data']['owner']);
 
@@ -606,7 +620,12 @@
 						HookManager::get()->handle('rename_domain', [$oldName, $domain]);
 					}
 				} else {
-					throw new ValidationFailed($domain->getLastError()[2]);
+					$error = $domain->getLastError()[2];
+					if (preg_match('#.*Duplicate entry.*domains_domain_unique.*#', $error)) {
+						throw new ValidationFailed('Domain already exists');
+					} else {
+						throw new ValidationFailed('Unknown Error');
+					}
 				}
 				$domain->getSOARecord()->setDomainID($domain->getID());
 				if ($domain->getSOARecord()->save()) {
@@ -617,7 +636,8 @@
 					}
 					HookManager::get()->handle('records_changed', [$domain]);
 				} else {
-					throw new ValidationFailed($domain->getSOARecord()->getLastError()[2]);
+					$error = $domain->getSOARecord()->getLastError()[2];
+					throw new ValidationFailed('Unknown Error with SOA');
 				}
 			} catch (ValidationFailed $ex) {
 				$this->getContextKey('response')->sendError('Error updating domain.', $ex->getMessage());
