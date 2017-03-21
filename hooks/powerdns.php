@@ -21,6 +21,7 @@
 			$hasNS = false;
 
 			foreach ($domain->getRecords() as $record) {
+				if ($record->isDisabled()) { continue; }
 				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
 					$hasNS = true;
 				}
@@ -38,6 +39,8 @@
 					$pdns->setRecords($records);
 					$pdns->notify();
 				}
+			} else if ($pdns->domainExists()) {
+				$pdns->removeDomain();
 			}
 		};
 

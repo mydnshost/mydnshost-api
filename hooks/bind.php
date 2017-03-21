@@ -35,6 +35,8 @@
 			$hasNS = false;
 
 			foreach ($domain->getRecords() as $record) {
+				if ($record->isDisabled()) { continue; }
+
 				$name = $record->getName() . '.';
 				$content = $record->getContent();
 				if ($record->getType() == "TXT") {
@@ -62,6 +64,9 @@
 				} else {
 					HookManager::get()->handle('bind_zone_changed', [$domain, $bind]);
 				}
+			} else if (file_exists($filename)) {
+				unlink($filename);
+				HookManager::get()->handle('bind_zone_removed', [$domain, $bind]);
 			}
 		};
 
