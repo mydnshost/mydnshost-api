@@ -139,7 +139,8 @@ Endpoints for dealing with user accounts
 
 ## User list [/users]
 ### Get the list of known users [GET]
-For an admin user, this will return all the known users. Non-Admin users will just see themselves.
+For a user with the `manage_users` permission, this will return all the known users. Users without this permission will just see themselves.
+
 + Response 200 (application/json)
     + Body
 
@@ -150,8 +151,7 @@ For an admin user, this will return all the known users. Non-Admin users will ju
                     {
                         "id": "2",
                         "email": "user@example.org",
-                        "realname": "Some User",
-                        "admin": "false"
+                        "realname": "Some User"
                     }
                 ],
             }
@@ -163,7 +163,7 @@ For an admin user, this will return all the known users. Non-Admin users will ju
 
 
 ### Get information about a specific user [GET]
-Returns complete information about the requested user.
+Returns complete information about the requested user if the user has permission to see the requested user.
 + Response 200 (application/json)
     + Body
 
@@ -173,13 +173,12 @@ Returns complete information about the requested user.
                 "response": {
                     "id": "2",
                     "email": "user@example.org",
-                    "realname": "Some User",
-                    "admin": "false"
+                    "realname": "Some User"
                 }
             }
 
 ### Update information about a specific user [POST]
-Allows updating user information. Any fields that are passed in will be updated, fields not passed will be ignored.
+Allows updating user information on a user account that you have permission to modify. Any fields that are passed in will be updated, fields not passed will be unchanged.
 
 + Request Change realname and Password (application/json)
     + Body
@@ -202,7 +201,6 @@ Allows updating user information. Any fields that are passed in will be updated,
                     "id": "2",
                     "email": "user@example.org",
                     "realname": "Some Real Name",
-                    "admin": "false",
                     "updated": true
                 }
             }
@@ -218,7 +216,7 @@ Allows updating user information. Any fields that are passed in will be updated,
             }
 
 ### Delete a specific user [DELETE]
-This is an admin-only endpoint that will delete the user specified. You can not delete the current user.
+This will allow a user with the `manage_users` permission to delete the user specified. You can not delete the current user.
 
 + Response 200 (application/json)
     + Body
@@ -233,8 +231,9 @@ This is an admin-only endpoint that will delete the user specified. You can not 
 
 ## Create a user [/users/create]
 ### Create a user [POST]
-This is an admin-only end-point. This behaves similarily to the update user except that you must pass in `password`, `email` and `realname` fields.
-Allows updating user information. Any fields that are passed in will be updated, fields not passed will be ignored.
+This allows a user with the `manage_users` permission to create new users.
+
+This behaves similarily to update user except that you must pass in `password`, `email` and `realname` fields.
 
 + Request Change realname and Password (application/json)
     + Body
@@ -258,7 +257,6 @@ Allows updating user information. Any fields that are passed in will be updated,
                     "id": "6",
                     "email": "newuser@example.org",
                     "realname": "Some new User",
-                    "admin": false,
                     "updated": true
                 }
             }
@@ -428,6 +426,53 @@ See what domains you have access to, and what level of access to each.
                 }
             }
 
+### Create a new domain [POST]
+If the user has the `domains_create` permission, they can use this to create a new domain owned by themselves.
+
++ Request Create a domain (application/json)
+    + Body
+
+            {
+                "data": {
+                    "domain": "example.net",
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-created domain.
+    + Body
+
+            {
+                "respid": "58bcc0c377913",
+                "method": "domains",
+                "response":{
+                    "id": "9",
+                    "domain": "example.net",
+                    "disabled": false,
+                    "SOA":{
+                        "primaryNS": "ns1.example.net.",
+                        "adminAddress": "dnsadmin.example.net.",
+                        "serial": "0",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "58bcc115b3601",
+                "method": "domains",
+                "error": "Error updating domain.",
+                "errorData": "Domain already exists."
+            }
+
 ## Specific domain infomation [/domains/{domain}]
 + Parameters
     + domain: `example.org` (required, string) - The domain name
@@ -548,7 +593,7 @@ Changes made with this end point do not automatically increment the domain seria
 ### Update domain access  [POST]
 This allows changing user access levels on the domain.
 
-As a general rule of thumb, you can not edit your own access level, and you can not set people to have an access level equal or above your own (Thus only site-admin users can set domain owners.)
+As a general rule of thumb, you can not edit your own access level, and you can not set people to have an access level equal or above your own (Thus only users with the `manage_domains` permission can set domain owners.)
 
 There are 5 levels of access (each level has all the access of those below it):
  - owner - Owner has full control over the domain, there can only be 1. Only the owner can delete the domain.
@@ -952,11 +997,28 @@ If the import is successful, the zone serial will be returned.
                 "error": "Unknown record id for domain example.org : 21"
             }
 
+## Force backend sync [/domains/{domain}/sync]
+
+### Force backend sync [GET]
+Attempt to resync the domain with the server backends.
+
+This can be used to force the server backend to refresh its copy of the domain without needing to make any changes.
+
++ Response 200 (application/json)
+    This will always show a successful response, it only fires the sync hook.
+    + Body
+
+            {
+                "respid": "58cef6194ca63",
+                "method": "domains/test1.com/sync"
+            }
+
 
 # Group Domains Admin
-Admin Endpoints for dealing with domains.
+Admin Endpoints for dealing with domains, end points under `/admin` require the `manage_domains` permission.
 
-As a general rule, anything that exists under `/domains` also exists under `/admin/domains` but in a less-restricted fashion. (ie, behaves as if the user had `owner` access to all domains)
+As a general rule, anything that exists under `/domains` also exists under `/admin/domains` but in a less-restricted fashion. (ie, behaves as if the user had `owner` access to all domains and allows setting the domain owner access level on a domain).
+
 As such, to prevent documentation duplication, this section only lists methods where the result is different.
 
 ## Get domains [/admin/domains]
@@ -1066,9 +1128,11 @@ See what domains exist and user access levels for each.
             }
 
 ### Create a new domain [POST]
-Create a new domain.
+This behaves the same as the non-admin end-point, and requires the `domains_create` permission in addition to the `manage_domains` permission.
 
-If owner is not specified, then the current user will be set as the owner.
+The admin version of the endpoint however also allows specifying an owner of a newly created domain.
+
+If owner is not specified, then the current user will be set as the owner (same as non-admin end-point)
 
 If owner is blank, no owner will be set.
 
@@ -1117,17 +1181,3 @@ If owner is blank, no owner will be set.
                 "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
             }
 
-
-## Force backend sync [/admin/domains/{domain}/sync]
-
-### Create a new domain [GET]
-Attempt to resync the domain with the server backends.
-
-+ Response 200 (application/json)
-    This will always show a successful response, it only fires the sync hook.
-    + Body
-
-            {
-                "respid": "58cef6194ca63",
-                "method": "domains/test1.com/sync"
-            }
