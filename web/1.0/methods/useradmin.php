@@ -176,24 +176,32 @@
 			if ($this->checkPermissions(['manage_users'], true)) {
 				// Don't allow disabling own account.
 				if ($this->getContextKey('user')->getID() !== $user->getID()) {
-					// Only allow disabling admins if the user has the manage_admins permission.
-					if (!$user->isAdmin() || $this->checkPermissions(['manage_admins'], true)) {
-						$keys['disabled'] = 'setDisabled';
-					}
-				}
-			}
-
-			// Can this user promote/demote admins?
-			if ($this->checkPermissions(['manage_admins'], true)) {
-				// Don't allow admins to change their own admin level.
-				if ($this->getContextKey('user')->getID() !== $user->getID()) {
-					$keys['admin'] = 'setAdmin';
+					$keys['disabled'] = 'setDisabled';
 				}
 			}
 
 			foreach ($keys as $k => $f) {
 				if (array_key_exists($k, $data)) {
 					$user->$f($data[$k]);
+				}
+			}
+
+			// Can this user set permissions?
+			if (isset($data['permissions']) && $this->checkPermissions(['manage_permissions'], true)) {
+				$oldPermissions = $user->getPermissions();
+
+				// Set requested permissions.
+				foreach ($data['permissions'] as $permission => $value) {
+					$user->setPermission($permission, $value);
+				}
+
+				// Don't allow users to remove their own ability to edit permissions.
+				if ($this->getContextKey('user')->getID() == $user->getID()) {
+					foreach (['manage_permissions', 'manage_users'] as $p) {
+						if ($oldPermissions[$p] === true) {
+							$user->setPermission($p, true);
+						}
+					}
 				}
 			}
 

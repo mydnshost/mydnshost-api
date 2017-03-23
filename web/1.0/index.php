@@ -102,13 +102,10 @@
 		           'user_write' => ($key == null) ? true : (true && $key->getUserWrite()),
 		          ];
 
-		if ($user->isAdmin()) {
-			$access['domains_create'] = true;
-			$access['manage_domains'] = true;
-
-			$access['manage_users'] = true;
-			$access['manage_admins'] = true;
-			$access['impersonate_users'] = true;
+		foreach ($user->getPermissions() as $permission => $value) {
+			if ($value) {
+				$access[$permission] = true;
+			}
 		}
 
 		return $access;

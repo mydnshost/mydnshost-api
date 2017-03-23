@@ -4,7 +4,9 @@
 		public function get($matches) {
 			$apiData = ['version' => '1.0'];
 
-			if ($this->getContextKey('user') != NULL && $this->getContextKey('user')->isAdmin()) {
+			// This permission doesn't actually exist right now, but we need
+			// to lock this off.
+			if ($this->getContextKey('user') != NULL && $this->checkPermissions(['site_admin'], true)) {
 				$apiData['gitversion'] = trim(`git describe --tags 2>&1`);
 			}
 

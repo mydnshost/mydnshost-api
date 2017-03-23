@@ -11,6 +11,7 @@
 	$pdo->exec('DROP TABLE records;');
 	$pdo->exec('DROP TABLE apikeys;');
 	$pdo->exec('DROP TABLE hooks;');
+	$pdo->exec('DROP TABLE permissions;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
@@ -18,7 +19,7 @@
 	$domains = array();
 
 	$admin = new User(DB::get());
-	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setAdmin(true)->save();
+	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setPermission('all', true)->save();
 
 	$adminKey = new APIKey(DB::get());
 	$adminKey->setKey('69299C29-5BED-447D-B2F9-840DD01FE0B5')->setDescription('Test Key')->setUserID($admin->getID());
@@ -36,7 +37,7 @@
 
 	for ($i = 1; $i <= 5; $i++) {
 		$user = new User(DB::get());
-		$user->setEmail('user' . $i . '@example.org')->setRealName('Normal User ' . $i)->setPassword('password')->setAdmin(false)->save();
+		$user->setEmail('user' . $i . '@example.org')->setRealName('Normal User ' . $i)->setPassword('password')->setPermission('all', false)->save();
 
 		$domain = new Domain(DB::get());
 		$domain->setDomain('example' . $i . '.org')->setAccess($user->getID(), 'Owner')->save();

@@ -15,12 +15,7 @@
 			             'realname' => $user->getRealName(),
 			            ];
 
-			if ($user->isAdmin()) {
-				$userinfo['admin'] = true;
-			}
-
 			$this->getContextKey('response')->set('user', $userinfo);
-
 			$this->getContextKey('response')->set('access', $this->getContextKey('access'));
 
 			return TRUE;

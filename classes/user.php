@@ -5,11 +5,15 @@ class User extends DBObject {
 	                             'email' => NULL,
 	                             'password' => NULL,
 	                             'realname' => NULL,
-	                             'admin' => false,
 	                             'disabled' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'users';
+
+	protected static $VALID_PERMISSIONS = ['manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'];
+
+	// Permissions levels for unknown objects.
+	protected $_permissions = [];
 
 	public function __construct($db) {
 		parent::__construct($db);
@@ -25,10 +29,6 @@ class User extends DBObject {
 
 	public function setPassword($value) {
 		return $this->setData('password', bcrypt::hash($value));
-	}
-
-	public function setAdmin($value) {
-		return $this->setData('admin', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function setDisabled($value) {
@@ -53,12 +53,37 @@ class User extends DBObject {
 		return bcrypt::check($password, $testPass);
 	}
 
-	public function isAdmin() {
-		return parseBool($this->getData('admin'));
-	}
-
 	public function isDisabled() {
 		return parseBool($this->getData('disabled'));
+	}
+
+	public function getPermissions() {
+		return $this->_permissions;
+	}
+
+	public function getPermission($permission) {
+		return array_key_exists($permission, $this->_permissions) ? $this->_permissions[$permission] : false;
+	}
+
+	public function setPermission($permission, $value) {
+		$value = parseBool($value);
+		if ($permission == 'all') {
+			foreach (User::$VALID_PERMISSIONS as $p) {
+				$this->setPermission($p, $value);
+			}
+			return $this;
+		}
+
+		if (in_array($permission, User::$VALID_PERMISSIONS)) {
+			if ($value && !array_key_exists($permission, $this->_permissions)) {
+				$this->_permissions[$permission] = true;
+				$this->setChanged();
+			} else if (!$value && array_key_exists($permission, $this->_permissions)) {
+				unset($this->_permissions[$permission]);
+				$this->setChanged();
+			}
+		}
+		return $this;
 	}
 
 	/**
@@ -151,6 +176,12 @@ class User extends DBObject {
 		return ($result) ? $result[0] : FALSE;
 	}
 
+	/**
+	 * Validate the user account.
+	 *
+	 * @return TRUE if validation succeeded
+	 * @throws ValidationFailed if there is an error.
+	 */
 	public function validate() {
 		$required = ['password', 'email', 'realname'];
 		foreach ($required as $r) {
@@ -164,5 +195,51 @@ class User extends DBObject {
 		}
 
 		return TRUE;
+	}
+
+	public function postSave($result) {
+		if ($result) {
+			// Persist permission changes
+			$setQuery = 'INSERT INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
+			$setStatement = $this->getDB()->getPDO()->prepare($setQuery);
+
+			$params = [':user' => $this->getID()];
+			$removeParams = [];
+			$removeID = 0;
+			foreach ($this->_permissions as $permission => $access) {
+				$params[':permission'] = $permission;
+				$setStatement->execute($params);
+
+				$removeParams[':permission_' . $removeID++] = $permission;
+			}
+
+			if (count($removeParams) > 0) {
+				$removeQuery = sprintf('DELETE FROM permissions WHERE `user_id` = :user AND `permission` NOT IN (%s)', implode(', ', array_keys($removeParams)));
+			} else {
+				$removeQuery = sprintf('DELETE FROM permissions WHERE `user_id` = :user');
+			}
+			$removeStatement = $this->getDB()->getPDO()->prepare($removeQuery);
+			$removeStatement->execute(array_merge([':user' => $this->getID()], $removeParams));
+		}
+	}
+
+	public function postLoad() {
+		// Get access levels;
+		$query = 'SELECT `permission` FROM permissions WHERE `user_id` = :user';
+		$params = [':user' => $this->getID()];
+		$statement = $this->getDB()->getPDO()->prepare($query);
+		$statement->execute($params);
+		$result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach ($result as $row) {
+			$this->setPermission($row['permission'], true);
+		}
+	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		$result['permissions'] = $this->_permissions;
+
+		return $result;
 	}
 }

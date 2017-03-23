@@ -2,8 +2,8 @@
 	require_once(dirname(__FILE__) . '/../functions.php');
 
 	class DBChange {
-		private $query = '';
-		private $result = null;
+		protected $query = '';
+		protected $result = null;
 
 		public function __construct($query) {
 			$this->query = $query;
@@ -12,9 +12,11 @@
 		public function run($pdo) {
 			if ($pdo->exec($this->query) !== FALSE) {
 				$this->result = TRUE;
+				echo 'success', "\n";
 			} else {
 				$ei = $pdo->errorInfo();
 				$this->result = $ei[2];
+				echo 'failed', "\n";
 			}
 
 			return $this->getLastResult();
@@ -41,12 +43,13 @@
 
 		foreach ($changes as $version => $change) {
 			if ($version <= $currentVersion) { continue; }
+			echo 'Updating to version ', $version, ': ';
+
 			if ($change->run($db->getPDO())) {
-				echo 'Updated to version ', $version, ' success', "\n";
 				$db->setMetaData($versionField, $version);
 				$currentVersion = $version;
 			} else {
-				echo 'Error updating to version ', $version, ': ', $change->getLastError(), "\n";
+				echo "\n", 'Error updating to version ', $version, ': ', $change->getLastError(), "\n";
 				return $currentVersion;
 			}
 		}
@@ -73,9 +76,9 @@ CREATE TABLE IF NOT EXISTS `__MetaData` (
 MYSQLQUERY
 );
 
-  // ------------------------------------------------------------------------
-  // Initial Schema
-  // ------------------------------------------------------------------------
+	// ------------------------------------------------------------------------
+	// Initial Schema
+	// ------------------------------------------------------------------------
 	$dataChanges[2] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -125,9 +128,9 @@ CREATE TABLE `domain_access` (
 MYSQLQUERY
 );
 
-  // ------------------------------------------------------------------------
-  // API Keys
-  // ------------------------------------------------------------------------
+	// ------------------------------------------------------------------------
+	// API Keys
+	// ------------------------------------------------------------------------
 	$dataChanges[3] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `apikeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -145,17 +148,17 @@ CREATE TABLE `apikeys` (
 MYSQLQUERY
 );
 
-  // ------------------------------------------------------------------------
-  // Suspendable Users
-  // ------------------------------------------------------------------------
+	// ------------------------------------------------------------------------
+	// Suspendable Users
+	// ------------------------------------------------------------------------
 	$dataChanges[4] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `users` ADD COLUMN `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `admin`;
 MYSQLQUERY
 );
 
-  // ------------------------------------------------------------------------
-  // Background Hooks
-  // ------------------------------------------------------------------------
+	// ------------------------------------------------------------------------
+	// Background Hooks
+	// ------------------------------------------------------------------------
 	$dataChanges[5] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `hooks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -163,5 +166,67 @@ CREATE TABLE `hooks` (
   `args` varchar(8192) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
+	// ------------------------------------------------------------------------
+	// User Permissions - Part 1 - Add new permissions table
+	// ------------------------------------------------------------------------
+	$dataChanges[6] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `permissions` (
+  `user_id` int(11) NOT NULL,
+  `permission` varchar(64) NOT NULL,
+  PRIMARY KEY (`user_id`,`permission`),
+  CONSTRAINT `permissions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
+	// ------------------------------------------------------------------------
+	// User Permissions - Part 2 - Convert old admins
+	// ------------------------------------------------------------------------
+	$dataChanges[7] = new class(null) extends DBChange {
+		public function run($pdo) {
+			$this->result = TRUE;
+
+			$failed = false;
+			$setQuery = 'INSERT INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
+			$setStatement = $pdo->prepare($setQuery);
+
+			$rows = (new Search($pdo, 'users', ['id', 'email']))->where('admin', 'true')->getRows();
+
+			if (count($rows) > 0) {
+				echo "\n";
+				foreach ($rows as $row) {
+					echo "\t", 'Setting admin permissions for: ', $row['email'], ' - ';
+					foreach (['manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'] as $permission) {
+						echo $permission, ' ';
+						$res = $setStatement->execute([':user' => $row['id'], ':permission' => $permission]);
+						if (!$res) {
+							$failed = true;
+							$this->result = $setStatement->errorInfo()[2];
+							break;
+						}
+					}
+					if ($failed) {
+						echo '- Failed.', "\n";
+						break;
+					} else {
+						echo '- Done.', "\n";
+					}
+				}
+			} else {
+				echo 'success', "\n";
+			}
+
+			return $this->result === true;
+		}
+	};
+
+	// ------------------------------------------------------------------------
+	// User Permissions - Part 3 - Remove admin column
+	// ------------------------------------------------------------------------
+	$dataChanges[8] = new DBChange(<<<MYSQLQUERY
+  ALTER TABLE `dnsapi`.`users` DROP COLUMN `admin`;
 MYSQLQUERY
 );
