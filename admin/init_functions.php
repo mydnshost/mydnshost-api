@@ -227,6 +227,6 @@ MYSQLQUERY
 	// User Permissions - Part 3 - Remove admin column
 	// ------------------------------------------------------------------------
 	$dataChanges[8] = new DBChange(<<<MYSQLQUERY
-  ALTER TABLE `dnsapi`.`users` DROP COLUMN `admin`;
+  ALTER TABLE `users` DROP COLUMN `admin`;
 MYSQLQUERY
 );
