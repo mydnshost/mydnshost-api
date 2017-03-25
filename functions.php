@@ -19,7 +19,7 @@
 	DB::get()->setPDO($pdo);
 
 	// Prepare the hook manager.
-	if ($config['useBackgroundHooks']) {
+	if (parseBool($config['useBackgroundHooks'])) {
 		BackgroundHookManager::install();
 	}
 

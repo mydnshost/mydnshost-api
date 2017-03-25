@@ -113,4 +113,55 @@
 		HookManager::get()->addHook('bind_zone_added', [new BindCommandRunner($bindConfig['addZoneCommand']), 'run']);
 		HookManager::get()->addHook('bind_zone_changed', [new BindCommandRunner($bindConfig['reloadZoneCommand']), 'run']);
 		HookManager::get()->addHook('bind_zone_removed', [new BindCommandRunner($bindConfig['delZoneCommand']), 'run']);
+
+		HookManager::get()->addHook('bind_zone_added', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
+		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, false); });
+
+		function updateCatalogZone($bindConfig, $domain, $add = false) {
+			// Update the catalog
+			if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && file_exists($bindConfig['catalogZoneFile'])) {
+				$fp = fopen($bindConfig['catalogZoneFile'] . '.lock', 'r+');
+				if (flock($fp, LOCK_EX)) {
+					$bind = new Bind($bindConfig['catalogZoneName'], '', $bindConfig['catalogZoneFile']);
+
+					$bind->parseZoneFile();
+					$bindSOA = $bind->getSOA();
+					$bindSOA['Serial']++;
+					$bind->setSOA($bindSOA);
+
+					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
+
+					$bind->unsetRecord($hash, 'PTR');
+					if ($add) {
+						$bind->setRecord($hash, 'PTR', $domain->getDomain());
+					}
+					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
+
+					$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($domain->getDomain()), $bindConfig['catalogZoneFile']);
+					exec($cmd);
+
+					flock($fp, LOCK_UN);
+					fclose($fp);
+				}
+			}
+		}
+
+		if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && !file_exists($bindConfig['catalogZoneFile'])) {
+			$bind = new Bind($bindConfig['catalogZoneName'], '', $bindConfig['catalogZoneFile']);
+			$bind->clearRecords();
+
+			$bindSOA = array('Nameserver' => '.',
+			                 'Email' => '.',
+			                 'Serial' => '0',
+			                 'Refresh' => '86400',
+			                 'Retry' => '3600',
+			                 'Expire' => '86400',
+			                 'MinTTL' => '3600');
+			$bind->setSOA($bindSOA);
+			$bind->setRecord('@', 'NS', 'invalid.', '3600', '');
+			$bind->setRecord('version', 'TXT', '1', '3600', '');
+			$bind->saveZoneFile($bindConfig['catalogZoneFile']);
+
+			file_put_contents($bindConfig['catalogZoneFile'] . '.lock', '');
+		}
 	}
