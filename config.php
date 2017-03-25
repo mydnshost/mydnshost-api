@@ -33,7 +33,8 @@
 	// delZoneCommand = Command to run to remove zones	//
 	// --------------------
 	// $config['hooks']['bind']['enabled'] = 'true';
-	// $config['hooks']['bind']['catalogZone'] = '/tmp/bindzones/catalog.db';
+	// $config['hooks']['bind']['catalogZoneFile'] = '/tmp/bindzones/catalog.db';
+	// $config['hooks']['bind']['catalogZoneName'] = 'catalog.invalid';
 	// $config['hooks']['bind']['zonedir'] = '/tmp/bindzones';
 	// $config['hooks']['bind']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
 	// $config['hooks']['bind']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
