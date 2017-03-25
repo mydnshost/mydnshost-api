@@ -14,7 +14,7 @@
 		$user->setEmail(getEnvOrDefault('ADMIN_EMAIL', 'admin@example.org'));
 		$user->setRealName(getEnvOrDefault('ADMIN_NAME', 'Admin User'));
 		$user->setPassword($password);
-		$user->setAdmin(true);
+		$user->setPermission('all', true);
 
 		if ($user->save()) {
 			echo 'Added admin user: ', $user->getEmail(), ' with password: ', $password, "\n";
