@@ -34,22 +34,24 @@
 
 			$hasNS = false;
 
-			foreach ($domain->getRecords() as $record) {
-				if ($record->isDisabled()) { continue; }
+			if (!$domain->isDisabled()) {
+				foreach ($domain->getRecords() as $record) {
+					if ($record->isDisabled()) { continue; }
 
-				$name = $record->getName() . '.';
-				$content = $record->getContent();
-				if ($record->getType() == "TXT") {
-					$content = '"' . $record->getContent() . '"';
-				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
-					$content = $record->getContent() . '.';
+					$name = $record->getName() . '.';
+					$content = $record->getContent();
+					if ($record->getType() == "TXT") {
+						$content = '"' . $record->getContent() . '"';
+					} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+						$content = $record->getContent() . '.';
+					}
+
+					if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+						$hasNS = true;
+					}
+
+					$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 				}
-
-				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
-					$hasNS = true;
-				}
-
-				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 			}
 
 			// Bind requires an NS record to load the zone, don't bother

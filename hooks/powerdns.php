@@ -20,13 +20,15 @@
 
 			$hasNS = false;
 
-			foreach ($domain->getRecords() as $record) {
-				if ($record->isDisabled()) { continue; }
-				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
-					$hasNS = true;
-				}
+			if (!$domain->isDisabled()) {
+				foreach ($domain->getRecords() as $record) {
+					if ($record->isDisabled()) { continue; }
+					if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+						$hasNS = true;
+					}
 
-				$records[] = $record->toArray();
+					$records[] = $record->toArray();
+				}
 			}
 
 			if ($hasNS) {
