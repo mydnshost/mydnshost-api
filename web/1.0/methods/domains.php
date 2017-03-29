@@ -358,10 +358,11 @@
 			$bind = new Bind($domain->getDomain(), '', $tmpname);
 			try {
 				$bind->parseZoneFile();
+				$bind->getSOA();
 				unlink($tmpname);
 			} catch (Exception $ex) {
-				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
 				unlink($tmpname);
+				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
 			}
 
 			$domainInfo = $bind->getDomainInfo();
@@ -408,6 +409,8 @@
 								if (!empty($record['Address'])) { $record['Address'] .= '.'; }
 								$record['Address'] .= $domain->getDomain();
 							}
+						} else if ($type == 'TXT' && preg_match('#^"(.*)"$#', $record['Address'], $m)) {
+							$record['Address'] = $m[1];
 						}
 
 						$record['TTL'] = $bind->ttlToInt($record['TTL']);

@@ -174,11 +174,15 @@ Returns complete information about the requested user if the user has permission
                     "id": "2",
                     "email": "user@example.org",
                     "realname": "Some User"
+                    "disabled": "false",
+                    "permissions": []
                 }
             }
 
 ### Update information about a specific user [POST]
 Allows updating user information on a user account that you have permission to modify. Any fields that are passed in will be updated, fields not passed will be unchanged.
+
+If you have `manage_permissions` you can also pass a map of permissions where the key is the permission, and the value is `true` or `false` to grant/revoke the permission. Permissions not given will be left unchanged. The meta-permission of `all` can be used to set the value of all permissions.
 
 + Request Change realname and Password (application/json)
     + Body

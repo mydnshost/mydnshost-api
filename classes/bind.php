@@ -286,7 +286,11 @@
 		function getSOA() {
 			$domainInfo = $this->domainInfo;
 			if (!isset($domainInfo['SOA'][$this->domain.'.'])) {
-				throw new Exception('SOA for domain not found..');
+				if (count($domainInfo['SOA']) > 0) {
+					throw new Exception('SOA for domain not found. Found: ' . implode(', ', array_keys($domainInfo['SOA'])));
+				} else {
+					throw new Exception('Invalid zone file. (No SOA found)');
+				}
 			}
 			return $domainInfo['SOA'][$this->domain.'.'][0];
 		}
@@ -410,7 +414,11 @@
 			$lines[] = '$ORIGIN '.$this->domain.'.';
 			// Now SOA
 			if (!isset($domainInfo['SOA'][$this->domain.'.'])) {
-				throw new Exception('SOA for domain not found..');
+				if (count($domainInfo['SOA']) > 0) {
+					throw new Exception('SOA for domain not found. Found: ' . implode(', ', array_keys($domainInfo['SOA'])));
+				} else {
+					throw new Exception('Invalid zone file. (No SOA found)');
+				}
 			}
 			$soa = $domainInfo['SOA'][$this->domain.'.'][0];
 

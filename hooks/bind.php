@@ -165,5 +165,6 @@
 			$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
 			file_put_contents($bindConfig['catalogZoneFile'] . '.lock', '');
+			chmod($bindConfig['catalogZoneFile'] . '.lock', 0777);
 		}
 	}
