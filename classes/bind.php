@@ -30,6 +30,24 @@
 		}
 
 		/**
+		 * This function allow enabling/disabling debug.
+		 *
+		 * @param $value New value for debugging.
+		 */
+		function setDebug($value) {
+			$this->debugging = $value;
+		}
+
+		/**
+		 * Is debugging enabled?
+		 *
+		 * @return Value of debugging.
+		 */
+		function isDebug() {
+			return $this->debugging;
+		}
+
+		/**
 		 * Create an instance of 'Bind' for the specified domain.
 		 *
 		 * @param $domain Domain to work with.
@@ -111,8 +129,9 @@
 
 			$domainInfo = $this->domainInfo;
 			for ($i = 0; $i < count($file); $i++) {
-				$line = trim($file[$i]);
-				if ((isset($line[0]) && $line[0] == ';') || $line == '' || $line == ')') { continue; }
+				$testline = trim($file[$i]);
+				if (empty($testline) || $testline{0} == ';' || $testline == ')') { continue; }
+				$line = rtrim($file[$i]);
 
 				$pos = 0;
 
@@ -124,52 +143,46 @@
 				} else if (strtolower($bits[0]) == '$origin') {
 					$origin = $bits[++$pos];
 					$this->debug('parseZoneFile', 'Origin is now: '.$origin);
+					if ($origin == '.') { $origin = ''; }
 				} else {
 					// Zone stuff!
 					$pos = 0;
-					$start = $startname;
 					$thisttl = $ttl;
-					if (strtoupper($bits[$pos]) != 'IN') {
-						// @ = $ORIGIN
-						if ($bits[$pos] == '@') {
-							$start = $origin;
-						} else {
-							$start = $bits[$pos];
-						}
 
-						$pos++;
-						if (strtoupper($bits[$pos]) != 'IN') {
-							$thisttl = $bits[$pos];
-							$pos++;
-							if (strtoupper($bits[$pos]) != 'IN') {
-								// print_r($bits);
-								// throw new Exception('Invalid zone file. (Got: "'.$bits[$pos].'", expected "IN", {'.$line.'})');
-								$pos--;
-							}
+					$name = $bits[0];
+
+					for ($pos = 1; $pos < count($bits); $pos++) {
+						if (is_numeric($bits[$pos])) {
+							$ttl = $bits[$pos];
+						} else if (strtoupper($bits[$pos]) == 'IN') {
+							continue;
+						} else {
+							break;
 						}
 					}
-//					$startname = $start;
-					$pos++;
+
 					$type = strtoupper($bits[$pos]);
 					$pos++;
 					$this->debug('parseZoneFile', 'Got Line of Type: '.$type.' ('.$line.')');
 
 					// We don't store origin changes, so add the origin if its not there
-					if ($start[strlen($start)-1] != '.') {
-						$start = $start.'.'.$origin;
+					if (empty($name)) {
+						$name = $origin;
+					} else if ($name[strlen($name)-1] != '.') {
+						$name = $name.'.'.$origin;
 					}
 
 					// Now check to see if the name ends with domain.com. if it does,
 					// remove it.
 					$len = strlen($this->domain)+1;
-					$end = substr($start, strlen($start) - $len);
+					$end = substr($name, strlen($name) - $len);
 
 					if ($type != 'SOA') {
 						if ($end == $this->domain.'.') {
-							if ($start != $end) {
-								$start = substr($start, 0,  strlen($start) - $len - 1);
+							if ($name != $end) {
+								$name = substr($name, 0,  strlen($name) - $len - 1);
 							} else {
-								$start = '';
+								$name = '';
 							}
 						}
 					}
@@ -177,7 +190,7 @@
 					// Add type to domainInfo
 					if (!isset($domainInfo[$type])) { $domainInfo[$type] = array(); }
 					// Add value to domainInfo
-					if (!isset($domainInfo[$type][$start])) { $domainInfo[$type][$start] = array(); }
+					if (!isset($domainInfo[$type][$name])) { $domainInfo[$type][$name] = array(); }
 
 					// Add params to this bit first, we add it to domainInfo afterwards
 					$info = array();
@@ -194,6 +207,7 @@
 									$line = trim($file[++$i]);
 									$bits = preg_split('/\s+/', $line);
 									foreach ($bits as $bit) {
+										if ($bit{0} == ';') { break; }
 										$soabits[] = $bit;
 									}
 								} else {
@@ -222,7 +236,7 @@
 					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $ttl; }
 
 					// And finally actually add to the domainInfo array:
-					$domainInfo[$type][$start][] = $info;
+					$domainInfo[$type][$name][] = $info;
 				}
 			}
 
