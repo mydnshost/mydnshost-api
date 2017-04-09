@@ -1,4 +1,15 @@
 <?php
+	// --------------------
+	// PowerDNS
+	// --------------------
+	// masters = Array of "master" servers to add/update/remove zones on
+	// slaves = Array of additional slave servers that zones should be removed from
+	// --------------------
+	// $config['hooks']['powerdns']['enabled'] = 'true';
+	// $config['hooks']['powerdns']['masters'] = [['host' => '127.0.0.1', 'port' => '1080', 'apikey' => 'myapikey', 'zonetype' => 'master']];
+	// $config['hooks']['powerdns']['slaves'] = [['host' => '192.168.0.2', 'port' => '1080', 'apikey' => 'myapikey'],
+	//                                  ['host' => '192.168.0.3', 'port' => '1080', 'apikey' => 'myapikey']];
+
 	if (isset($config['hooks']['powerdns']['enabled']) && parseBool($config['hooks']['powerdns']['enabled'])) {
 
 		$config['hooks']['powerdns']['defaults']['masters'] = [];
