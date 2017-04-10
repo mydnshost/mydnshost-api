@@ -10,8 +10,23 @@
 	// -------------------------------------------------------------------------
 	// Configuration for hooks
 	// -------------------------------------------------------------------------
-	// Should hooks only be run by the background hook runner rather than
-	// inline?
+	// Should the background hook runner be used?
+	//
+	// Background hook runner will swallow all attempts to run hooks and store
+	// them in the database to be run at a later date instead.
+	//
+	// For hooks that need to be run, the 'enabled' flag should be set to
+	// 'background' so that they don't run their enabled functions during
+	// normal use.
+	//
+	// admin/backgroundHookRunner.php can then be used to run the hooks based
+	// on the entries in the database, this will enable any hooks with the
+	// 'enabled' flag set to 'background'.
+	//
+	// (This only works if the hook config is defined in config.local.php and
+	// not if it only gets config from the included script.)
+	//
+	// This is all a bit icky, and subject to change in the future.
 	// -------------------------------------------------------------------------
 	$config['useBackgroundHooks'] = 'false';
 

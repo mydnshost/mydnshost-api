@@ -137,6 +137,7 @@ class User extends DBObject {
 		$domainSearch->select('domain_access', 'level');
 		$domainSearch->select('domain_access', 'user_id');
 		$domainSearch->where('user_id', $this->getID());
+		$domainSearch->order('domain');
 
 		return $domainSearch;
 	}

@@ -62,6 +62,7 @@
 			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
 			$s->select('users', 'email', 'user');
 			$s->select('domain_access', 'level', 'level');
+			$s->order('domain');
 			$rows = $s->getRows();
 
 			$domains = [];

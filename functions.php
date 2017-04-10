@@ -35,7 +35,6 @@
 
 	// Load the hooks
 	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }
-	foreach (recursiveFindFiles(__DIR__ . '/hooks.local') as $file) { include_once($file); }
 
 	// Functions
 	function recursiveFindFiles($dir) {
