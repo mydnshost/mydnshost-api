@@ -1,3 +1,4 @@
 config.local.php
 admin/test.php
 test.php
+hooks/*

@@ -129,7 +129,7 @@ class Record extends DBObject {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 
-		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS'])) {
+		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA'])) {
 			throw new ValidationFailed('Unknown record type: '. $type);
 		}
 
@@ -189,6 +189,12 @@ class Record extends DBObject {
 				}
 			} else {
 				throw new ValidationFailed('SRV Record content should have the format: <weight> <port> <target>');
+			}
+		}
+
+		if ($type == 'CAA') {
+			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#', $content, $m)) {
+				throw new ValidationFailed('SRV Record content should have the format: <flag> <tag> "<value>"');
 			}
 		}
 
