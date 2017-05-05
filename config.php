@@ -7,6 +7,9 @@
 	$database['password'] = getEnvOrDefault('DB_SERVER_PASSWORD', 'dnsapi');
 	$database['database'] = getEnvOrDefault('DB_SERVER_DATABASE', 'dnsapi');
 
+	// Config for session data
+	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
+
 	// -------------------------------------------------------------------------
 	// Configuration for hooks
 	// -------------------------------------------------------------------------
