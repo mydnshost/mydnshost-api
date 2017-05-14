@@ -171,11 +171,11 @@
 		}
 
 		// Hook to rebuild the whole catalog.
-		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneFile) {
+		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneName, $zoneFile) {
 
 			$fp = fopen($zoneFile . '.lock', 'r+');
 			if (flock($fp, LOCK_EX)) {
-				$bind = new Bind($zoneFile, '', $zoneFile);
+				$bind = new Bind($zoneName, '', $zoneFile);
 				$bind->parseZoneFile();
 				$bindSOA = $bind->getSOA();
 				$bindSOA['Serial']++;
@@ -223,6 +223,6 @@
 			file_put_contents($bindConfig['catalogZoneFile'] . '.lock', '');
 			chmod($bindConfig['catalogZoneFile'] . '.lock', 0777);
 
-			HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName']]);
+			HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
 		}
 	}
