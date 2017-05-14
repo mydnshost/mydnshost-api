@@ -161,7 +161,7 @@
 					}
 					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
-					$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($domain->getDomain()), $bindConfig['catalogZoneFile']);
+					$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($bindConfig['catalogZoneName']), $bindConfig['catalogZoneFile']);
 					exec($cmd);
 
 					flock($fp, LOCK_UN);
@@ -182,6 +182,9 @@
 				$bind->clearRecords();
 				$bind->setSOA($bindSOA);
 
+				$bind->setRecord('@', 'NS', 'invalid.', '3600', '');
+				$bind->setRecord('version', 'TXT', '1', '3600', '');
+
 				$s = new Search(DB::get()->getPDO(), 'domains', ['domain', 'disabled']);
 				$s->order('domain');
 				$rows = $s->getRows();
@@ -197,6 +200,10 @@
 
 				$bind->saveZoneFile($zoneFile);
 				chmod($zoneFile, 0777);
+
+				$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
+				exec($cmd);
+
 				flock($fp, LOCK_UN);
 				fclose($fp);
 			}
@@ -226,3 +233,11 @@
 			HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
 		}
 	}
+
+/*
+require_once('/dnsapi/functions.php');
+$bindConfig = $config['hooks']['bind'];
+HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
+$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
+exec($cmd);
+*/
