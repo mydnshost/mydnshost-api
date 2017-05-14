@@ -8,4 +8,5 @@ RUN \
   echo "www-data  ALL=NOPASSWD: /usr/sbin/rndc" >> /etc/sudoers.d/99_rndc && \
   chmod 0440 /etc/sudoers.d/99_rndc && \
   rm -Rfv /var/www/html && \
-  ln -s /dnsapi/web /var/www/html
+  ln -s /dnsapi/web /var/www/html && \
+  mkdir /bind && chown www-data: /bind
