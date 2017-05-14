@@ -196,6 +196,7 @@
 				}
 
 				$bind->saveZoneFile($zoneFile);
+				chmod($zoneFile, 0777);
 				flock($fp, LOCK_UN);
 				fclose($fp);
 			}
