@@ -203,6 +203,7 @@
 		});
 
 		if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && !file_exists($bindConfig['catalogZoneFile'])) {
+			file_put_contents($bindConfig['catalogZoneFile'], '');
 			$bind = new Bind($bindConfig['catalogZoneName'], '', $bindConfig['catalogZoneFile']);
 			$bind->clearRecords();
 
