@@ -92,6 +92,8 @@
 			}
 		};
 
+		HookManager::get()->addHookType('bind_rebuild_catalog');
+
 		HookManager::get()->addHookType('bind_zone_added');
 		HookManager::get()->addHookType('bind_zone_changed');
 		HookManager::get()->addHookType('bind_zone_removed');
@@ -168,6 +170,39 @@
 			}
 		}
 
+		// Hook to rebuild the whole catalog.
+		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneFile) {
+
+			$fp = fopen($zoneFile . '.lock', 'r+');
+			if (flock($fp, LOCK_EX)) {
+				$bind = new Bind($zoneFile], '', $zoneFile);
+				$bind->parseZoneFile();
+				$bindSOA = $bind->getSOA();
+				$bindSOA['Serial']++;
+				$bind->clearRecords();
+				$bind->setSOA($bindSOA);
+
+				$s = new Search(DB::get()->getPDO(), 'domains', ['domain', 'disabled']);
+				$s->order('domain');
+				$rows = $s->getRows();
+
+				foreach ($rows as $row) {
+					if (strtolower($row['disabled']) == 'true') { continue; }
+
+					$hash = sha1("\7" . str_replace(".", "\3", $row['domain']) . "\0");
+
+					$bind->unsetRecord($hash . '.zones', 'PTR');
+					if ($add) {
+						$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
+					}
+				}
+
+				$bind->saveZoneFile($zoneFile);
+				flock($fp, LOCK_UN);
+				fclose($fp);
+			}
+		});
+
 		if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && !file_exists($bindConfig['catalogZoneFile'])) {
 			$bind = new Bind($bindConfig['catalogZoneName'], '', $bindConfig['catalogZoneFile']);
 			$bind->clearRecords();
@@ -187,5 +222,7 @@
 
 			file_put_contents($bindConfig['catalogZoneFile'] . '.lock', '');
 			chmod($bindConfig['catalogZoneFile'] . '.lock', 0777);
+
+			HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName']]);
 		}
 	}
