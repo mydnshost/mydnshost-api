@@ -153,9 +153,9 @@
 
 					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
 
-					$bind->unsetRecord($hash, 'PTR');
+					$bind->unsetRecord($hash . '.zones', 'PTR');
 					if ($add) {
-						$bind->setRecord($hash, 'PTR', $domain->getDomain());
+						$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
 					}
 					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
