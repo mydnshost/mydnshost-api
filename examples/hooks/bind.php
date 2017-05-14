@@ -171,7 +171,7 @@
 		}
 
 		// Hook to rebuild the whole catalog.
-		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneName, $zoneFile) {
+		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneName, $zoneFile) use ($bindConfig) {
 
 			$fp = fopen($zoneFile . '.lock', 'r+');
 			if (flock($fp, LOCK_EX)) {
@@ -201,7 +201,7 @@
 				$bind->saveZoneFile($zoneFile);
 				chmod($zoneFile, 0777);
 
-				$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
+				$cmd = sprintf($bindConfig['reloadZoneCommand'], $zoneName, $zoneFile);
 				exec($cmd);
 
 				flock($fp, LOCK_UN);
