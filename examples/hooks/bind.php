@@ -183,6 +183,7 @@
 			$bind->setRecord('@', 'NS', 'invalid.', '3600', '');
 			$bind->setRecord('version', 'TXT', '1', '3600', '');
 			$bind->saveZoneFile($bindConfig['catalogZoneFile']);
+			chmod($bindConfig['catalogZoneFile'], 0777);
 
 			file_put_contents($bindConfig['catalogZoneFile'] . '.lock', '');
 			chmod($bindConfig['catalogZoneFile'] . '.lock', 0777);
