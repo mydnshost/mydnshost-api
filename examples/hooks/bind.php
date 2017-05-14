@@ -175,7 +175,7 @@
 
 			$fp = fopen($zoneFile . '.lock', 'r+');
 			if (flock($fp, LOCK_EX)) {
-				$bind = new Bind($zoneFile], '', $zoneFile);
+				$bind = new Bind($zoneFile, '', $zoneFile);
 				$bind->parseZoneFile();
 				$bindSOA = $bind->getSOA();
 				$bindSOA['Serial']++;
