@@ -192,9 +192,7 @@
 					$hash = sha1("\7" . str_replace(".", "\3", $row['domain']) . "\0");
 
 					$bind->unsetRecord($hash . '.zones', 'PTR');
-					if ($add) {
-						$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
-					}
+					$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
 				}
 
 				$bind->saveZoneFile($zoneFile);
