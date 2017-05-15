@@ -195,7 +195,7 @@ class Record extends DBObject {
 
 		if ($type == 'CAA') {
 			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#', $content, $m)) {
-				throw new ValidationFailed('SRV Record content should have the format: <flag> <tag> "<value>"');
+				throw new ValidationFailed('CAA Record content should have the format: <flag> <tag> "<value>"');
 			}
 		}
 
