@@ -178,7 +178,7 @@ class Record extends DBObject {
 		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			if (filter_var($content, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
-			} else if (!preg_match('#^[a-z0-9-._]+$#i', $content)) {
+			} else if (!preg_match('#^[a-z0-9-._]*$#i', $content)) {
 				throw new ValidationFailed('Content must be a valid name.');
 			}
 		}
