@@ -192,10 +192,21 @@
 				foreach ($rows as $row) {
 					if (strtolower($row['disabled']) == 'true') { continue; }
 
-					$hash = sha1("\7" . str_replace(".", "\3", $row['domain']) . "\0");
+					$hasNS = false;
+					$domain = Domain::loadFromDomain(DB::get()->getPDO(), $row);
 
-					$bind->unsetRecord($hash . '.zones', 'PTR');
-					$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
+					foreach ($domain->getRecords() as $record) {
+						if ($record->isDisabled()) { continue; }
+						if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+							$hasNS = true;
+							break;
+						}
+					}
+
+					if ($hasNS) {
+						$hash = sha1("\7" . str_replace(".", "\3", $row['domain']) . "\0");
+						$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
+					}
 				}
 
 				$bind->saveZoneFile($zoneFile);
