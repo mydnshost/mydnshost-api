@@ -235,9 +235,9 @@
 	}
 
 /*
-require_once('/dnsapi/functions.php');
-$bindConfig = $config['hooks']['bind'];
-HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
-$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
-exec($cmd);
+	require_once('/dnsapi/functions.php');
+	$bindConfig = $config['hooks']['bind'];
+	HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
+	$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
+	exec($cmd);
 */

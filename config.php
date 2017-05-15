@@ -33,6 +33,12 @@
 	// -------------------------------------------------------------------------
 	$config['useBackgroundHooks'] = 'false';
 
+	// Default DNS Records
+	$config['defaultRecords'] = [];
+	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns1.example.com'];
+	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns2.example.com'];
+	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns3.example.com'];
+
 	// Local configuration.
 	if (file_exists(dirname(__FILE__) . '/config.local.php')) {
 		include(dirname(__FILE__) . '/config.local.php');

@@ -638,7 +638,6 @@
 					} else {
 						HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
 					}
-					HookManager::get()->handle('records_changed', [$domain]);
 				} else {
 					$error = $domain->getSOARecord()->getLastError()[2];
 					throw new ValidationFailed('Unknown Error with SOA');
@@ -647,6 +646,13 @@
 				$this->getContextKey('response')->sendError('Error updating domain.', $ex->getMessage());
 			}
 
+			// Add default records.
+			if ($isCreate) {
+				$this->addDefaultRecords($domain);
+			}
+
+			HookManager::get()->handle('records_changed', [$domain]);
+
 			$r = $domain->toArray();
 
 			$soa = $domain->getSOARecord();
@@ -654,6 +660,30 @@
 
 			$this->getContextKey('response')->data($r);
 			return true;
+		}
+
+		/**
+		 * Add default records to a domain
+		 *
+		 * @param $domain Domain object to add records to.
+		 */
+		protected function addDefaultRecords($domain) {
+			global $config;
+			// TODO: Allow some kind of per-user default, and only fall back to
+			//       these if not specified.
+			$defaultRecords = $config['defaultRecords'];
+
+			foreach ($defaultRecords as $data) {
+				$record = (new Record($domain->getDB()))->setDomainID($domain->getID());
+				$record = $this->doUpdateRecord($domain, $record, $data);
+
+				try {
+					$record->validate();
+					if ($record->save()) {
+						HookManager::get()->handle('add_record', [$domain, $record]);
+					}
+				} catch (ValidationFailed $ex) { }
+			}
 		}
 
 		/**
