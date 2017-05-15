@@ -399,7 +399,7 @@
 						$name = $rname;
 
 						if (!endsWith($name, '.')) {
-							if (!empty($name)) { $name .= '.'; }
+							if (!empty($name) || $name == "0") { $name .= '.'; }
 							$name .= $domain->getDomain();
 						}
 
