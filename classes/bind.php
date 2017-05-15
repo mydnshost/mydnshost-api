@@ -200,6 +200,15 @@
 							// SOAs can span multiple lines.
 							$info['Nameserver'] = $bits[$pos++];
 							$info['Email'] = $bits[$pos++];
+
+							// Fully-Qualify the SOA.
+							if ($info['Nameserver'][strlen($info['Nameserver'])-1] != '.') {
+								$info['Nameserver'] .= '.' . $origin;
+							}
+							if ($info['Email'][strlen($info['Email'])-1] != '.') {
+								$info['Email'] .= '.' . $origin;
+							}
+
 							$soabits = array();
 							$multiLine = ($bits[$pos] == '(');
 							while (count($soabits) < 5) {
