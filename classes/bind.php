@@ -166,7 +166,7 @@
 					$this->debug('parseZoneFile', 'Got Line of Type: '.$type.' ('.$line.')');
 
 					// We don't store origin changes, so add the origin if its not there
-					if (empty($name)) {
+					if ((empty($name) && $name != "0") || $name == '@') {
 						$name = $origin;
 					} else if ($name[strlen($name)-1] != '.') {
 						$name = $name.'.'.$origin;
