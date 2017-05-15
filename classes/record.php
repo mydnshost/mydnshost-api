@@ -137,7 +137,7 @@ class Record extends DBObject {
 			if (preg_match('#^[^\s]+ [^\s]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+$#', $content, $m)) {
 				$soa = $this->parseSOA();
 				if (!preg_match('#^[a-z0-9-._]+\.$#i', $soa['primaryNS'])) {
-					throw new ValidationFailed('Primary Nameserver in SOA does not look valid.');
+					throw new ValidationFailed('Primary Nameserver in SOA (' . $soa['primaryNS'] . ') does not look valid.');
 				}
 
 				if (!preg_match('#^[a-z0-9-._]+\.[a-z0-9-._]+\.[a-z]+\.$#i', $soa['adminAddress'])) {

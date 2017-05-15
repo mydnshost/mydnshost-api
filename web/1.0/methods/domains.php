@@ -615,6 +615,13 @@
 
 			try {
 				$domain->validate();
+
+				if ($isCreate) {
+					global $config;
+					$soa = $domain->getSOARecord();
+					$soa->updateSOAContent(array_merge($soa->parseSOA(), $config['defaultSOA']));
+				}
+
 				$domain->getSOARecord()->validate();
 
 				if ($domain->save()) {
@@ -632,6 +639,7 @@
 					}
 				}
 				$domain->getSOARecord()->setDomainID($domain->getID());
+
 				if ($domain->getSOARecord()->save()) {
 					if ($isCreate) {
 						HookManager::get()->handle('add_record', [$domain, $domain->getSOARecord()]);

@@ -39,6 +39,9 @@
 	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns2.example.com'];
 	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns3.example.com'];
 
+	// Default SOA
+	$config['defaultSOA'] = ['primaryNS' => 'ns1.example.com.'];
+
 	// Local configuration.
 	if (file_exists(dirname(__FILE__) . '/config.local.php')) {
 		include(dirname(__FILE__) . '/config.local.php');
