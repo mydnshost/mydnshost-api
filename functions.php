@@ -10,9 +10,7 @@
 	require_once(dirname(__FILE__) . '/config.php');
 
 	// Load main classes
-	require_once(dirname(__FILE__) . '/classes/dbobject.php');
-	require_once(dirname(__FILE__) . '/classes/search.php');
-	foreach (recursiveFindFiles(__DIR__ . '/classes') as $file) { require_once($file); }
+	require_once(__DIR__ . '/vendor/autoload.php');
 
 	// Prep DB
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
@@ -69,6 +67,17 @@
 		}
 
 		return (substr($haystack, -$length) === $needle);
+	}
+
+	function updatePublicSuffixes() {
+		(new Pdp\PublicSuffixListManager())->refreshPublicSuffixList();
+	}
+
+	function isPublicSuffix($domain) {
+		$list = (new Pdp\PublicSuffixListManager())->getList();
+		$parser = new Pdp\Parser($list);
+
+		return $domain == $parser->getPublicSuffix($domain) || array_key_exists($domain, $list);
 	}
 
 	class bcrypt {

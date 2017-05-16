@@ -2,6 +2,10 @@
 <?php
 	require_once(dirname(__FILE__) . '/init_functions.php');
 
+	echo 'Updating public suffixes...';
+	updatePublicSuffixes();
+	echo ' Done.', "\n";
+
 	initDataServer(DB::get());
 
 	// Check for users, if there isn't one - add a default admin user.
