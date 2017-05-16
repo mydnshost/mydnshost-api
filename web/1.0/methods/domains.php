@@ -1011,8 +1011,8 @@
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $domainsHandler);
 	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[0-9]+)', $domainsHandler);
 
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)', $domainsHandler);
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)/(?P<rrtype>[^/]+)', $domainsHandler);
+	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)', $domainsHandler);
+	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)/(?P<rrtype>[^/]+)', $domainsHandler);
 
 
 
@@ -1028,5 +1028,5 @@
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)', $adminDomainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $adminDomainsHandler);
 
-	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)', $adminDomainsHandler);
-	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)/(?P<rrtype>[^/]+)', $adminDomainsHandler);
+	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)', $adminDomainsHandler);
+	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)/(?P<rrtype>[^/]+)', $adminDomainsHandler);
