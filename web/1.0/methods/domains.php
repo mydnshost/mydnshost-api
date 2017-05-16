@@ -584,13 +584,18 @@
 			}
 
 			if (isset($data['data']['domain'])) {
-				if (!Domain::validDomainName($data['data']['domain'])) {
+				if (!Domain::validDomainName($data['data']['domain']) || isPublicSuffix($data['data']['domain'])) {
 					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
 				}
 
 				$domain->setDomain($data['data']['domain']);
 			} else {
 				$this->getContextKey('response')->sendError('No domain name provided for create.');
+			}
+
+			$parent = $domain->findParent();
+			if ($parent !== FALSE) {
+				$this->checkAccess($parent, ['owner']);
 			}
 
 			return $this->updateDomain($domain, true);

@@ -10,7 +10,7 @@
 	require_once(dirname(__FILE__) . '/config.php');
 
 	// Load main classes
-	require_once(__DIR__ . '/vendor/autoload.php');
+	require_once(dirname(__FILE__) . '/vendor/autoload.php');
 
 	// Prep DB
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);

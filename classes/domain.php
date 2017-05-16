@@ -206,6 +206,25 @@ class Domain extends DBObject {
 		return $serial;
 	}
 
+	/**
+	 * Look for a parent for this domain.
+	 *
+	 * @return Parent domain object, or FALSE if no parent found.
+	 */
+	public function findParent() {
+		$bits = explode('.', $this->getDomain());
+		while (!empty($bits)) {
+			array_shift($bits);
+
+			$p = Domain::loadFromDomain($this->getDB(), implode('.', $bits));
+			if ($p !== FALSE) {
+				return $p;
+			}
+		}
+
+		return FALSE;
+	}
+
 	public function validate() {
 		$required = ['domain'];
 		foreach ($required as $r) {
