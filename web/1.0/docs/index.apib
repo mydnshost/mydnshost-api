@@ -853,6 +853,8 @@ As with other update methods, only fields that are provided will be changed, you
                 }
             }
 
+
+
 ### Delete all domain records [DELETE]
 
 + Response 200 (application/json)
@@ -999,6 +1001,57 @@ If the import is successful, the zone serial will be returned.
                 "respid": "58bcc75e10e3a",
                 "method": "domains/example.org/records/21",
                 "error": "Unknown record id for domain example.org : 21"
+            }
+
+## Specific records by name [/domains/{domain}/record/{rrname}/{rrtype}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + rrname: `www` (required, string) - The record name
+    + rrtype: `A` (optional, string) - The record type
+
+### Get all `www` records with a type of A [GET]
+
+This allows looking at specific records by name and/or type.
+
+(If rrtype is not specified, then all records of the requested name will be
+shown, regardless of the type)
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591b5190e3f66",
+                "method": "domains/example1.org/record/www/A",
+                "response":{
+                    "records":[
+                        {
+                            "id": "69",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1490399322",
+                            "changed_by": null,
+                            "disabled": "false"
+                        }
+                    ]
+                }
+            }
+
+### Delete all domain records with a type of A [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591b51c5a5ca8",
+                "method": "domains/example1.org/record/www/A",
+                "response":{
+                    "deleted": 1,
+                    "serial": "2017051600"
+                }
             }
 
 ## Force backend sync [/domains/{domain}/sync]

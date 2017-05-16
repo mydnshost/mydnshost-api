@@ -158,7 +158,22 @@
 
 			$domain = $this->getDomainFromParam($params);
 
-			if (isset($params['recordid'])) {
+			if (isset($params['rrname']) || isset($params['rrtype'])) {
+				$filter = [];
+				if (isset($params['rrname'])) {
+					$filter['name'] = $params['rrname'];
+					if ($filter['name'] == '@' || $filter['name'] == '') {
+						$filter['name'] = $domain->getDomain();
+					} else {
+						$filter['name'] .= '.' . $domain->getDomain();
+					}
+				}
+				if (isset($params['rrtype'])) {
+					$filter['type'] = $params['rrtype'];
+				}
+
+				return $this->getRecords($domain, $filter);
+			} else if (isset($params['recordid'])) {
 				$record = $this->getRecordFromParam($domain, $params);
 
 				return $this->getRecordID($domain, $record);
@@ -211,7 +226,22 @@
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
-			if (isset($params['recordid'])) {
+			if (isset($params['rrname']) || isset($params['rrtype'])) {
+				$filter = [];
+				if (isset($params['rrname'])) {
+					$filter['name'] = $params['rrname'];
+					if ($filter['name'] == '@' || $filter['name'] == '') {
+						$filter['name'] = $domain->getDomain();
+					} else {
+						$filter['name'] .= '.' . $domain->getDomain();
+					}
+				}
+				if (isset($params['rrtype'])) {
+					$filter['type'] = $params['rrtype'];
+				}
+
+				return $this->deleteRecords($domain, $filter);
+			} else if (isset($params['recordid'])) {
 				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
 				if ($record === FALSE) {
 					$this->getContextKey('response')->sendError('Unknown record id for domain ' . $params['domain'] . ' : ' . $params['recordid']);
@@ -248,19 +278,28 @@
 		 * Get all records for this domain.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $filter Optional array of filters.
 		 * @return TRUE if we handled this method.
 		 */
-		protected function getRecords($domain) {
+		protected function getRecords($domain, $filter = null) {
+			if (!is_array($filter)) { $filter = []; }
 			$records = $domain->getRecords();
 			$list = [];
 			foreach ($records as $record) {
+				if (isset($filter['name']) && strtolower($record->getName()) != strtolower($filter['name'])) { continue; }
+				if (isset($filter['type']) && strtoupper($record->getType()) != strtoupper($filter['type'])) { continue; }
+
 				$r = $record->toArray();
 				unset($r['domain_id']);
 				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
 				$list[] = $r;
 			}
 			$this->getContextKey('response')->set('records', $list);
-			$this->getContextKey('response')->set('soa', $domain->getSOARecord()->parseSOA());
+
+			// Only include SOA in unfiltered.
+			if (count($filter) == 0) {
+				$this->getContextKey('response')->set('soa', $domain->getSOARecord()->parseSOA());
+			}
 
 			return true;
 		}
@@ -916,12 +955,18 @@
 		 * Delete all records for a domain.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $filter Optional array of filters.
 		 * @return TRUE if we handled this method.
 		 */
-		protected function deleteRecords($domain) {
+		protected function deleteRecords($domain, $filter = null) {
+			if (!is_array($filter)) { $filter = []; }
+
 			$records = $domain->getRecords();
 			$count = 0;
 			foreach ($records as $record) {
+				if (isset($filter['name']) && strtolower($record->getName()) != strtolower($filter['name'])) { continue; }
+				if (isset($filter['type']) && strtoupper($record->getType()) != strtoupper($filter['type'])) { continue; }
+
 				if ($record->delete()) {
 					$count++;
 					HookManager::get()->handle('delete_record', [$domain, $record]);
@@ -964,6 +1009,11 @@
 
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', $domainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $domainsHandler);
+	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[0-9]+)', $domainsHandler);
+
+	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)', $domainsHandler);
+	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)/(?P<rrtype>[^/]+)', $domainsHandler);
+
 
 
 	$adminDomainsHandler = new AdminDomains();
@@ -977,3 +1027,6 @@
 
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)', $adminDomainsHandler);
 	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $adminDomainsHandler);
+
+	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)', $adminDomainsHandler);
+	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]+)/(?P<rrtype>[^/]+)', $adminDomainsHandler);
