@@ -9,5 +9,6 @@ RUN \
   chmod 0440 /etc/sudoers.d/99_rndc && \
   rm -Rfv /var/www/html && \
   ln -s /dnsapi/web /var/www/html && \
-  mkdir /bind && chown www-data: /bind && \
+  mkdir /bind && \
+  chown -Rfv www-data: /dnsapi/ /var/www/ /bind && \
   su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer update"
