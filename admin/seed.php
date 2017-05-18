@@ -12,6 +12,7 @@
 	$pdo->exec('DROP TABLE apikeys;');
 	$pdo->exec('DROP TABLE hooks;');
 	$pdo->exec('DROP TABLE permissions;');
+	$pdo->exec('DROP TABLE twofactorkeys;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
@@ -49,6 +50,18 @@
 		HookManager::get()->handle('add_domain', [$domain]);
 	}
 
+	$user->setRealName('2FA User')->save();
+
+	$ga = new PHPGangsta_GoogleAuthenticator();
+
+	$secretKey1 = new TwoFactorKey(DB::get());
+	$secretKey1->setKey('TESTTESTTESTTEST')->setDescription('Test Key [TESTTESTTESTTEST]')->setUserID($user->getID());
+	$secretKey1->save();
+
+	$secretKey2 = new TwoFactorKey(DB::get());
+	$s = $ga->createSecret();
+	$secretKey2->setKey($s)->setDescription('Test Device [' . $s . ']')->setUserID($user->getID());
+	$secretKey2->save();
 
 	for ($i = 1; $i <= 5; $i++) {
 		$domain = new Domain(DB::get());

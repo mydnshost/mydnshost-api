@@ -45,11 +45,29 @@
 			return $key;
 		}
 
+		protected function get2FAKeyFromParam($params) {
+			$key = FALSE;
+			if (isset($params['secretid'])) {
+				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
+				$key = TwoFactorKey::loadFromUserKey($this->getContextKey('db'), $userid, $params['secretid']);
+				if ($key === FALSE) {
+					$this->getContextKey('response')->sendError('Unknown 2fakey: ' . $params['secretid']);
+				}
+			}
+
+			return $key;
+		}
+
 		public function get($params) {
 			$this->checkPermissions(['user_read']);
 			$user = $this->getUserFromParam($params);
 
-			if (isset($params['keyid'])) {
+			if (isset($params['secretid'])) {
+				$key = $this->get2FAKeyFromParam($params);
+				return $this->get2FAKey($user, $key);
+			} else if (isset($params['secret'])) {
+				return $this->get2FAKeys($user);
+			} else if (isset($params['keyid'])) {
 				$key = $this->getKeyFromParam($params);
 				return $this->getAPIKey($user, $key);
 			} else if (isset($params['keys'])) {
@@ -67,7 +85,12 @@
 			$this->checkPermissions(['user_write']);
 			$user = $this->getUserFromParam($params);
 
-			if (isset($params['keyid'])) {
+			if (isset($params['secretid'])) {
+				$key = $this->get2FAKeyFromParam($params);
+				return $this->update2FAKey($user, $key);
+			} else if (isset($params['secret'])) {
+				return $this->create2FAKey($user);
+			} else if (isset($params['keyid'])) {
 				$key = $this->getKeyFromParam($params);
 				return $this->updateAPIKey($user, $key);
 			} else if (isset($params['keys'])) {
@@ -85,7 +108,10 @@
 			$this->checkPermissions(['user_write']);
 			$user = $this->getUserFromParam($params);
 
-			if (isset($params['keyid'])) {
+			if (isset($params['secretid'])) {
+				$key = $this->get2FAKeyFromParam($params);
+				return $this->delete2FAKey($user, $key);
+			} else if (isset($params['keyid'])) {
 				$key = $this->getKeyFromParam($params);
 				return $this->deleteAPIKey($user, $key);
 			} else if (isset($params['userid'])) {
@@ -311,12 +337,111 @@
 			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
 			return TRUE;
 		}
+
+		protected function get2FAKeys($user) {
+			$keys = TwoFactorKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->find('id');
+
+			$result = [];
+			foreach ($keys as $k => $v) {
+				$result[$k] = $v->toArray();
+				unset($result[$k]['id']);
+				unset($result[$k]['user_id']);
+				if ($result[$k]['lastused'] > 0) {
+					unset($result[$k]['key']);
+				}
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
+		protected function get2FAKey($user, $key) {
+			$k = $key->toArray();
+			unset($k['user_id']);
+			if ($k['lastused'] > 0) {
+				unset($k['key']);
+			}
+
+			$this->getContextKey('response')->data($k);
+
+			return TRUE;
+		}
+
+		protected function create2FAKey($user) {
+			$key = (new TwoFactorKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID());
+			return $this->update2FAKey($user, $key, true);
+		}
+
+		protected function update2FAKey($user, $key, $isCreate = false) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if ($key !== FALSE) {
+				$this->doUpdate2FAKey($key, $data['data']);
+
+				try {
+					$key->validate();
+				} catch (ValidationFailed $ex) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
+					}
+				}
+
+				$k = $key->toArray();
+				unset($k['user_id']);
+				if (!$isCreate) {
+					unset($k['key']);
+				}
+				$k['updated'] = $key->save();
+				$k['id'] = $key->getID();
+				if (!$k['updated']) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
+					}
+				} else if ($isCreate) {
+					$this->getContextKey('response')->data($k);
+				} else {
+					$this->getContextKey('response')->data($k);
+				}
+
+				return TRUE;
+
+			}
+		}
+
+		private function doUpdate2FAKey($key, $data) {
+			$keys = array('description' => 'setDescription',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$key->$f($data[$k]);
+				}
+			}
+
+			return $key;
+		}
+
+		protected function delete2FAKey($user, $key) {
+			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			return TRUE;
+		}
 	}
 
 	$router->addRoute('GET /users', new UserAdmin());
 	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)', new UserAdmin());
 
 	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)', new UserAdmin());
-	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[^/]+)', new UserAdmin());
+	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[0-9]+)', new UserAdmin());
+
+	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)', new UserAdmin());
+	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)', new UserAdmin());
 
 	$router->addRoute('POST /users/(?P<create>create)', new UserAdmin());

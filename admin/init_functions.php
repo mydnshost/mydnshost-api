@@ -230,3 +230,21 @@ MYSQLQUERY
   ALTER TABLE `users` DROP COLUMN `admin`;
 MYSQLQUERY
 );
+
+	// ------------------------------------------------------------------------
+	// 2FA Keys
+	// ------------------------------------------------------------------------
+	$dataChanges[9] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `twofactorkeys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `key` VARCHAR(250) NOT NULL,
+  `description` VARCHAR(250) NOT NULL,
+  `lastused` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `twofactorkeys_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `twofactorkeys_apikey_user` (`key` ASC, `user_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+

@@ -117,6 +117,8 @@
 		return $access;
 	}
 
+	$errorExtraData = [];
+
 	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
 		session_id($_SERVER['HTTP_X_SESSION_ID']);
 		session_start(['use_cookies' => '0', 'cache_limiter' => '']);
@@ -150,8 +152,46 @@
 		$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
-			$context['user'] = $user;
-			$context['access'] = getAccessPermissions($user);
+			$keys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->find('key');
+
+			$valid = true;
+			if (count($keys) > 0) {
+				$valid = false;
+				$testKey = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
+
+				$ga = new PHPGangsta_GoogleAuthenticator();
+
+				if ($testKey !== NULL) {
+					$currentTime = time();
+					$currentTimeSlice = floor($currentTime / 30);
+					$discrepancy = 1;
+
+					foreach ($keys as $k => $v) {
+						$minTimeSlice = floor($v->getLastUsed() / 30);
+
+						for ($i = -$discrepancy; $i <= $discrepancy; ++$i) {
+							$thisTimeSlice = $currentTimeSlice + $i;
+							if ($thisTimeSlice <= $minTimeSlice) { continue; }
+
+							if ($ga->verifyCode($k, $testKey, 0, $thisTimeSlice)) {
+								$valid = true;
+								$v->setLastUsed($currentTime)->save();
+								break 2;
+							}
+						}
+					}
+					$errorExtraData = '2FA key invalid.';
+				} else {
+					$errorExtraData = '2FA key required.';
+				}
+			}
+
+			if ($valid) {
+				$context['user'] = $user;
+				$context['access'] = getAccessPermissions($user);
+			} else {
+				$user = FALSE;
+			}
 		} else {
 			// Failed password check, reset user.
 			$user = FALSE;
@@ -217,10 +257,10 @@
 		} catch (APIMethod_NeedsAuthentication $ex) {
 			header('WWW-Authenticate: Basic realm="API"');
 			$resp->setErrorCode('401', 'Unauthorized');
-			$resp->sendError('Authentication required.');
+			$resp->sendError('Authentication required.', $errorExtraData);
 		} catch (APIMethod_AccessDenied $ex) {
 			$resp->setErrorCode('403', 'Forbidden');
-			$resp->sendError('Access denied.');
+			$resp->sendError('Access denied.', $errorExtraData);
 		} catch (APIMethod_PermissionDenied $ex) {
 			$resp->setErrorCode('403', 'Forbidden');
 			$resp->sendError('Permission Denied', 'You do not have the required permission: ' . $ex->getMessage());

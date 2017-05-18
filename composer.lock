@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "dde4f98898436b25d484795651a2dd38",
-    "content-hash": "634ed5386f32ba8921f9d3f99627b87a",
+    "hash": "75307eac779449ef4af71adac11a65d3",
+    "content-hash": "04f8ef10458f9286c7d0a1dc21072386",
     "packages": [
         {
             "name": "jeremykendall/php-domain-parser",
@@ -67,12 +67,57 @@
                 "url parsing"
             ],
             "time": "2015-02-16 12:45:33"
+        },
+        {
+            "name": "phpgangsta/googleauthenticator",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPGangsta/GoogleAuthenticator.git",
+                "reference": "3baa997f399d4afd5d6a81d42244ec9cc3eeb080"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPGangsta/GoogleAuthenticator/zipball/3baa997f399d4afd5d6a81d42244ec9cc3eeb080",
+                "reference": "3baa997f399d4afd5d6a81d42244ec9cc3eeb080",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "PHPGangsta/GoogleAuthenticator.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-4-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Michael Kliewe",
+                    "email": "info@phpgangsta.de",
+                    "homepage": "http://www.phpgangsta.de/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Google Authenticator 2-factor authentication",
+            "keywords": [
+                "googleauthenticator",
+                "rfc6238",
+                "totp"
+            ],
+            "time": "2016-10-08 16:35:34"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "phpgangsta/googleauthenticator": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

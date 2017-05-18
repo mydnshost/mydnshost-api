@@ -12,7 +12,8 @@
     ],
     "require": {
         "php": ">=7.0",
-        "jeremykendall/php-domain-parser": "~2.0"
+        "jeremykendall/php-domain-parser": "~2.0",
+        "phpgangsta/googleauthenticator": "dev-master"
     },
     "autoload": {
         "classmap": [
