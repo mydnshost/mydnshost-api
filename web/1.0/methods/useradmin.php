@@ -439,7 +439,7 @@
 	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)', new UserAdmin());
 
 	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)', new UserAdmin());
-	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[0-9]+)', new UserAdmin());
+	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[^/]+)', new UserAdmin());
 
 	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)', new UserAdmin());
 	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)', new UserAdmin());
