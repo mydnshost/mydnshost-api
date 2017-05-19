@@ -28,7 +28,7 @@ class Record extends DBObject {
 	}
 
 	public function setType($value) {
-		return $this->setData('type', $value);
+		return $this->setData('type', strtoupper($value));
 	}
 
 	public function setContent($value) {
