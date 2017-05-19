@@ -162,11 +162,6 @@
 				$filter = [];
 				if (isset($params['rrname'])) {
 					$filter['name'] = $params['rrname'];
-					if ($filter['name'] == '@' || $filter['name'] == '') {
-						$filter['name'] = $domain->getDomain();
-					} else {
-						$filter['name'] .= '.' . $domain->getDomain();
-					}
 				}
 				if (isset($params['rrtype'])) {
 					$filter['type'] = $params['rrtype'];
@@ -230,11 +225,6 @@
 				$filter = [];
 				if (isset($params['rrname'])) {
 					$filter['name'] = $params['rrname'];
-					if ($filter['name'] == '@' || $filter['name'] == '') {
-						$filter['name'] = $domain->getDomain();
-					} else {
-						$filter['name'] .= '.' . $domain->getDomain();
-					}
 				}
 				if (isset($params['rrtype'])) {
 					$filter['type'] = $params['rrtype'];
@@ -283,12 +273,12 @@
 		 */
 		protected function getRecords($domain, $filter = null) {
 			if (!is_array($filter)) { $filter = []; }
-			$records = $domain->getRecords();
+			$nameFilter = array_key_exists('name', $filter) ? $filter['name'] : NULL;
+			$typeFilter = array_key_exists('type', $filter) ? $filter['type'] : NULL;
+
+			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$list = [];
 			foreach ($records as $record) {
-				if (isset($filter['name']) && strtolower($record->getName()) != strtolower($filter['name'])) { continue; }
-				if (isset($filter['type']) && strtoupper($record->getType()) != strtoupper($filter['type'])) { continue; }
-
 				$r = $record->toArray();
 				unset($r['domain_id']);
 				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
@@ -961,13 +951,12 @@
 		 */
 		protected function deleteRecords($domain, $filter = null) {
 			if (!is_array($filter)) { $filter = []; }
+			$nameFilter = array_key_exists('name', $filter) ? $filter['name'] : NULL;
+			$typeFilter = array_key_exists('type', $filter) ? $filter['type'] : NULL;
 
-			$records = $domain->getRecords();
+			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$count = 0;
 			foreach ($records as $record) {
-				if (isset($filter['name']) && strtolower($record->getName()) != strtolower($filter['name'])) { continue; }
-				if (isset($filter['type']) && strtoupper($record->getType()) != strtoupper($filter['type'])) { continue; }
-
 				if ($record->delete()) {
 					$count++;
 					HookManager::get()->handle('delete_record', [$domain, $record]);

@@ -118,10 +118,34 @@ class Domain extends DBObject {
 	/**
 	 * Get all the records for this domain.
 	 *
-	 * @return List of record objects for this domain.
+	 * @param $name (Optional) Limit results to this name.
+	 * @param $type (Optional) Limit results to this rrtype.
+	 * @return List of record objects for this domain
 	 */
-	public function getRecords() {
-		$result = Record::find($this->getDB(), ['domain_id' => $this->getID(), 'type' => 'SOA'], ['type' => '!=']);
+	public function getRecords($name = NULL, $rrtype = NULL) {
+		$searchParams = ['domain_id' => $this->getID(), 'type' => 'SOA'];
+		$searchFilters = ['type' => '!='];
+
+		if ($name != NULL) {
+			if ($name == '@' || $name == '') {
+				$name = $this->getDomain();
+			} else {
+				$name .= '.' . $this->getDomain();
+			}
+
+			$searchParams['name'] = $name;
+		}
+
+		if ($rrtype != NULL) {
+			if ($rrtype == 'SOA') {
+				return [];
+			} else {
+				$searchParams['type'] = $rrtype;
+				unset($searchFilters['type']);
+			}
+		}
+
+		$result = Record::find($this->getDB(), $searchParams, $searchFilters);
 		return ($result) ? $result : [];
 	}
 
