@@ -7,7 +7,13 @@ This document describes the current API (Version 1.0) for MyDNSHost.
 ## User Authentication
 Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
 
-Authentication via Basic Auth gives you full access to the account (Same as an API Key with all permissions set to true)
+Authentication via Basic Auth gives you full access to the account (Same as an API Key with all permissions set to true).
+
+If a 2FA Key is required for the account, this must be passed as a HTTP Header:
+
+```http
+X-2FA-Key: 123456
+```
 
 ## API Key Authentication
 If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.
@@ -406,6 +412,177 @@ This takes the same parameters as create, but will update an existing key.
                 "response":[
                    "deleted"
                 ]
+            }
+
+## 2FA Keys [/users/{userid}/2fa]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known 2FA Keys [GET]
+Returns the list of known 2FA Key-IDs and information about them.
+
+Keys that have not yet been verified will also include the secret to allow a QR Code to be displayed.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e43446c4b7",
+                "method": "users/self/2fa",
+                "response":{
+                    "1":{
+                        "description": "Test Key",
+                        "created": "1495151997",
+                        "lastused": "1495153158",
+                        "active": "true"
+                    },
+                    "2":{
+                        "key": "MCOERRKFPJ7Z2Q2U",
+                        "description": "Second Key",
+                        "created": "1495151997",
+                        "lastused": "0",
+                        "active": "false"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new 2FA Key. The secret for the key will be randomly generated and included in the returned output.
+
++ Request Create a key (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Third Key",
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "591e43b1d0df7",
+                "method": "users/self/2fa",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Key",
+                    "created": 1495155633,
+                    "lastused": 0,
+                    "active": false,
+                    "updated": true
+                }
+            }
+
+
+## Manipulate specific 2FA Key [/users/{userid}/2fa/{keyid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `6` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    The "key" parameter will only be returned if the key is not yet active.
+    + Body
+
+            {
+                "respid": "591e43f5ce743",
+                "method": "users/self/2fa/6",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Key",
+                    "created": "1495155633",
+                    "lastused": "0",
+                    "active": "false"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Third Device"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    The "key" parameter will only be returned if the key is not yet active.
+    + Body
+
+            {
+                "respid": "591e444c2868c",
+                "method": "users/self/2fa/6",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Device",
+                    "created": "1495155633",
+                    "lastused": "0",
+                    "active": "false",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e456fdb62f",
+                "method": "users/self/2fa/6",
+                "response":[
+                    "deleted"
+                ]
+            }
+
+## Verify 2FA Key [/users/{userid}/2fa/{keyid}/verify]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `6` (required) - The key ID.
+
+
+### Verify 2FA Key [POST]
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "123456"
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e453d08ac9",
+                "method": "users/self/2fa/6/verify",
+                "response":{
+                   "success": "Valid code provided."
+                }
+            }
+
+
++ Response 40 01(application/json)
+    + Body
+
+            {
+                "respid": "591e455409613",
+                "method": "users/self/2fa/6/verify",
+                "error": "Invalid code provided for verification."
             }
 
 

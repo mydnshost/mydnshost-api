@@ -248,3 +248,12 @@ CREATE TABLE `twofactorkeys` (
 MYSQLQUERY
 );
 
+	// ------------------------------------------------------------------------
+	// Improved 2FA Keys
+	// ------------------------------------------------------------------------
+	$dataChanges[10] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys`
+  ADD COLUMN `created` int(11) NOT NULL AFTER `description`,
+  ADD COLUMN `active` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `lastused`;
+MYSQLQUERY
+);

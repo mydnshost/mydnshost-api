@@ -85,7 +85,10 @@
 			$this->checkPermissions(['user_write']);
 			$user = $this->getUserFromParam($params);
 
-			if (isset($params['secretid'])) {
+			if (isset($params['verify'])) {
+				$key = $this->get2FAKeyFromParam($params);
+				return $this->verify2FAKey($user, $key);
+			} else if (isset($params['secretid'])) {
 				$key = $this->get2FAKeyFromParam($params);
 				return $this->update2FAKey($user, $key);
 			} else if (isset($params['secret'])) {
@@ -346,7 +349,7 @@
 				$result[$k] = $v->toArray();
 				unset($result[$k]['id']);
 				unset($result[$k]['user_id']);
-				if ($result[$k]['lastused'] > 0) {
+				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
 			}
@@ -359,7 +362,7 @@
 		protected function get2FAKey($user, $key) {
 			$k = $key->toArray();
 			unset($k['user_id']);
-			if ($k['lastused'] > 0) {
+			if ($key->isActive()) {
 				unset($k['key']);
 			}
 
@@ -369,7 +372,7 @@
 		}
 
 		protected function create2FAKey($user) {
-			$key = (new TwoFactorKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID());
+			$key = (new TwoFactorKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID())->setCreated(time());
 			return $this->update2FAKey($user, $key, true);
 		}
 
@@ -394,7 +397,7 @@
 
 				$k = $key->toArray();
 				unset($k['user_id']);
-				if (!$isCreate) {
+				if ($key->isActive()) {
 					unset($k['key']);
 				}
 				$k['updated'] = $key->save();
@@ -429,6 +432,23 @@
 			return $key;
 		}
 
+		protected function verify2FAKey($user, $key) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data']) || !isset($data['data']['code'])) {
+				$this->getContextKey('response')->sendError('No code provided for verification.');
+			}
+
+			if (!$key->verify($data['data']['code'], 1)) {
+				$this->getContextKey('response')->sendError('Invalid code provided for verification.');
+			}
+
+			// Activate the key once verified.
+			$key->setActive(true)->setLastUsed(time())->save();
+			$this->getContextKey('response')->data(['success' => 'Valid code provided.']);
+
+			return TRUE;
+		}
+
 		protected function delete2FAKey($user, $key) {
 			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
 			return TRUE;
@@ -443,5 +463,6 @@
 
 	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)', new UserAdmin());
 	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)', new UserAdmin());
+	$router->addRoute('(POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)/(?P<verify>verify)', new UserAdmin());
 
 	$router->addRoute('POST /users/(?P<create>create)', new UserAdmin());

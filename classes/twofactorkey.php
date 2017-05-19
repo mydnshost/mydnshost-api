@@ -5,7 +5,9 @@ class TwoFactorKey extends DBObject {
 	                             'user_id' => NULL,
 	                             'key' => NULL,
 	                             'description' => NULL,
+	                             'created' => 0,
 	                             'lastused' => 0,
+	                             'active' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'twofactorkeys';
@@ -34,6 +36,14 @@ class TwoFactorKey extends DBObject {
 		return $this->setData('lastused', $value);
 	}
 
+	public function setCreated($value) {
+		return $this->setData('created', $value);
+	}
+
+	public function setActive($value) {
+		return $this->setData('active', parseBool($value) ? 'true' : 'false');
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -52,6 +62,14 @@ class TwoFactorKey extends DBObject {
 
 	public function getLastUsed() {
 		return $this->getData('lastused');
+	}
+
+	public function getCreated() {
+		return $this->getData('created');
+	}
+
+	public function isActive() {
+		return parseBool($this->getData('active'));
 	}
 
 	/**
@@ -80,5 +98,23 @@ class TwoFactorKey extends DBObject {
 		}
 
 		return TRUE;
+	}
+
+	public function verify($code, $discrepancy = 1) {
+		$ga = new PHPGangsta_GoogleAuthenticator();
+
+		$minTimeSlice = floor($this->getLastUsed() / 30);
+		$currentTimeSlice = floor(time() / 30);
+
+		for ($i = -$discrepancy; $i <= $discrepancy; ++$i) {
+			$thisTimeSlice = $currentTimeSlice + $i;
+			if ($thisTimeSlice <= $minTimeSlice) { continue; }
+
+			if ($ga->verifyCode($this->getKey(), $code, 0, $thisTimeSlice)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

@@ -152,32 +152,21 @@
 		$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
-			$keys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->find('key');
+			$keys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->where('active', 'true')->find('key');
 
 			$valid = true;
 			if (count($keys) > 0) {
 				$valid = false;
-				$testKey = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
+				$testCode = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
 
 				$ga = new PHPGangsta_GoogleAuthenticator();
 
-				if ($testKey !== NULL) {
-					$currentTime = time();
-					$currentTimeSlice = floor($currentTime / 30);
-					$discrepancy = 1;
-
-					foreach ($keys as $k => $v) {
-						$minTimeSlice = floor($v->getLastUsed() / 30);
-
-						for ($i = -$discrepancy; $i <= $discrepancy; ++$i) {
-							$thisTimeSlice = $currentTimeSlice + $i;
-							if ($thisTimeSlice <= $minTimeSlice) { continue; }
-
-							if ($ga->verifyCode($k, $testKey, 0, $thisTimeSlice)) {
-								$valid = true;
-								$v->setLastUsed($currentTime)->save();
-								break 2;
-							}
+				if ($testCode !== NULL) {
+					foreach ($keys as $key) {
+						if ($key->verify($testCode, 1)) {
+							$valid = true;
+							$key->setLastUsed(time())->save();
+							break;
 						}
 					}
 					$errorExtraData = '2FA key invalid.';

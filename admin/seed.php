@@ -55,12 +55,12 @@
 	$ga = new PHPGangsta_GoogleAuthenticator();
 
 	$secretKey1 = new TwoFactorKey(DB::get());
-	$secretKey1->setKey('TESTTESTTESTTEST')->setDescription('Test Key [TESTTESTTESTTEST]')->setUserID($user->getID());
+	$secretKey1->setKey('TESTTESTTESTTEST')->setDescription('Test Key [TESTTESTTESTTEST]')->setUserID($user->getID())->setCreated(time())->setActive(true);
 	$secretKey1->save();
 
 	$secretKey2 = new TwoFactorKey(DB::get());
 	$s = $ga->createSecret();
-	$secretKey2->setKey($s)->setDescription('Test Device [' . $s . ']')->setUserID($user->getID());
+	$secretKey2->setKey($s)->setDescription('Test Device [' . $s . ']')->setUserID($user->getID())->setCreated(time());
 	$secretKey2->save();
 
 	for ($i = 1; $i <= 5; $i++) {
