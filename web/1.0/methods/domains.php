@@ -867,6 +867,7 @@
 				unset($r['domain_id']);
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
+				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
 				$result[] = $r;
 				if ($r['updated']) {
 					HookManager::get()->handle('update_record', [$domain, $record]);
