@@ -256,10 +256,11 @@
 
 			// Add Ordering
 			if (count($this->orderBy) > 0) {
-				$query .= ' ORDER BY ';
+				$orders = [];
 				foreach ($this->orderBy as $order) {
-					$query .= sprintf('`%s` %s', $order[0], $order[1]);
+					$orders[] = sprintf('`%s` %s', $order[0], $order[1]);
 				}
+				$query .= ' ORDER BY ' . implode(', ', $orders);
 			}
 
 			// Add LIMIT
