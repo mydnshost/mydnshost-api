@@ -907,7 +907,7 @@
 			             );
 
 			if (array_key_exists('name', $data)) {
-				if (!empty($data['name'])) { $data['name'] .= '.'; }
+				if (!empty($data['name']) && !endsWith($data['name'], '.')) { $data['name'] .= '.'; }
 				$data['name'] .= $domain->getDomain();
 			}
 
