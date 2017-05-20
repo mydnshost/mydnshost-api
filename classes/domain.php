@@ -4,6 +4,7 @@ class Domain extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'domain' => NULL,
 	                             'disabled' => false,
+	                             'defaultttl' => 86400,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'domains';
@@ -23,6 +24,10 @@ class Domain extends DBObject {
 
 	public function setDisabled($value) {
 		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setDefaultTTL($value) {
+		return $this->setData('defaultttl', $value);
 	}
 
 	/**
@@ -113,6 +118,10 @@ class Domain extends DBObject {
 
 	public function isDisabled() {
 		return parseBool($this->getData('disabled'));
+	}
+
+	public function getDefaultTTL() {
+		return $this->getData('defaultttl');
 	}
 
 	/**

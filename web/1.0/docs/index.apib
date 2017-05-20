@@ -630,6 +630,7 @@ If the user has the `domains_create` permission, they can use this to create a n
                 "response":{
                     "id": "9",
                     "domain": "example.net",
+                    "defaultttl": 86400,
                     "disabled": false,
                     "SOA":{
                         "primaryNS": "ns1.example.net.",
@@ -670,6 +671,7 @@ If the user has the `domains_create` permission, they can use this to create a n
                 "response":{
                     "id": "3",
                     "domain": "example.org",
+                    "defaultttl": 86400,
                     "disabled": "false",
                     "SOA":{
                         "primaryNS": "ns1.mydnshost.co.uk.",
@@ -723,6 +725,7 @@ Changes made with this end point do not automatically increment the domain seria
                 "response":{
                     "id": "3",
                     "domain": "example.org",
+                    "defaultttl": 86400,
                     "disabled": "true",
                     "SOA":{
                         "primaryNS": "ns1.mydnshost.co.uk.",
@@ -763,6 +766,7 @@ Changes made with this end point do not automatically increment the domain seria
                 "response":{
                     "id": "7",
                     "domain": "example2.org",
+                    "defaultttl": 86400,
                     "disabled": "false",
                     "access":{
                        "admin@example.org": "write",
@@ -805,6 +809,7 @@ There are 5 levels of access (each level has all the access of those below it):
                 "response":{
                     "id": "7",
                     "domain": "example2.org",
+                    "defaultttl": 86400,
                     "disabled": "false",
                     "access":{
                         "admin@example.org": "write",

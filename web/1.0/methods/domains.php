@@ -738,6 +738,7 @@
 		 */
 		protected function doUpdateDomain($domain, $data, $allowSetName = false) {
 			$keys = array('disabled' => 'setDisabled',
+			              'defaultttl' => 'setDefaultTTL',
 			             );
 
 			if ($allowSetName) {
@@ -845,6 +846,8 @@
 				}
 			}
 
+			// TODO: Validate CNAMEs are not duplicated.
+
 			if (count($errors) > 0) {
 				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
 			}
@@ -906,6 +909,12 @@
 			if (array_key_exists('name', $data)) {
 				if (!empty($data['name'])) { $data['name'] .= '.'; }
 				$data['name'] .= $domain->getDomain();
+			}
+
+			if (array_key_exists('ttl', $data)) {
+				if (empty($data['ttl'])) {
+					$data['ttl'] = $domain->getDefaultTTL();
+				}
 			}
 
 			foreach ($keys as $k => $f) {

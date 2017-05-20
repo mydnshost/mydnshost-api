@@ -257,3 +257,11 @@ ALTER TABLE `twofactorkeys`
   ADD COLUMN `active` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `lastused`;
 MYSQLQUERY
 );
+
+	// ------------------------------------------------------------------------
+	// Default Record TTL
+	// ------------------------------------------------------------------------
+	$dataChanges[11] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `domains` ADD COLUMN `defaultttl` int(11) NOT NULL DEFAULT '86400' AFTER `domain`;
+MYSQLQUERY
+);
