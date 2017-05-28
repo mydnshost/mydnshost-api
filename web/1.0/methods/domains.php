@@ -1,89 +1,20 @@
 <?php
 
-	class AdminDomains extends Domains {
-		public function check($requestMethod, $params) {
-			parent::check($requestMethod, $params);
+	class Domains extends MultiMethodAPIMethod {
+		private $isAdminMethod = false;
 
-			if (!$this->checkPermissions(['manage_domains'], true)) {
-				throw new APIMethod_AccessDenied();
-			}
+		public function call($requestMethod, $params) {
+			$this->isAdminMethod = isset($params['admin']) && !empty($params['admin']);
+			return parent::call($requestMethod, $params);
 		}
 
-		/**
-		 * Admin getDomainFromParam looks for the domain without checking
-		 * that the current user can see it.
-		 */
-		protected function getDomainFromParam($params) {
-			if (isset($params['domain'])) {
-				if (!Domain::validDomainName($params['domain'])) {
-					$this->getContextKey('response')->sendError('Invalid domain: ' . $params['domain']);
-				}
-
-				$domain = Domain::loadFromDomain($this->getContextKey('db'), $params['domain']);
-				if ($domain === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
-				}
-			} else {
-				$domain = FALSE;
-			}
-
-			return $domain;
-		}
-
-		/**
-		 * Admin end point allows setting domain owner.
-		 */
-		protected function canSetOwner() {
-			return $this->checkPermissions(['manage_domains'], true);
-		}
-
-		/**
-		 * Admin's always have access.
-		 */
-		protected function checkAccess($domain, $required) {
-			return true;
-		}
-
-		/**
-		 * Admin's can change anything.
-		 */
-		protected function validAccessChange($domain, $email, $access, $self) {
-			return true;
-		}
-
-		/**
-		 * Get list of all domains.
-		 *
-		 * @return TRUE if we handled this method.
-		 */
-		protected function getDomainList() {
-			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled']);
-			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
-			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
-			$s->select('users', 'email', 'user');
-			$s->select('domain_access', 'level', 'level');
-			$s->order('domain');
-			$rows = $s->getRows();
-
-			$domains = [];
-			foreach ($rows as $row) {
-				if (!array_key_exists($row['domain'], $domains)) {
-					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => []];
-				}
-
-				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
-			}
-
-			$this->getContextKey('response')->data($domains);
-
-			return true;
-		}
-	}
-
-	class Domains extends APIMethod {
 		public function check($requestMethod, $params) {
 			if ($this->getContextKey('user') == NULL) {
 				throw new APIMethod_NeedsAuthentication();
+			}
+
+			if ($this->isAdminMethod && !$this->checkPermissions(['manage_domains'], true)) {
+				throw new APIMethod_AccessDenied();
 			}
 		}
 
@@ -97,17 +28,18 @@
 		 * @return Domain object or FALSE if no domain provided or found.
 		 */
 		protected function getDomainFromParam($params) {
-			if (isset($params['domain'])) {
-				if (!Domain::validDomainName($params['domain'])) {
-					$this->getContextKey('response')->sendError('Invalid domain: ' . $params['domain']);
-				}
+			if (!Domain::validDomainName($params['domain'])) {
+				$this->getContextKey('response')->sendError('Invalid domain: ' . $params['domain']);
+			}
 
-				$domain = $this->getContextKey('user')->getDomainByName($params['domain']);
-				if ($domain === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
-				}
+			if ($this->isAdminMethod) {
+				$domain = Domain::loadFromDomain($this->getContextKey('db'), $params['domain']);
 			} else {
-				$domain = FALSE;
+				$domain = $this->getContextKey('user')->getDomainByName($params['domain']);
+			}
+
+			if ($domain === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown domain: ' . $params['domain']);
 			}
 
 			return $domain;
@@ -124,13 +56,9 @@
 		 * @return Domain object or FALSE if no domain provided or found.
 		 */
 		protected function getRecordFromParam($domain, $params) {
-			if (isset($params['recordid'])) {
-				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
-				if ($record === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown record id: ' . $params['recordid']);
-				}
-			} else {
-				$record = FALSE;
+			$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
+			if ($record === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown record id: ' . $params['recordid']);
 			}
 
 			return $record;
@@ -146,106 +74,15 @@
 		 * @return True
 		 */
 		protected function checkAccess($domain, $required) {
+			if ($this->isAdminMethod) {
+				return true;
+			}
+
 			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')->getID()), $required)) {
 				$this->getContextKey('response')->sendError('You do not have the required access to the domain: ' . $domain->getDomain());
 			}
 
 			return true;
-		}
-
-		public function get($params) {
-			$this->checkPermissions(['domains_read']);
-
-			$domain = $this->getDomainFromParam($params);
-
-			if (isset($params['rrname']) || isset($params['rrtype'])) {
-				$filter = [];
-				if (isset($params['rrname'])) {
-					$filter['name'] = $params['rrname'];
-				}
-				if (isset($params['rrtype'])) {
-					$filter['type'] = $params['rrtype'];
-				}
-
-				return $this->getRecords($domain, $filter);
-			} else if (isset($params['recordid'])) {
-				$record = $this->getRecordFromParam($domain, $params);
-
-				return $this->getRecordID($domain, $record);
-			} else if (isset($params['records'])) {
-				return $this->getRecords($domain);
-			} else if (isset($params['access'])) {
-				return $this->getDomainAccess($domain);
-			} else if (isset($params['sync'])) {
-				return $this->getDomainSync($domain);
-			} else if (isset($params['export'])) {
-				return $this->getDomainExport($domain);
-			} else if (isset($params['domain'])) {
-				return $this->getDomainInfo($domain);
-			} else {
-				return $this->getDomainList();
-			}
-
-			return FALSE;
-		}
-
-		public function post($params) {
-			$this->checkPermissions(['domains_write']);
-			$domain = $this->getDomainFromParam($params);
-
-			$this->checkAccess($domain, ['write', 'admin', 'owner']);
-
-			if (isset($params['recordid'])) {
-				$record = $this->getRecordFromParam($domain, $params);
-
-				return $this->updateRecordID($domain, $record);
-			} else if (isset($params['records'])) {
-				return $this->updateRecords($domain);
-			} else if (isset($params['access'])) {
-				return $this->updateDomainAccess($domain);
-			} else if (isset($params['import'])) {
-				return $this->doDomainImport($domain);
-			} else if ($domain !== FALSE) {
-				return $this->updateDomain($domain);
-			} else if ($domain === FALSE) {
-				$this->checkPermissions(['domains_create']);
-				return $this->createDomain();
-			}
-
-			return FALSE;
-		}
-
-		public function delete($params) {
-			$this->checkPermissions(['domains_write']);
-			$domain = $this->getDomainFromParam($params);
-
-			$this->checkAccess($domain, ['write', 'admin', 'owner']);
-
-			if (isset($params['rrname']) || isset($params['rrtype'])) {
-				$filter = [];
-				if (isset($params['rrname'])) {
-					$filter['name'] = $params['rrname'];
-				}
-				if (isset($params['rrtype'])) {
-					$filter['type'] = $params['rrtype'];
-				}
-
-				return $this->deleteRecords($domain, $filter);
-			} else if (isset($params['recordid'])) {
-				$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
-				if ($record === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown record id for domain ' . $params['domain'] . ' : ' . $params['recordid']);
-				}
-
-				return $this->deleteRecordID($domain, $record);
-			} else if (isset($params['records'])) {
-				return $this->deleteRecords($domain);
-			} else if (isset($params['domain'])) {
-				$this->checkAccess($domain, ['owner']);
-				return $this->deleteDomain($domain);
-			}
-
-			return FALSE;
 		}
 
 		/**
@@ -552,6 +389,10 @@
 		 * @return True if valid, or send an api error.
 		 */
 		protected function validAccessChange($domain, $email, $access, $self) {
+			if ($this->isAdminMethod) {
+				return true;
+			}
+
 			$selfAccess = $domain->getAccess($self->getID());
 			$levels = ['none', 'read', 'write', 'admin', 'owner'];
 
@@ -569,6 +410,10 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainList() {
+			if ($this->isAdminMethod) {
+				return $this->getDomainListAdmin();
+			}
+
 			$domains = $this->getContextKey('user')->getDomains();
 			$list = [];
 			foreach ($domains as $domain) {
@@ -580,10 +425,42 @@
 		}
 
 		/**
+		 * Get list of all domains for admins.
+		 *
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainListAdmin() {
+			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled']);
+			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
+			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
+			$s->select('users', 'email', 'user');
+			$s->select('domain_access', 'level', 'level');
+			$s->order('domain');
+			$rows = $s->getRows();
+
+			$domains = [];
+			foreach ($rows as $row) {
+				if (!array_key_exists($row['domain'], $domains)) {
+					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => []];
+				}
+
+				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
+			}
+
+			$this->getContextKey('response')->data($domains);
+
+			return true;
+		}
+
+		/**
 		 * Can we set the domain owner?
 		 */
 		protected function canSetOwner() {
-			return false;
+			if ($this->isAdminMethod) {
+				return $this->checkPermissions(['manage_domains'], true);
+			} else {
+				return false;
+			}
 		}
 
 		/**
@@ -994,38 +871,194 @@
 			}
 			return true;
 		}
-
 	}
 
-	$domainsHandler = new Domains();
-	$router->addRoute('(GET|POST) /domains', $domainsHandler);
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)', $domainsHandler);
+	$router->addRoute('(GET|POST) (?P<admin>/admin)?/domains', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+			return $this->getDomainList();
+		}
 
-	$router->addRoute('(GET|POST) /domains/(?P<domain>[^/]+)/(?P<access>access)', $domainsHandler);
-	$router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<sync>sync)', $domainsHandler);
-	$router->addRoute('(GET) /domains/(?P<domain>[^/]+)/(?P<export>export)', $domainsHandler);
-	$router->addRoute('(POST) /domains/(?P<domain>[^/]+)/(?P<import>import)', $domainsHandler);
+		function post($params) {
+			$this->checkPermissions(['domains_write', 'domains_create']);
+			return $this->createDomain();
+		}
+	});
 
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)', $domainsHandler);
-	$router->addRoute('(GET|POST|DELETE) /domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $domainsHandler);
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[0-9]+)', $domainsHandler);
+	$router->addRoute('(GET|POST|DELETE) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+			$domain = $this->getDomainFromParam($params);
 
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)', $domainsHandler);
-	$router->addRoute('(GET|DELETE) /domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)/(?P<rrtype>[^/]+)', $domainsHandler);
+			return $this->getDomainInfo($domain);
+		}
 
+		function post($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
 
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			return $this->updateDomain($domain);
+		}
 
-	$adminDomainsHandler = new AdminDomains();
-	$router->addRoute('(GET|POST) /admin/domains', $adminDomainsHandler);
-	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)', $adminDomainsHandler);
+		function delete($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
 
-	$router->addRoute('(GET|POST) /admin/domains/(?P<domain>[^/]+)/(?P<access>access)', $adminDomainsHandler);
-	$router->addRoute('(GET) /admin/domains/(?P<domain>[^/]+)/(?P<sync>sync)', $adminDomainsHandler);
-	$router->addRoute('(GET) /admin/domains/(?P<domain>[^/]+)/(?P<export>export)', $adminDomainsHandler);
-	$router->addRoute('(POST) /admin/domains/(?P<domain>[^/]+)/(?P<import>import)', $adminDomainsHandler);
+			$this->checkAccess($domain, ['owner']);
+			return $this->deleteDomain($domain);
+		}
+	});
 
-	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)', $adminDomainsHandler);
-	$router->addRoute('(GET|POST|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', $adminDomainsHandler);
+	$router->addRoute('(GET|POST) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<access>access)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
 
-	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)', $adminDomainsHandler);
-	$router->addRoute('(GET|DELETE) /admin/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)/(?P<rrtype>[^/]+)', $adminDomainsHandler);
+			$domain = $this->getDomainFromParam($params);
+			return $this->getDomainAccess($domain);
+		}
+
+		function post($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			return $this->updateDomainAccess($domain);
+		}
+	});
+
+	$router->addRoute('(GET) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<sync>sync)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+			return $this->getDomainSync($domain);
+		}
+	});
+
+	$router->addRoute('(GET) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<export>export)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+			return $this->getDomainExport($domain);
+		}
+	});
+
+	$router->addRoute('(POST) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<import>import)', new class extends Domains {
+		function post($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			return $this->doDomainImport($domain);
+		}
+	});
+
+	$router->addRoute('(GET|POST|DELETE) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<records>records)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+			return $this->getRecords($domain);
+		}
+
+		function post($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			return $this->updateRecords($domain);
+		}
+
+		function delete($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			return $this->deleteRecords($domain);
+		}
+	});
+
+	$router->addRoute('(GET|POST|DELETE) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<records>records)/(?P<recordid>[0-9]+)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+			$record = $this->getRecordFromParam($domain, $params);
+
+			return $this->getRecordID($domain, $record);
+		}
+
+		function post($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$record = $this->getRecordFromParam($domain, $params);
+
+			return $this->updateRecordID($domain, $record);
+		}
+
+		function delete($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$record = $domain !== FALSE ? $domain->getRecord($params['recordid']) : FALSE;
+			if ($record === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown record id for domain ' . $params['domain'] . ' : ' . $params['recordid']);
+			}
+
+			return $this->deleteRecordID($domain, $record);
+		}
+	});
+
+	$router->addRoute('(GET|DELETE) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+
+			$filter = [];
+			$filter['name'] = $params['rrname'];
+			return $this->getRecords($domain, $filter);
+		}
+
+		function delete($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$filter = [];
+			$filter['name'] = $params['rrname'];
+
+			return $this->deleteRecords($domain, $filter);
+		}
+	});
+
+	$router->addRoute('(GET|DELETE) (?P<admin>/admin)?/domains/(?P<domain>[^/]+)/(?P<record>record)/(?P<rrname>[^/]*)/(?P<rrtype>[^/]+)', new class extends Domains {
+		function get($params) {
+			$this->checkPermissions(['domains_read']);
+
+			$domain = $this->getDomainFromParam($params);
+
+			$filter = [];
+			$filter['name'] = $params['rrname'];
+			$filter['type'] = $params['rrtype'];
+
+			return $this->getRecords($domain, $filter);
+		}
+
+		function delete($params) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($params);
+
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$filter = [];
+			$filter['name'] = $params['rrname'];
+			$filter['type'] = $params['rrtype'];
+
+			return $this->deleteRecords($domain, $filter);
+		}
+	});

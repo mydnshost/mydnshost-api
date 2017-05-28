@@ -1,13 +1,13 @@
 <?php
 
-	class Userdata extends APIMethod {
-		public function check($requestMethod, $params) {
+	$router->addRoute('GET /userdata', new class extends APIMethod {
+		function check($requestMethod, $params) {
 			if ($this->getContextKey('user') == NULL) {
 				throw new APIMethod_NeedsAuthentication();
 			}
 		}
 
-		public function get($params) {
+		function call($requestMethod, $params) {
 			$user = $this->getContextKey('user');
 
 			$userinfo = ['id' => $user->getId(),
@@ -20,6 +20,4 @@
 
 			return TRUE;
 		}
-	}
-
-	$router->addRoute('GET /userdata', new Userdata());
+	});

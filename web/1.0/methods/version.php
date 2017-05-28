@@ -1,7 +1,7 @@
 <?php
 
-	class Version extends APIMethod {
-		public function get($matches) {
+	$router->addRoute('GET /version', new class extends APIMethod {
+		function call($requestMethod, $params) {
 			$apiData = ['version' => '1.0'];
 
 			// This permission doesn't actually exist right now, but we need
@@ -14,6 +14,5 @@
 
 			return TRUE;
 		}
-	}
+	});
 
-	$router->addRoute('GET /version', new Version());

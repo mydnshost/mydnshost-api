@@ -1,14 +1,14 @@
 <?php
 
-	class SessionAdmin extends APIMethod {
-		public function check($requestMethod, $params) {
+	$router->addRoute('(GET|DELETE) /session', new class extends MultiMethodAPIMethod {
+		function check($requestMethod, $params) {
 			$user = $this->getContextKey('user');
 			if ($user == NULL) {
 				throw new APIMethod_NeedsAuthentication();
 			}
 		}
 
-		public function get($params) {
+		function get($params) {
 			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 			$_SESSION['userid'] = $this->getContextKey('user')->getID();
 			$_SESSION['access'] = $this->getContextKey('access');
@@ -21,7 +21,7 @@
 			return true;
 		}
 
-		public function delete($params) {
+		function delete($params) {
 			if ($this->hasContextKey('sessionid')) {
 				session_id($this->getContextKey('sessionid'));
 				session_start(['use_cookies' => '0', 'cache_limiter' => '']);
@@ -37,6 +37,4 @@
 			}
 			return true;
 		}
-	}
-
-	$router->addRoute('(GET|DELETE) /session', new SessionAdmin());
+	});
