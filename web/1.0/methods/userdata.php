@@ -1,13 +1,13 @@
 <?php
 
-	$router->addRoute('GET /userdata', new class extends APIMethod {
-		function check($requestMethod, $params) {
+	$router->get('/userdata', new class extends RouterMethod {
+		function check() {
 			if ($this->getContextKey('user') == NULL) {
-				throw new APIMethod_NeedsAuthentication();
+				throw new RouterMethod_NeedsAuthentication();
 			}
 		}
 
-		function call($requestMethod, $params) {
+		function run() {
 			$user = $this->getContextKey('user');
 
 			$userinfo = ['id' => $user->getId(),

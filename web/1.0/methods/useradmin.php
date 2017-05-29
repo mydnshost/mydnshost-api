@@ -1,58 +1,39 @@
 <?php
 
-	class UserAdmin extends MultiMethodAPIMethod {
-		public function check($requestMethod, $params) {
+	class UserAdmin extends RouterMethod {
+		public function check() {
 			$user = $this->getContextKey('user');
 			if ($user == NULL) {
-				throw new APIMethod_NeedsAuthentication();
-			}
-
-			if ($this->checkPermissions(['manage_users'], true)) { return true; }
-
-			if (isset($params['userid']) && ($params['userid'] != 'self' && $params['userid'] != $user->getID())) {
-				throw new APIMethod_AccessDenied();
-			}
-
-			if (isset($params['create'])) {
-				throw new APIMethod_AccessDenied();
+				throw new RouterMethod_NeedsAuthentication();
 			}
 		}
 
-		protected function getUserFromParam($params) {
-			$user = FALSE;
-			if (isset($params['userid'])) {
-				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
+		protected function getUserFromParam($userid) {
+			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
 
-				$user = User::load($this->getContextKey('db'), $userid);
-				if ($user === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown userid: ' . $params['userid']);
-				}
+			$user = User::load($this->getContextKey('db'), $userid);
+			if ($user === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown userid: ' . $userid);
 			}
 
 			return $user;
 		}
 
-		protected function getKeyFromParam($params) {
-			$key = FALSE;
-			if (isset($params['keyid'])) {
-				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
-				$key = APIKey::loadFromUserKey($this->getContextKey('db'), $userid, $params['keyid']);
-				if ($key === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown apikey: ' . $params['keyid']);
-				}
+		protected function getKeyFromParam($userid, $keyid) {
+			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
+			$key = APIKey::loadFromUserKey($this->getContextKey('db'), $userid, $keyid);
+			if ($key === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown apikey: ' . $keyid);
 			}
 
 			return $key;
 		}
 
-		protected function get2FAKeyFromParam($params) {
-			$key = FALSE;
-			if (isset($params['secretid'])) {
-				$userid = ($params['userid'] == 'self') ? $this->getContextKey('user')->getID() : $params['userid'];
-				$key = TwoFactorKey::loadFromUserKey($this->getContextKey('db'), $userid, $params['secretid']);
-				if ($key === FALSE) {
-					$this->getContextKey('response')->sendError('Unknown 2fakey: ' . $params['secretid']);
-				}
+		protected function get2FAKeyFromParam($userid, $secretid) {
+			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
+			$key = TwoFactorKey::loadFromUserKey($this->getContextKey('db'), $userid, $secretid);
+			if ($key === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown 2fakey: ' . $secretid);
 			}
 
 			return $key;
@@ -60,7 +41,7 @@
 
 		protected function getUserData($user) {
 			if ($user === FALSE) {
-				$this->getContextKey('response')->sendError('Unknown User ID: ' . $params['userid']);
+				$this->getContextKey('response')->sendError('Unknown User.');
 			} else {
 				$u = $user->toArray();
 				unset($u['password']);
@@ -390,136 +371,147 @@
 		}
 	}
 
-	$router->addRoute('GET /users', new class extends UserAdmin {
-		function get($params) {
+	class UserIDUserAdmin extends UserAdmin {
+		public function check() {
+			parent::check();
+			list($userid) = func_get_args();
+
+			$user = $this->getContextKey('user');
+
+			if ($userid != 'self' && $userid != $user->getID()) {
+				$this->checkPermissions(['manage_users']);
+			}
+		}
+	}
+
+	$router->get('/users', new class extends UserAdmin {
+		function run() {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
 
 			return $this->listUsers();
 		}
 	});
 
-	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)', new class extends UserAdmin {
-		function get($params) {
+	$router->addRoute('(GET|POST|DELETE)', '/users/(self|[0-9]+)', new class extends UserIDUserAdmin {
+		function get($userid) {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->getUserData($user);
 		}
 
-		function post($params) {
+		function post($userid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->updateUser($user);
 		}
 
-		function delete($params) {
+		function delete($userid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->deleteUser($user);
 		}
 	});
 
-	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)', new class extends UserAdmin {
-		function get($params) {
+	$router->addRoute('(GET|POST)', '/users/(self|[0-9]+)/keys', new class extends UserIDUserAdmin {
+		function get($userid) {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->getAPIKeys($user);
 		}
 
-		function post($params) {
+		function post($userid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->createAPIKey($user);
 		}
 	});
 
-	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<keys>keys)/(?P<keyid>[^/]+)', new class extends UserAdmin {
-		function get($params) {
+	$router->addRoute('(GET|POST|DELETE)', '/users/(self|[0-9]+)/keys/([^/]+)', new class extends UserIDUserAdmin {
+		function get($userid, $keyid) {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->getKeyFromParam($userid, $keyid);
 
-			$key = $this->getKeyFromParam($params);
 			return $this->getAPIKey($user, $key);
 		}
 
-		function post($params) {
+		function post($userid, $keyid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->getKeyFromParam($userid, $keyid);
 
-			$key = $this->getKeyFromParam($params);
 			return $this->updateAPIKey($user, $key);
 		}
 
-		function delete($params) {
+		function delete($userid, $keyid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->getKeyFromParam($userid, $keyid);
 
-			$key = $this->getKeyFromParam($params);
 			return $this->deleteAPIKey($user, $key);
 		}
 	});
 
-	$router->addRoute('(GET|POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)', new class extends UserAdmin {
-		function get($params) {
+	$router->addRoute('(GET|POST)', '/users/(self|[0-9]+)/2fa', new class extends UserIDUserAdmin {
+		function get($userid) {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->get2FAKeys($user);
 		}
 
-		function post($params) {
+		function post($userid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
 
 			return $this->create2FAKey($user);
 		}
 	});
 
-	$router->addRoute('(GET|POST|DELETE) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)', new class extends UserAdmin {
-		function get($params) {
+	$router->addRoute('(GET|POST|DELETE)', '/users/(self|[0-9]+)/2fa/([0-9]+)', new class extends UserIDUserAdmin {
+		function get($userid, $secretid) {
 			$this->checkPermissions(['user_read']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->get2FAKeyFromParam($userid, $secretid);
 
-			$key = $this->get2FAKeyFromParam($params);
 			return $this->get2FAKey($user, $key);
 		}
 
-		function post($params) {
+		function post($userid, $secretid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->get2FAKeyFromParam($userid, $secretid);
 
-			$key = $this->get2FAKeyFromParam($params);
 			return $this->update2FAKey($user, $key);
 		}
 
-		function delete($params) {
+		function delete($userid, $secretid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->get2FAKeyFromParam($userid, $secretid);
 
-			$key = $this->get2FAKeyFromParam($params);
 			return $this->delete2FAKey($user, $key);
 		}
 	});
 
-	$router->addRoute('(POST) /users/(?P<userid>self|[0-9]+)/(?P<secret>2fa)/(?P<secretid>[0-9]+)/(?P<verify>verify)', new class extends UserAdmin {
-		function post($params) {
+	$router->post('/users/(self|[0-9]+)/2fa/([0-9]+)/verify', new class extends UserIDUserAdmin {
+		function run($userid, $secretid) {
 			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+			$user = $this->getUserFromParam($userid);
+			$key = $this->get2FAKeyFromParam($userid, $secretid);
 
-			$key = $this->get2FAKeyFromParam($params);
 			return $this->verify2FAKey($user, $key);
 		}
 	});
 
-	$router->addRoute('POST /users/(?P<create>create)', new class extends UserAdmin {
-		function post($params) {
-			$this->checkPermissions(['user_write']);
-			$user = $this->getUserFromParam($params);
+	$router->post('/users/create', new class extends UserAdmin {
+		function run() {
+			$this->checkPermissions(['manage_users', 'user_write']);
 
 			return $this->createUser();
 		}

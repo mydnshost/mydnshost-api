@@ -1,9 +1,9 @@
 <?php
 
-	$router->addRoute('GET /ping(?:/(?P<time>.+))?', new class extends APIMethod {
-		function call($requestMethod, $params) {
-			if (isset($params['time'])) {
-				$this->getContext()['response']->set('time', $params['time']);
+	$router->get('/ping(?:/(.+))?', new class extends RouterMethod {
+		function run($time = null) {
+			if ($time != null) {
+				$this->getContext()['response']->set('time', $time);
 			}
 
 			return TRUE;

@@ -1,14 +1,14 @@
 <?php
 
-	$router->addRoute('(GET|DELETE) /session', new class extends MultiMethodAPIMethod {
-		function check($requestMethod, $params) {
+	$router->addRoute('(GET|DELETE)', '/session', new class extends RouterMethod {
+		function check() {
 			$user = $this->getContextKey('user');
 			if ($user == NULL) {
-				throw new APIMethod_NeedsAuthentication();
+				throw new RouterMethod_NeedsAuthentication();
 			}
 		}
 
-		function get($params) {
+		function get() {
 			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 			$_SESSION['userid'] = $this->getContextKey('user')->getID();
 			$_SESSION['access'] = $this->getContextKey('access');
@@ -21,7 +21,7 @@
 			return true;
 		}
 
-		function delete($params) {
+		function delete() {
 			if ($this->hasContextKey('sessionid')) {
 				session_id($this->getContextKey('sessionid'));
 				session_start(['use_cookies' => '0', 'cache_limiter' => '']);

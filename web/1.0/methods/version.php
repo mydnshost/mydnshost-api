@@ -1,7 +1,7 @@
 <?php
 
-	$router->addRoute('GET /version', new class extends APIMethod {
-		function call($requestMethod, $params) {
+	$router->get('/version', new class extends RouterMethod {
+		function run() {
 			$apiData = ['version' => '1.0'];
 
 			// This permission doesn't actually exist right now, but we need

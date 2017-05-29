@@ -4,7 +4,8 @@
 
 	require_once(dirname(__FILE__) . '/functions.php');
 	require_once(dirname(__FILE__) . '/response.php');
-	require_once(dirname(__FILE__) . '/routes.php');
+
+	$router = new MethodRouter();
 
 	foreach (recursiveFindFiles(__DIR__ . '/methods') as $file) { include_once($file); }
 
@@ -233,40 +234,28 @@
 	}
 
 	// Now, look for the API Method that does what we want!
-	list($apimethod, $matches) = $router->findRoute($requestMethod,  '/' . $method);
-	if ($apimethod !== FALSE) {
-		// Give it a context
-		$apimethod->setContext($context);
-
-		// And run it!
-		try {
-			if ($apimethod->call($requestMethod, $matches)) {
-				$resp->send();
-			}
-		} catch (APIMethod_NeedsAuthentication $ex) {
-			header('WWW-Authenticate: Basic realm="API"');
-			$resp->setErrorCode('401', 'Unauthorized');
-			$resp->sendError('Authentication required.', $errorExtraData);
-		} catch (APIMethod_AccessDenied $ex) {
-			$resp->setErrorCode('403', 'Forbidden');
-			$resp->sendError('Access denied.', $errorExtraData);
-		} catch (APIMethod_PermissionDenied $ex) {
-			$resp->setErrorCode('403', 'Forbidden');
-			$resp->sendError('Permission Denied', 'You do not have the required permission: ' . $ex->getMessage());
-		} catch (Exception $ex) {
-			$resp->setErrorCode('500', 'Internal Server Error');
-			$resp->sendError('Internal Server Error.');
-		}
-
-
-		// If we get here, the APIMethod responded negatively towards the method
-		// throw an error
+	try {
+		$router->run($requestMethod, $method, $context);
+		$resp->send();
+	} catch (RouterMethod_NotAllowed $ex) {
 		$resp->setErrorCode('405', 'Method Not Allowed');
 		$resp->sendError('Unsupported request method (' . $requestMethod . ').');
-	} else {
-		// No such method known
+	} catch (RouterMethod_NotFound $ex) {
 		$resp->setErrorCode('404', 'Not Found');
 		$resp->sendError('Unknown method requested (' . $method . ').');
+	} catch (RouterMethod_NeedsAuthentication $ex) {
+		header('WWW-Authenticate: Basic realm="API"');
+		$resp->setErrorCode('401', 'Unauthorized');
+		$resp->sendError('Authentication required.', $errorExtraData);
+	} catch (RouterMethod_AccessDenied $ex) {
+		$resp->setErrorCode('403', 'Forbidden');
+		$resp->sendError('Access denied.', $errorExtraData);
+	} catch (RouterMethod_PermissionDenied $ex) {
+		$resp->setErrorCode('403', 'Forbidden');
+		$resp->sendError('Permission Denied', 'You do not have the required permission: ' . $ex->getMessage());
+	} catch (Exception $ex) {
+		$resp->setErrorCode('500', 'Internal Server Error');
+		$resp->sendError('Internal Server Error.');
 	}
 
 	// Shouldn't get here, but exit anyway just in case.
