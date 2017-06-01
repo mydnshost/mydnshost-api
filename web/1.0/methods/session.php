@@ -9,15 +9,15 @@
 		}
 
 		function get() {
-			if ($this->hasContextKey('domainkey')) {
-				$this->getContextKey('response')->sendError('DomainKeys can not be used to created a session.');
-			}
-
 			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
-			$_SESSION['userid'] = $this->getContextKey('user')->getID();
 			$_SESSION['access'] = $this->getContextKey('access');
-			if ($this->hasContextKey('key')) {
-				$_SESSION['keyid'] = $this->getContextKey('key')->getID();
+			if ($this->hasContextKey('domainkey')) {
+				$_SESSION['domainkey'] = $this->getContextKey('domainkey')->getID();
+			} else {
+				$_SESSION['userid'] = $this->getContextKey('user')->getID();
+				if ($this->hasContextKey('key')) {
+					$_SESSION['keyid'] = $this->getContextKey('key')->getID();
+				}
 			}
 			session_commit();
 
@@ -30,6 +30,7 @@
 				session_id($this->getContextKey('sessionid'));
 				session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 				unset($_SESSION['userid']);
+				unset($_SESSION['domainkey']);
 				unset($_SESSION['access']);
 				unset($_SESSION['keyid']);
 				session_destroy();

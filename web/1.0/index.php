@@ -125,15 +125,35 @@
 		session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 
 		if (isset($_SESSION['userid']) && isset($_SESSION['access'])) {
-			$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
 			$user = User::load($context['db'], $_SESSION['userid']);
-			$context['user'] = $user;
 			$key = FALSE;
 			if (isset($_SESSION['keyid'])) {
 				$key = APIKey::load($context['db'], $_SESSION['keyid']);
+				if ($key == FALSE) {
+					$key->setLastUsed(time())->save();
+				} else {
+					// Key no longer exists, so session is no longer valid.
+					$user = FALSE;
+				}
+			}
+
+			if ($user !== FALSE) {
+				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				$context['user'] = $user;
+				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
+			}
+		} else if (isset($_SESSION['domainkey']) && isset($_SESSION['access'])) {
+			$key = DomainKey::load($context['db'], $_SESSION['domainkey']);
+
+			if ($key != FALSE) {
+				$user = $key->getDomainKeyUser();
+
+				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				$context['user'] = $user;
+				$context['access'] = ['domains_read' => true, 'domains_write' => (true && $key->getDomainWrite())];
+				$context['domainkey'] = $key;
 				$key->setLastUsed(time())->save();
 			}
-			$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
 		}
 
 		session_commit();
