@@ -190,7 +190,7 @@
 		}
 
 		protected function createAPIKey($user) {
-			$key = (new APIKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID());
+			$key = (new APIKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID())->setCreated(time());
 			return $this->updateAPIKey($user, $key, true);
 		}
 

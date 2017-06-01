@@ -13,6 +13,8 @@
     "require": {
         "php": ">=7.0",
         "jeremykendall/php-domain-parser": "~2.0",
+        "twig/twig": "~2.0",
+        "phpmailer/phpmailer": "^5.2",
         "phpgangsta/googleauthenticator": "dev-master"
     },
     "autoload": {

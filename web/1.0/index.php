@@ -131,6 +131,7 @@
 			$key = FALSE;
 			if (isset($_SESSION['keyid'])) {
 				$key = APIKey::load($context['db'], $_SESSION['keyid']);
+				$key->setLastUsed(time())->save();
 			}
 			$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
 		}
@@ -144,9 +145,25 @@
 			if ($key != FALSE) {
 				$context['user'] = $user;
 				$context['access'] = getAccessPermissions($user, $key);
+				$context['key'] = $key;
+				$key->setLastUsed(time())->save();
 			} else {
 				// Invalid Key, reset user.
 				$user = FALSE;
+			}
+		}
+	} else if (isset($_SERVER['HTTP_X_DOMAIN']) && isset($_SERVER['HTTP_X_DOMAIN_KEY'])) {
+		$domain = Domain::loadFromDomain($context['db'], $_SERVER['HTTP_X_DOMAIN']);
+		if ($domain != FALSE) {
+			$key = DomainKey::loadFromDomainKey($context['db'], $domain->getID(), $_SERVER['HTTP_X_DOMAIN_KEY']);
+
+			if ($key != FALSE) {
+				$user = $key->getDomainKeyUser();
+
+				$context['user'] = $user;
+				$context['access'] = ['domains_read' => true, 'domains_write' => (true && $key->getDomainWrite())];
+				$context['domainkey'] = $key;
+				$key->setLastUsed(time())->save();
 			}
 		}
 	} else if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {

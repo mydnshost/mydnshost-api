@@ -47,10 +47,25 @@ class Domain extends DBObject {
 	}
 
 	public function getAccess($user) {
+		if ($user instanceof DomainKeyUser) {
+			$key = $user->getDomainKey();
+			if ($key->getDomainID() != $this->getID()) { return 'none'; }
+
+			return $key->getDomainWrite() ? 'write' : 'read';
+		} else if ($user instanceof User) {
+			$user = $user->getID();
+		}
+
 		return array_key_exists($user, $this->_access) ? $this->_access[$user] : 'none';
 	}
 
 	public function setAccess($user, $level) {
+		if ($user instanceof DomainKeyUser) {
+			return $this;
+		} else if ($user instanceof User) {
+			$user = $user->getID();
+		}
+
 		$level = strtolower($level);
 		if (in_array($level, ['none', 'read', 'write', 'admin', 'owner'])) {
 			$this->_access[$user] = $level;

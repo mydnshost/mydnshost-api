@@ -10,12 +10,22 @@
 		function run() {
 			$user = $this->getContextKey('user');
 
-			$userinfo = ['id' => $user->getId(),
-			             'email' => $user->getEmail(),
-			             'realname' => $user->getRealName(),
-			            ];
+			if ($user instanceof DomainKeyUser) {
+				$key = $user->getDomainKey();
+				$keyinfo = ['key' => $key->getKey(),
+				            'description' => $key->getDescription(),
+				            'domain' => $key->getDomain()->getDomain(),
+				           ];
 
-			$this->getContextKey('response')->set('user', $userinfo);
+				$this->getContextKey('response')->set('domainkey', $keyinfo);
+			} else {
+				$userinfo = ['id' => $user->getId(),
+				             'email' => $user->getEmail(),
+				             'realname' => $user->getRealName(),
+				            ];
+
+				$this->getContextKey('response')->set('user', $userinfo);
+			}
 			$this->getContextKey('response')->set('access', $this->getContextKey('access'));
 
 			return TRUE;

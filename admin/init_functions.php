@@ -265,3 +265,33 @@ MYSQLQUERY
 ALTER TABLE `domains` ADD COLUMN `defaultttl` int(11) NOT NULL DEFAULT '86400' AFTER `domain`;
 MYSQLQUERY
 );
+
+
+	// ------------------------------------------------------------------------
+	// Add times to API Keys
+	// ------------------------------------------------------------------------
+	$dataChanges[12] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `apikeys`
+  ADD COLUMN `lastused` int(11) NOT NULL AFTER `description`,
+  ADD COLUMN `created` int(11) NOT NULL AFTER `description`;
+MYSQLQUERY
+);
+
+	// ------------------------------------------------------------------------
+	// Domain Keys
+	// ------------------------------------------------------------------------
+	$dataChanges[13] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `domainkeys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domainkey` VARCHAR(250) NOT NULL,
+  `domain_id` int(11) NOT NULL,
+  `description` VARCHAR(250) NOT NULL,
+  `lastused` int(11) NOT NULL,
+  `created` int(11) NOT NULL,
+  `domains_write` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `domainkeys_user_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `domainkeys_domainkey_domain` (`domainkey` ASC, `domain_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);

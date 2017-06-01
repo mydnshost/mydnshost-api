@@ -41,6 +41,15 @@
 			return $result;
 		}
 
+		protected function getKeyFromParam($domain, $keyid) {
+			$key = DomainKey::loadFromDomainKey($this->getContextKey('db'), $domain->getID(), $keyid);
+			if ($key === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown domainkey: ' . $keyid);
+			}
+
+			return $key;
+		}
+
 		/**
 		 * Helper function for get()/post()/delete() to get the record object or
 		 * return an error.
@@ -72,7 +81,7 @@
 				return true;
 			}
 
-			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')->getID()), $required)) {
+			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')), $required)) {
 				$this->getContextKey('response')->sendError('You do not have the required access to the domain: ' . $domain->getDomain());
 			}
 
@@ -387,7 +396,7 @@
 				return true;
 			}
 
-			$selfAccess = $domain->getAccess($self->getID());
+			$selfAccess = $domain->getAccess($self);
 			$levels = ['none', 'read', 'write', 'admin', 'owner'];
 
 			if ($email == $self->getEmail()) {
@@ -411,7 +420,7 @@
 			$domains = $this->getContextKey('user')->getDomains();
 			$list = [];
 			foreach ($domains as $domain) {
-				$list[$domain->getDomain()] = $domain->getAccess($this->getContextKey('user')->getID());
+				$list[$domain->getDomain()] = $domain->getAccess($this->getContextKey('user'));
 			}
 			$this->getContextKey('response')->data($list);
 
@@ -865,6 +874,99 @@
 			}
 			return true;
 		}
+
+		protected function getDomainKeys($domain) {
+			$keys = DomainKey::getSearch($this->getContextKey('db'))->where('domain_id', $domain->getID())->find('domainkey');
+
+			$result = [];
+			foreach ($keys as $k => $v) {
+				$result[$k] = $v->toArray();
+				unset($result[$k]['id']);
+				unset($result[$k]['domain_id']);
+				unset($result[$k]['domainkey']);
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
+		protected function getDomainKey($domain, $key) {
+			$k = $key->toArray();
+			unset($k['id']);
+			unset($k['domain_id']);
+			unset($k['domainkey']);
+
+			$this->getContextKey('response')->data($k);
+
+			return TRUE;
+		}
+
+		protected function createDomainKey($domain) {
+			$key = (new DomainKey($this->getContextKey('db')))->setKey(TRUE)->setDomainID($domain->getID())->setCreated(time());
+			return $this->updateDomainKey($domain, $key, true);
+		}
+
+		protected function updateDomainKey($domain, $key, $isCreate = false) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if ($key !== FALSE) {
+				$this->doUpdateKey($key, $data['data']);
+
+				try {
+					$key->validate();
+				} catch (ValidationFailed $ex) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
+					}
+				}
+
+				$k = $key->toArray();
+				unset($k['id']);
+				unset($k['domain_id']);
+				unset($k['domainkey']);
+				$k['updated'] = $key->save();
+				if (!$k['updated']) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
+					}
+				} else if ($isCreate) {
+					$this->getContextKey('response')->data([$key->getKey() => $k]);
+				} else {
+					$this->getContextKey('response')->data($k);
+				}
+
+				return TRUE;
+
+			}
+		}
+
+		private function doUpdateKey($key, $data) {
+			$keys = array('description' => 'setDescription',
+			              'domains_read' => 'setDomainRead',
+			              'domains_write' => 'setDomainWrite',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$key->$f($data[$k]);
+				}
+			}
+
+			return $key;
+		}
+
+		protected function deleteDomainKey($domain, $key) {
+			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			return TRUE;
+		}
 	}
 
 	$router->addRoute('(GET|POST)', '/domains', new class extends Domains {
@@ -1054,6 +1156,53 @@
 			$filter['type'] = $rrtype;
 
 			return $this->deleteRecords($domain, $filter);
+		}
+	});
+
+	$router->addRoute('(GET|POST)', '/domains/([^/]+)/keys', new class extends Domains {
+		function get($domain) {
+			$this->checkPermissions(['domains_read']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+
+			return $this->getDomainKeys($domain);
+		}
+
+		function post($domain) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+
+			return $this->createDomainKey($domain);
+		}
+	});
+
+	$router->addRoute('(GET|POST|DELETE)', '/domains/([^/]+)/keys/([^/]+)', new class extends Domains {
+		function get($domain, $keyid) {
+			$this->checkPermissions(['domains_read']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getKeyFromParam($domain, $keyid);
+
+			return $this->getDomainKey($domain, $key);
+		}
+
+		function post($domain, $keyid) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getKeyFromParam($domain, $keyid);
+
+			return $this->updateDomainKey($domain, $key);
+		}
+
+		function delete($domain, $keyid) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getKeyFromParam($domain, $keyid);
+
+			return $this->deleteDomainKey($domain, $key);
 		}
 	});
 

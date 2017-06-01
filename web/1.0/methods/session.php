@@ -9,6 +9,10 @@
 		}
 
 		function get() {
+			if ($this->hasContextKey('domainkey')) {
+				$this->getContextKey('response')->sendError('DomainKeys can not be used to created a session.');
+			}
+
 			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
 			$_SESSION['userid'] = $this->getContextKey('user')->getID();
 			$_SESSION['access'] = $this->getContextKey('access');

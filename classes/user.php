@@ -131,7 +131,7 @@ class User extends DBObject {
 	/**
 	 * Get a domain searcher that limits us to domains we have access to.
 	 */
-	private function getDomainSearch() {
+	protected function getDomainSearch() {
 		$domainSearch = Domain::getSearch($this->getDB());
 		$domainSearch->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
 		$domainSearch->select('domain_access', 'level');

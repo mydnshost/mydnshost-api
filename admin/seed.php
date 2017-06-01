@@ -13,6 +13,7 @@
 	$pdo->exec('DROP TABLE hooks;');
 	$pdo->exec('DROP TABLE permissions;');
 	$pdo->exec('DROP TABLE twofactorkeys;');
+	$pdo->exec('DROP TABLE domainkeys;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
@@ -23,7 +24,7 @@
 	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setPermission('all', true)->save();
 
 	$adminKey = new APIKey(DB::get());
-	$adminKey->setKey('69299C29-5BED-447D-B2F9-840DD01FE0B5')->setDescription('Test Key')->setUserID($admin->getID());
+	$adminKey->setKey('69299C29-5BED-447D-B2F9-840DD01FE0B5')->setDescription('Test Key')->setUserID($admin->getID())->setCreated(time());
 	$adminKey->setDomainRead(true)->setDomainWrite(true);
 	$adminKey->setUserRead(true)->setUserWrite(true);
 	$adminKey->save();
@@ -34,6 +35,15 @@
 		$domains[] = $domain;
 		HookManager::get()->handle('delete_domain', [$domain]);
 		HookManager::get()->handle('add_domain', [$domain]);
+
+		$key = new DomainKey(DB::get());
+		$key->setKey('9426F536-2559-4FA0-BA50-644C90B5FAE4')->setDescription('Write Key')->setDomainID($domain->getID())->setCreated(time());
+		$key->setDomainWrite(true);
+		$key->save();
+
+		$key = new DomainKey(DB::get());
+		$key->setKey('586DAB85-9DCE-4FA2-AA9D-877AA7011190')->setDescription('Read Key')->setDomainID($domain->getID())->setCreated(time());
+		$key->save();
 	}
 
 	for ($i = 1; $i <= 5; $i++) {
