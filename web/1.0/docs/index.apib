@@ -829,6 +829,135 @@ There are 5 levels of access (each level has all the access of those below it):
                 "error": "You do not have the required access to the domain: example2.org"
             }
 
+## Domain Keys [/domains/{domain}/keys]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+
+
+### Get known Domain Keys [GET]
+Returns the list of known Domain Keys and their description/permissions.
+
+Domain keys behave like user API Keys, except they are limited to a single domain and can only be given read or write access (not owner or admin).
+
+You will need `write` level access on a domain to view or make changes to domain keys and will need to be authenticated as a real user and not using another domain key.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f821198f95",
+                "method": "domains/example.org/keys",
+                "response":{
+                    "9426F536-2559-4FA0-BA50-644C90B5FAE4":{
+                        "description": "Write Key",
+                        "domains_write": "true",
+                        "created": "1496284877",
+                        "lastused": "1496284879"
+                    },
+                    "586DAB85-9DCE-4FA2-AA9D-877AA7011190":{
+                        "description": "Read Key",
+                        "domains_write": "false",
+                        "created": "1496284877",
+                        "lastused": "1496285565"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new Domain Key. The key itself will be randomly generated and returned.
+
++ Request Create a key that has read-only access (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Read-Only Key"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "592f825565d61",
+                "method": "domains/example.org/keys",
+                "response":{
+                    "7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E":{
+                        "description": "Read-Only Key",
+                        "domains_write": false,
+                        "created": 1496285781,
+                        "lastused": 0,
+                        "updated": true
+                    }
+                }
+            }
+
+
+## Manipulate specific Domain Key [/domains/{domain}/keys/{keyid}]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+    + keyid: `7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f828d6ddbd",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":{
+                    "description": "Read-Only Key",
+                    "domains_write": "false",
+                    "created": "1496285781",
+                    "lastused": "0"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Full-Access Key",
+                    "domains_write": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    + Body
+
+            {
+                "respid": "592f82ac75e21",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":{
+                    "description": "Full-Access Key",
+                    "domains_write": "true",
+                    "created": "1496285781",
+                    "lastused": "0",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f82c0d3006",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":[
+                   "deleted"
+                ]
+            }
+
 ## Domain records [/domains/{domain}/records]
 
 + Parameters

@@ -1160,6 +1160,14 @@
 	});
 
 	$router->addRoute('(GET|POST)', '/domains/([^/]+)/keys', new class extends Domains {
+		function check() {
+			parent::check();
+
+			if ($this->getContextKey('user') instanceof DomainKeyUser) {
+				throw new RouterMethod_AccessDenied('You must authenticate as a user to view domain keys.');
+			}
+		}
+
 		function get($domain) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);
@@ -1178,6 +1186,14 @@
 	});
 
 	$router->addRoute('(GET|POST|DELETE)', '/domains/([^/]+)/keys/([^/]+)', new class extends Domains {
+		function check() {
+			parent::check();
+
+			if ($this->getContextKey('user') instanceof DomainKeyUser) {
+				throw new RouterMethod_AccessDenied('You must authenticate as a user to view domain keys.');
+			}
+		}
+
 		function get($domain, $keyid) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);

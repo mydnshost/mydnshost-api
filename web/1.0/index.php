@@ -281,10 +281,12 @@
 		$resp->setErrorCode('404', 'Not Found');
 		$resp->sendError('Unknown method requested (' . $method . ').');
 	} catch (RouterMethod_NeedsAuthentication $ex) {
+		if (!empty($ex->getMessage())) { $errorExtraData[] = $ex->getMessage(); }
 		header('WWW-Authenticate: Basic realm="API"');
 		$resp->setErrorCode('401', 'Unauthorized');
 		$resp->sendError('Authentication required.', $errorExtraData);
 	} catch (RouterMethod_AccessDenied $ex) {
+		if (!empty($ex->getMessage())) { $errorExtraData[] = $ex->getMessage(); }
 		$resp->setErrorCode('403', 'Forbidden');
 		$resp->sendError('Access denied.', $errorExtraData);
 	} catch (RouterMethod_PermissionDenied $ex) {
