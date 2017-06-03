@@ -228,6 +228,15 @@
 					$this->getContextKey('response')->data([$key->getKey() => $k]);
 				} else {
 					$this->getContextKey('response')->data($k);
+
+					$te = TemplateEngine::get();
+					$te->setVar('user', $user);
+					$te->setVar('apikey', $key);
+					if ($isCreate) {
+						HookManager::get()->handle('send_mail', [$user->getEmail(), 'New APIKey Created: ' . $key->getDescription(), $te->render('apikey/create.tpl')]);
+					} else {
+						HookManager::get()->handle('send_mail', [$user->getEmail(), 'APIKey Updated: ' . $key->getDescription(), $te->render('apikey/update.tpl')]);
+					}
 				}
 
 				return TRUE;
@@ -254,6 +263,12 @@
 
 		protected function deleteAPIKey($user, $key) {
 			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+
+			$te = TemplateEngine::get();
+			$te->setVar('user', $user);
+			$te->setVar('apikey', $key);
+			HookManager::get()->handle('send_mail', [$user->getEmail(), 'APIKey Deleted: ' . $key->getDescription(), $te->render('apikey/delete.tpl')]);
+
 			return TRUE;
 		}
 
@@ -324,10 +339,21 @@
 					} else {
 						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
-				} else if ($isCreate) {
-					$this->getContextKey('response')->data($k);
 				} else {
 					$this->getContextKey('response')->data($k);
+				}
+
+				$te = TemplateEngine::get();
+				$te->setVar('user', $user);
+				$te->setVar('twofactorkey', $key);
+				if ($isCreate) {
+					HookManager::get()->handle('send_mail', [$user->getEmail(), 'New 2FA Key Added: ' . $key->getDescription(), $te->render('2fakey/create.tpl')]);
+				} else {
+					// Doesn't make sense to send this mail, as only the
+					// description can change, we won't show the 2FA Secret in
+					// the mails...
+
+					// HookManager::get()->handle('send_mail', [$user->getEmail(), '2FA Key Updated: ' . $key->getDescription(), $te->render('2fakey/update.tpl')]);
 				}
 
 				return TRUE;
@@ -367,6 +393,12 @@
 
 		protected function delete2FAKey($user, $key) {
 			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+
+			$te = TemplateEngine::get();
+			$te->setVar('user', $user);
+			$te->setVar('2fakey', $key);
+			HookManager::get()->handle('send_mail', [$user->getEmail(), '2FA Key Deleted: ' . $key->getDescription(), $te->render('2fakey/delete.tpl')]);
+
 			return TRUE;
 		}
 	}

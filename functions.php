@@ -16,10 +16,11 @@
 	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
 	DB::get()->setPDO($pdo);
 
-	// Prepare the hook manager.
-	if (parseBool($config['useBackgroundHooks'])) {
-		BackgroundHookManager::install();
-	}
+	// Template Engine
+	TemplateEngine::get()->setConfig($config['templates'])->setVar('sitename', $config['sitename'])->setVar('siteurl', $config['siteurl']);
+
+	// Mailer
+	Mailer::get()->setConfig($config['email']);
 
 	HookManager::get()->addHookType('add_domain');
 	HookManager::get()->addHookType('rename_domain');
@@ -30,6 +31,12 @@
 	HookManager::get()->addHookType('delete_record');
 
 	HookManager::get()->addHookType('records_changed');
+
+	HookManager::get()->addHookType('send_mail');
+
+	HookManager::get()->addHookBackground('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
+		Mailer::get()->send($to, $subject, $message, $htmlmessage);
+	});
 
 	// Load the hooks
 	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }

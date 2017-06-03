@@ -15,7 +15,8 @@
         "jeremykendall/php-domain-parser": "~2.0",
         "twig/twig": "~2.0",
         "phpmailer/phpmailer": "^5.2",
-        "phpgangsta/googleauthenticator": "dev-master"
+        "phpgangsta/googleauthenticator": "dev-master",
+        "cocur/background-process": "^0.7.0"
     },
     "autoload": {
         "classmap": [

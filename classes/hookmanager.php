@@ -1,11 +1,20 @@
 <?php
 
+	/**
+	 * Hook Mananger.
+	 */
 	class HookManager {
+		// Instance of hook manager.
 		private static $instance = null;
 
+		// Known Hooks
 		protected $hooks = [];
 
-
+		/**
+		 * Get the hookmanager instance.
+		 *
+		 * @return Hookmanager instance.
+		 */
 		public static function get() {
 			if (self::$instance == null) {
 				self::$instance = new HookManager();
@@ -14,98 +23,158 @@
 			return self::$instance;
 		}
 
-		public static function set($instance) {
-			self::$instance = $instance;
-		}
-
+		/**
+		 * Add a new hook type.
+		 * Hook types must be added before hooks can use them.
+		 *
+		 * @param $hooktype Hook type to add.
+		 */
 		public function addHookType($hooktype) {
 			if (array_key_exists($hooktype, $this->hooks)) {
 				throw new Exception('HookType already exists.');
 			}
 
-			$this->hooks[$hooktype] = array();
+			$this->hooks[$hooktype] = array('now' => [], 'background' => [], 'later' => []);
 		}
 
+		/**
+		 * Add a hook to a hooktype.
+		 *
+		 * The hook function will be run on the main thread when the hook is
+		 * called.
+		 *
+		 * @param $hooktype Hook type to add.
+		 */
 		public function addHook($hook, $callable) {
 			if (!array_key_exists($hook, $this->hooks)) {
 				throw new Exception('No such hook');
 			}
 
-			$this->hooks[$hook][] = $callable;
+			$this->hooks[$hook]['now'][] = $callable;
 		}
 
+		/**
+		 * Add a background hook to a hooktype.
+		 *
+		 * The hook function will be run in a separate process in the background
+		 * when it is called.
+		 *
+		 * @param $hooktype Hook type to add.
+		 */
+		public function addHookBackground($hook, $callable) {
+			if (!array_key_exists($hook, $this->hooks)) {
+				throw new Exception('No such hook');
+			}
+
+			$this->hooks[$hook]['background'][] = $callable;
+		}
+
+		/**
+		 * Add a "later" hook to a hooktype.
+		 *
+		 * The hook function will be run in a separate process in the background
+		 * at a later time (by cron).
+		 *
+		 * @param $hooktype Hook type to add.
+		 */
+		public function addHookLater($hook, $callable) {
+			if (!array_key_exists($hook, $this->hooks)) {
+				throw new Exception('No such hook');
+			}
+
+			$this->hooks[$hook]['later'][] = $callable;
+		}
+
+		/**
+		 * Handle a hooktype.
+		 *
+		 * This will run all normal hooks, then if required will start a
+		 * background process to run all the background hooks, and if required
+		 * also add the hook to the database to be run later.
+		 *
+		 * @param $hook Hooktype to handle.
+		 * @param $args Array of arguments for the hook.
+		 */
 		public function handle($hook, $args = []) {
 			if (!array_key_exists($hook, $this->hooks)) {
 				throw new Exception('No such hook');
 			}
 
-			foreach ($this->hooks[$hook] as $callable) {
-				try {
-					call_user_func_array($callable, $args);
-				} catch (Exception $ex) { }
+			$this->runHook('now', $hook, $args);
+			if (count($this->hooks[$hook]['background']) > 0) {
+				$this->handleBackground($hook, $args);
 			}
-		}
-	}
-
-	/**
-	 * Implementation of HookManager that stores hooks in the database to be
-	 * executed at a later date.
-	 *
-	 * There is a script `admin/backgroundHookRunner.php` that should be run
-	 * from a cronjob to run through all the hooks.
-	 *
-	 * It is important to realise that some hooks may behave differently when
-	 * run from the background hook runner. (For example, if a domain has
-	 * records changed twice, both instances of records_changed will do the same
-	 * thing as they only get given the `Domain` object and fetch the actual
-	 * records from the DB when the hook is run (not when it is called))
-	 */
-	class BackgroundHookManager extends HookManager {
-		public static function install() {
-			HookManager::set(new BackgroundHookManager());
-		}
-
-		public function handle($hook, $args = []) {
-			if (!array_key_exists($hook, $this->hooks)) {
-				throw new Exception('No such hook');
-			}
-
-			$h = new Hook(DB::get());
-			$h->setHook($hook);
-			$h->setArgs($args);
-			if (!$h->save()) {
-				echo 'Failed to save hook.', "\n";
-				var_dump($h->getLastError());
+			if (count($this->hooks[$hook]['later']) > 0) {
+				$h = new Hook(DB::get());
+				$h->setHook($hook);
+				$h->setArgs($args);
+				$h->save();
 			}
 		}
 
 		/**
-		 * Runs hooks from the database.
+		 * Actually run some hook functions.
+		 *
+		 * @param $type What type of hook functions should we call? ('now',
+		 *              'later', 'background')
+		 * @param $hook Hooktype to run.
+		 * @param $args Array of arguments for the hook.
 		 */
-		public function run() {
-			$search = Hook::getSearch(DB::get());
-			$dbhooks = [];
-			$rows = $search->find();
-			foreach ($rows as $hook) {
-				$dbhooks[] = [$hook->getHook(), $hook];
-			}
-
-			foreach ($dbhooks as $dbhook) {
-				list($hook, $obj) = $dbhook;
-				$args = $obj->getArgs();
-				foreach ($args as $arg) {
-					if ($arg instanceof DBObject) { $arg->setDB(DB::get()); }
-				}
-
-				echo 'Hook ID: ', $obj->getID(), "\n";
-
-				foreach ($this->hooks[$hook] as $callable) {
+		public function runHook($type, $hook, $args = []) {
+			if (array_key_exists($hook, $this->hooks)) {
+				foreach ($this->hooks[$hook][$type] as $callable) {
 					try {
 						call_user_func_array($callable, $args);
 					} catch (Exception $ex) { }
 				}
-
-				$obj->delete();
 			}
+		}
+
+		/**
+		 * Function to run hook objects.
+		 *
+		 * This just calls runHook after deserialising the object.
+		 *
+		 * @param $type What type of hook functions should we call? ('now',
+		 *              'later', 'background')
+		 * @param $obj Object to run
+		 */
+		public function runHookObject($type, $obj) {
+			$hook = $obj->getHook();
+
+			if (array_key_exists($hook, $this->hooks)) {
+				$args = $obj->getArgs();
+				foreach ($args as $arg) {
+					if ($arg instanceof DBObject) { $arg->setDB(DB::get()); }
+				}
+				$this->runHook($type, $hook, $args);
+			}
+		}
+
+		/**
+		 * Spawn a background process to run background hooks.
+		 *
+		 * Horrible code ahead.
+		 *
+		 * @param $hook Hooktype to run.
+		 * @param $args Array of arguments for the hook.
+		 */
+		private function handleBackground($hook, $args = []) {
+			$data = serialize(['hook' => $hook, 'args' => $args]);
+			$code = <<<'CODE'
+	require_once(__DIR__ . '/../functions.php');
+
+	$data = unserialize(file_get_contents("php://stdin"));
+
+	$h = new Hook(DB::get());
+	$h->setHook($data['hook']);
+	$h->setArgs($data['args']);
+
+	HookManager::get()->runHookObject('background', $h);
+CODE;
+
+			$cmd = 'cd ' . escapeshellarg(__DIR__) . '; echo ' . escapeshellarg($data) .' | /usr/bin/env php -r ' . escapeshellarg($code);
+			$process = new Cocur\BackgroundProcess\BackgroundProcess($cmd);
+			$process->run();
 		}
 	}

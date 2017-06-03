@@ -10,28 +10,22 @@
 	// Config for session data
 	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
 
-	// -------------------------------------------------------------------------
-	// Configuration for hooks
-	// -------------------------------------------------------------------------
-	// Should the background hook runner be used?
-	//
-	// Background hook runner will swallow all attempts to run hooks and store
-	// them in the database to be run at a later date instead.
-	//
-	// For hooks that need to be run, the 'enabled' flag should be set to
-	// 'background' so that they don't run their enabled functions during
-	// normal use.
-	//
-	// admin/backgroundHookRunner.php can then be used to run the hooks based
-	// on the entries in the database, this will enable any hooks with the
-	// 'enabled' flag set to 'background'.
-	//
-	// (This only works if the hook config is defined in config.local.php and
-	// not if it only gets config from the included script.)
-	//
-	// This is all a bit icky, and subject to change in the future.
-	// -------------------------------------------------------------------------
-	$config['useBackgroundHooks'] = 'false';
+	// General details (used by emails)
+	$config['sitename'] = getEnvOrDefault('SITE_NAME', 'MyDNSHost');
+	$config['siteurl'] = getEnvOrDefault('SITE_URL', 'https://mydnshost.co.uk/');
+
+	// Template details (used by emails)
+	$config['templates']['dir'] = getEnvOrDefault('TEMPLATE_DIR', __DIR__ . '/templates');
+	$config['templates']['theme'] = getEnvOrDefault('TEMPLATE_THEME', 'default');
+	$config['templates']['cache'] = getEnvOrDefault('TEMPLATE_CACHE', __DIR__ . '/templates_c');
+
+	// Config for email sending
+	$config['email']['enabled'] = parseBool(getEnvOrDefault('EMAIL_ENABLED', 'false'));
+	$config['email']['server'] = getEnvOrDefault('EMAIL_SERVER', '');
+	$config['email']['username'] = getEnvOrDefault('EMAIL_USERNAME', '');
+	$config['email']['password'] = getEnvOrDefault('EMAIL_PASSWORD', '');
+	$config['email']['from'] = getEnvOrDefault('EMAIL_FROM', 'dns@example.org');
+	$config['email']['from_name'] = getEnvOrDefault('EMAIL_FROM_NAME', $config['sitename']);
 
 	// Default DNS Records
 	$config['defaultRecords'] = [];

@@ -3,12 +3,11 @@
 	class TemplateEngine {
 		private $twig;
 		private $directories = [];
-		private $basepath;
 		private $vars = [];
 
-		public function __construct($siteconfig) {
-			$config = $siteconfig['templates'];
+		public function __construct() { }
 
+		public function setConfig($config) {
 			$loader = new Twig_Loader_Filesystem();
 			$themes = [];
 			if (isset($config['theme'])) {
@@ -35,22 +34,21 @@
 			$twig->addFunction(new Twig_Function('url', function ($path) { return $this->getURL($path); }));
 			$twig->addFunction(new Twig_Function('getVar', function ($var) { return $this->getVar($var); }));
 
+			$twig->addFilter(new Twig_Filter('yesno', function($input) {
+				return parseBool($input) ? "Yes" : "No";
+			}));
+
 			$twig->addFilter(new Twig_Filter('date', function($input) {
 				return date('r', $input);
 			}));
 
-			$this->vars = ['sitename' => ''];
-
 			$this->twig = $twig;
+
+			return $this;
 		}
 
 		public function getTwig() {
 			return $this->twig;
-		}
-
-		public function setSiteName($sitename) {
-			$this->vars['sitename'] = $sitename;
-			return $this;
 		}
 
 		public function setVar($var, $value) {
@@ -62,8 +60,8 @@
 			return array_key_exists($var, $this->vars) ? $this->vars[$var] : '';
 		}
 
-		public function display($template) {
-			$this->twig->display($template, $this->vars);
+		public function render($template) {
+			return $this->twig->render($template, $this->vars);
 		}
 
 		public function getFile($file) {
@@ -77,5 +75,26 @@
 			}
 
 			return FALSE;
+		}
+
+		private static $instance = null;
+
+		public static function get() {
+			if (self::$instance == null) {
+				self::$instance = new TemplateEngine();
+			}
+
+			return self::$instance;
+		}
+
+		public static function getClone() {
+			$source = self::get();
+			$new = new TemplateEngine();
+
+			$new->twig = $source->twig;
+			$new->directories = $source->directories;
+			$new->vars = $source->vars;
+
+			return $new;
 		}
 	}
