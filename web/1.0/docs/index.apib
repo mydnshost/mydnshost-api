@@ -32,6 +32,13 @@ X-API-User: SomeUser@example.org
 X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
 ```
 
+You can also use a domain-key, which behaves like an API key that has no `user_read` or `user_write` permissions, and can only interact with a single domain. Domain keys are linked to domains not users.
+
+```http
+X-Domain: example.org
+X-Domain-Key: 9426F536-2559-4FA0-BA50-644C90B5FAE4
+```
+
 ## Session Authentication
 
 You can obtain a session token from the `/session` end point, and then use it for future requests by passing the X-SESSION-ID header instead of any other authentication headers.
