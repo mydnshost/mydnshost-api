@@ -1,7 +1,7 @@
 <?php
 
 	/**
-	 * Hook Mananger.
+	 * Hook Manager.
 	 */
 	class HookManager {
 		// Instance of hook manager.
@@ -125,7 +125,11 @@
 				foreach ($this->hooks[$hook][$type] as $callable) {
 					try {
 						call_user_func_array($callable, $args);
-					} catch (Exception $ex) { }
+					} catch (Exception $ex) {
+						if ($hook != 'hook_error') {
+							$this->runHook('now', 'hook_error', [$ex]);
+						}
+					}
 				}
 			}
 		}
@@ -178,3 +182,5 @@ CODE;
 			$process->run();
 		}
 	}
+
+	HookManager::get()->addHookType('hook_error');

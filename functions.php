@@ -76,6 +76,14 @@
 		return (substr($haystack, -$length) === $needle);
 	}
 
+	function templateToMail($templateEngine, $template) {
+		$subject = trim($templateEngine->renderBlock($template, 'subject'));
+		$message = $templateEngine->renderBlock($template, 'body');
+		$htmlmessage = $templateEngine->renderBlock($template, 'htmlbody');
+
+		return [$subject, $message, $htmlmessage];
+	}
+
 	function updatePublicSuffixes() {
 		(new Pdp\PublicSuffixListManager())->refreshPublicSuffixList();
 	}

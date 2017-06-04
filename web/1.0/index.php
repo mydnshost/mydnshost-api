@@ -294,7 +294,7 @@
 		$resp->sendError('Permission Denied', 'You do not have the required permission: ' . $ex->getMessage());
 	} catch (Exception $ex) {
 		$resp->setErrorCode('500', 'Internal Server Error');
-		$resp->sendError('Internal Server Error.');
+		$resp->sendError('Internal Server Error.', $ex->getMessage());
 	}
 
 	// Shouldn't get here, but exit anyway just in case.

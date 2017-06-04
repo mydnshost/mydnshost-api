@@ -1,3 +1,8 @@
+{% block subject %}
+New API Key Updated: {{ apikey.getDescription() }}
+{% endblock %}
+
+{% block body %}
 Hi {{ user.getRealName() }},
 
 An API Key has been changed on your account on {{ sitename }}.
@@ -10,4 +15,5 @@ An API Key has been changed on your account on {{ sitename }}.
         User Read: {{ apikey.getUserRead() | yesno }}
         User Write:  {{ apikey.getUserWrite() | yesno }}
 
-{% include 'footer.tpl' %}
+{% include 'footer.txt' %}
+{% endblock %}

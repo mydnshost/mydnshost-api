@@ -1,3 +1,8 @@
+{% block subject %}
+New API Key Added: {{ apikey.getDescription() }}
+{% endblock %}
+
+{% block body %}
 Hi {{ user.getRealName() }},
 
 A new API Key has been added to your account on {{ sitename }}.
@@ -10,4 +15,5 @@ A new API Key has been added to your account on {{ sitename }}.
         User Read: {{ apikey.getUserRead() | yesno }}
         User Write:  {{ apikey.getUserWrite() | yesno }}
 
-{% include 'footer.tpl' %}
+{% include 'footer.txt' %}
+{% endblock %}

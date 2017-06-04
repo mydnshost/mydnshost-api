@@ -64,6 +64,11 @@
 			return $this->twig->render($template, $this->vars);
 		}
 
+		public function renderBlock($template, $block) {
+			$template = $this->twig->load($template);
+			return $template->hasBlock($block) ? $template->renderBlock($block, $this->vars) : NULL;
+		}
+
 		public function getFile($file) {
 			$file = str_replace('../', '', $file);
 

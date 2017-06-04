@@ -23,8 +23,11 @@
 		public function send($to, $subject, $message, $htmlmessage = NULL) {
 			if (!$this->config['enabled']) { return; }
 
-			$mail = new PHPMailer();
-			$mail->SMTPDebug = 3;
+			$mail = new PHPMailer(true);
+			if (isset($this->config['debug'])) {
+				$mail->SMTPDebug = 3;
+			}
+			$mail->Timeout = isset($this->config['timeout']) ? $this->config['timeout'] : 10;
 
 			if (!empty($this->config['server'])) {
 				$mail->isSMTP();
