@@ -148,6 +148,15 @@
 		function getAllowedIPs($domain, $APL) {
 			global $__BIND__DNSCACHE;
 
+			// Get NS Records
+			$NS = [];
+			foreach ($domain->getRecords() as $record) {
+				if ($record->isDisabled()) { continue; }
+				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+					$NS[] = $record->getContent();
+				}
+			}
+
 			$ips = [];
 			foreach ($NS as $host) {
 				if (!isset($__BIND__DNSCACHE[$host])) {
@@ -171,15 +180,6 @@
 			$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
 
 			$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
-
-			// Get NS Records
-			$NS = [];
-			foreach ($domain->getRecords() as $record) {
-				if ($record->isDisabled()) { continue; }
-				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
-					$NS[] = $record->getContent();
-				}
-			}
 
 			// Convert NS Records to IPs
 			$ips = getAllowedIPs($domain, true);
