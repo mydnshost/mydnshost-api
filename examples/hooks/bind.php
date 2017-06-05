@@ -22,7 +22,7 @@
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
 		// Default config settings
 		$config['hooks']['bind']['defaults']['zonedir'] = '/etc/bind/zones';
-		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s };};\' >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
 
@@ -129,7 +129,8 @@
 			public function run($domain, $bind) {
 				list($filename, $filename2) = $bind->getFileNames();
 
-				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), $filename);
+				$ips = getAllowedIPs($domain, false);
+				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), escapeshellarg($filename), implode(';', $ips));
 				exec($cmd);
 			}
 		}
@@ -140,6 +141,51 @@
 
 		HookManager::get()->addHook('bind_zone_added', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
 		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, false); });
+
+		function getAllowedIPs($domain, $APL) {
+			global $__BIND__DNSCACHE;
+
+			$ips = [];
+			foreach ($NS as $host) {
+				if (!isset($__BIND__DNSCACHE[$host])) {
+					$__BIND__DNSCACHE[$host] = dns_get_record($host, DNS_A | DNS_AAAA);
+				}
+				$records = $__BIND__DNSCACHE[$host];
+
+				foreach ($records as $rr) {
+					if ($rr['type'] == 'A') {
+						$ips[] = ($APL) ? '1:' . $rr['ip'] . '/32' : $rr['ip'];
+					} else if ($rr['type'] == 'AAAA') {
+						$ips[] = ($APL) ? '2:' . $rr['ipv6'] . '/128' : $rr['ipv6'];
+					}
+				}
+			}
+
+			return $ips;
+		}
+
+		function addCatalogRecords($bind, $domain) {
+			$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
+
+			$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
+
+			// Get NS Records
+			$NS = [];
+			foreach ($domain->getRecords() as $record) {
+				if ($record->isDisabled()) { continue; }
+				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+					$NS[] = $record->getContent();
+				}
+			}
+
+			// Convert NS Records to IPs
+			$ips = getAllowedIPs($domain, true);
+
+			// Save IPs
+			if (!empty($ips)) {
+				$bind->setRecord('allow-transfer.' . $hash . '.zones', 'APL', implode(' ', $ips));
+			}
+		}
 
 		function updateCatalogZone($bindConfig, $domain, $add = false) {
 			// Update the catalog
@@ -156,8 +202,9 @@
 					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
 
 					$bind->unsetRecord($hash . '.zones', 'PTR');
+					$bind->unsetRecord('allow-transfer.' . $hash . '.zones', 'APL');
 					if ($add) {
-						$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
+						addCatalogRecords($bind, $domain);
 					}
 					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
@@ -172,7 +219,6 @@
 
 		// Hook to rebuild the whole catalog.
 		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneName, $zoneFile) use ($bindConfig) {
-
 			$fp = fopen($zoneFile . '.lock', 'r+');
 			if (flock($fp, LOCK_EX)) {
 				$bind = new Bind($zoneName, '', $zoneFile);
@@ -192,20 +238,16 @@
 				foreach ($rows as $row) {
 					if (strtolower($row['disabled']) == 'true') { continue; }
 
-					$hasNS = false;
-					$domain = Domain::loadFromDomain(DB::get()->getPDO(), $row);
+					$domain = Domain::loadFromDomain(DB::get(), $row['domain']);
 
-					foreach ($domain->getRecords() as $record) {
-						if ($record->isDisabled()) { continue; }
-						if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
-							$hasNS = true;
-							break;
+					if ($domain != FALSE) {
+						foreach ($domain->getRecords() as $record) {
+							if ($record->isDisabled()) { continue; }
+							if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+								addCatalogRecords($bind, $domain);
+								break;
+							}
 						}
-					}
-
-					if ($hasNS) {
-						$hash = sha1("\7" . str_replace(".", "\3", $row['domain']) . "\0");
-						$bind->setRecord($hash . '.zones', 'PTR', $row['domain'] . '.');
 					}
 				}
 
