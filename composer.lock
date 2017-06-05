@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "82debaf4ec0e8ab617e18efc62e41a0c",
-    "content-hash": "5cb64b3b2aadca86d68eab548e38e8d6",
+    "hash": "c4e2d0c0118e1bd903ca80882ea67428",
+    "content-hash": "315356d71a891aec358ebbccf7d500fc",
     "packages": [
         {
             "name": "cocur/background-process",
@@ -357,7 +357,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=7.0"
+        "php": ">=7.1"
     },
     "platform-dev": []
 }
