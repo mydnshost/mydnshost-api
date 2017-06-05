@@ -6,6 +6,8 @@ class User extends DBObject {
 	                             'password' => NULL,
 	                             'realname' => NULL,
 	                             'disabled' => false,
+	                             'verifycode' => NULL,
+	                             'disabledreason' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'users';
@@ -31,8 +33,23 @@ class User extends DBObject {
 		return $this->setData('password', bcrypt::hash($value));
 	}
 
+	public function setRawPassword($value) {
+		return $this->setData('password', $value);
+	}
+
 	public function setDisabled($value) {
+		if (!parseBool($value)) {
+			$this->setDisabledReason(NULL);
+		}
 		return $this->setData('disabled', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setDisabledReason($value) {
+		return $this->setData('disabledreason', $value);
+	}
+
+	public function setVerifyCode($value) {
+		return $this->setData('verifycode', $value);
 	}
 
 	public function getID() {
@@ -53,8 +70,20 @@ class User extends DBObject {
 		return bcrypt::check($password, $testPass);
 	}
 
+	public function getRawPassword() {
+		return $this->getData('password');
+	}
+
 	public function isDisabled() {
 		return parseBool($this->getData('disabled'));
+	}
+
+	public function getDisabledReason() {
+		return $this->getData('disabledreason');
+	}
+
+	public function getVerifyCode() {
+		return $this->getData('verifycode');
 	}
 
 	public function getPermissions() {
@@ -84,6 +113,11 @@ class User extends DBObject {
 			}
 		}
 		return $this;
+	}
+
+
+	public function isUnVerified() {
+		return !empty($this->getVerifyCode()) && $this->getRawPassword() == '-' && $this->isDisabled();
 	}
 
 	/**

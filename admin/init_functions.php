@@ -295,3 +295,13 @@ CREATE TABLE `domainkeys` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 MYSQLQUERY
 );
+
+
+	// ------------------------------------------------------------------------
+	// User registration
+	// ------------------------------------------------------------------------
+	$dataChanges[14] = new DBChange(<<<MYSQLQUERY
+	ALTER TABLE `users` ADD COLUMN `verifycode` VARCHAR(64) DEFAULT NULL AFTER `password`;
+	ALTER TABLE `users` ADD COLUMN `disabledreason` VARCHAR(250) DEFAULT NULL AFTER `disabled`;
+MYSQLQUERY
+);

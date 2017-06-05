@@ -45,6 +45,9 @@
 			} else {
 				$u = $user->toArray();
 				unset($u['password']);
+				unset($u['verifycode']);
+				if (!$user->isDisabled()) { unset($u['disabledreason']); }
+
 				$list[] = $u;
 				$this->getContextKey('response')->data($u);
 				return true;
@@ -62,6 +65,9 @@
 			foreach ($users as $user) {
 				$u = $user->toArray();
 				unset($u['password']);
+				if ($user->isUnVerified()) {
+					$u['unverified'] = true;
+				}
 				$list[] = $u;
 			}
 			$this->getContextKey('response')->data($list);
@@ -80,7 +86,32 @@
 			}
 
 			if ($user !== FALSE) {
+				$oldPass = $user->getRawPassword();
+				$oldEmail = $user->getEmail();
 				$this->doUpdateUser($user, $data['data']);
+				$newPass = $user->getRawPassword();
+				$newEmail = $user->getEmail();
+
+				$sendWelcome = false;
+				if ($isCreate) {
+					// Set default permissions.
+					global $config;
+					foreach ($config['register_permissions'] as $permission) {
+						$permission = trim($permission);
+						if (!empty($permission)) {
+							$user->setPermission($permission, true);
+						}
+					}
+
+					if (isset($data['data']['sendWelcome']) && parseBool($data['data']['sendWelcome'])) {
+						$sendWelcome = true;
+						$user->setVerifyCode(genUUID());
+						$user->setRawPassword('-');
+						$user->setDisabled(true);
+						$user->setDisabledReason("Email address has not yet been verified.");
+					}
+				}
+
 				try {
 					$user->validate();
 				} catch (ValidationFailed $ex) {
@@ -93,6 +124,8 @@
 
 				$u = $user->toArray();
 				unset($u['password']);
+				unset($u['verifycode']);
+				if (!$user->isDisabled()) { unset($u['disabledreason']); }
 				$u['updated'] = $user->save();
 				$u['id'] = $user->getID();
 				if (!$u['updated']) {
@@ -102,6 +135,27 @@
 						$this->getContextKey('response')->sendError('Error updating user: ' . $user->getID());
 					}
 				} else {
+					if (!$isCreate && !$this->hasContextKey('impersonator')) {
+						if ($newEmail != $oldEmail && !empty($oldEmail)) {
+							$te = TemplateEngine::get();
+							$te->setVar('user', $user);
+							[$subject, $message, $htmlmessage] = templateToMail($te, 'emailchanged.tpl');
+							HookManager::get()->handle('send_mail', [$oldEmail, $subject, $message, $htmlmessage]);
+						}
+
+						if ($newPass != $oldPass && !empty($oldPass)) {
+							$te = TemplateEngine::get();
+							$te->setVar('user', $user);
+							[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
+							HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+						}
+					} else if ($isCreate && $sendWelcome) {
+						$te = TemplateEngine::get();
+						$te->setVar('user', $user);
+						[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
+						HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					}
+
 					$this->getContextKey('response')->data($u);
 				}
 
@@ -122,6 +176,7 @@
 				// Don't allow disabling own account.
 				if ($this->getContextKey('user')->getID() !== $user->getID()) {
 					$keys['disabled'] = 'setDisabled';
+					$keys['disabledreason'] = 'setDisabledReason';
 				}
 			}
 
@@ -423,6 +478,26 @@
 			$this->checkPermissions(['user_read']);
 
 			return $this->listUsers();
+		}
+	});
+
+	$router->addRoute('(POST)', '/users/([0-9]+)/resendwelcome', new class extends UserAdmin {
+		function post($userid) {
+			$this->checkPermissions(['manage_users']);
+			$user = $this->getUserFromParam($userid);
+
+			if (!$user->isUnVerified()) {
+				$this->getContextKey('response')->sendError('User has already completed registration.');
+			}
+
+			$te = TemplateEngine::get();
+			$te->setVar('user', $user);
+			[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
+			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+
+			$this->getContextKey('response')->data(['success' => 'Registration email resent.']);
+
+			return TRUE;
 		}
 	});
 

@@ -227,15 +227,17 @@
 
 	// Is this account disabled?
 	if ($user != FALSE && $user->isDisabled()) {
+		$reason = $user->getDisabledReason();
 		$user = FALSE;
 		unset($context['user']);
 		unset($context['access']);
 
-		// Accounts are currently silently disabled, and act as if
-		// authentication failed. If this changes, uncomment the below 2 lines.
-		//
-		// $resp->setErrorCode('403', 'Forbidden');
-		// $resp->sendError('Access denied.');
+		// If a reason has been specified, show it, otherwise we treat the
+		// request as unauthenticated.
+		if (!empty($reason)) {
+			$resp->setErrorCode('403', 'Forbidden');
+			$resp->sendError('Access denied: ' . $reason);
+		}
 	}
 
 	// Handle impersonation.

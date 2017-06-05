@@ -1,6 +1,5 @@
 <?php
 	// Database Details
-
 	$database['server'] = getEnvOrDefault('DB_SERVER', 'localhost');
 	$database['type'] = getEnvOrDefault('DB_SERVER_TYPE', 'mysql');
 	$database['username'] = getEnvOrDefault('DB_SERVER_USERNAME', 'dnsapi');
@@ -9,6 +8,11 @@
 
 	// Config for session data
 	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
+
+	// Config for Site registration
+	$config['register_enabled'] = parseBool(getEnvOrDefault('ALLOW_REGISTER', 'true'));
+	$config['register_manual_verify'] = parseBool(getEnvOrDefault('REGISTER_MANUAL_VERIFY', 'false'));
+	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
 
 	// General details (used by emails)
 	$config['sitename'] = getEnvOrDefault('SITE_NAME', 'MyDNSHost');
