@@ -147,6 +147,142 @@ This will close the current session to prevent any future requests.
             }
 
 
+## Forgot Password [/forgotpassword]
+### Initiate a Forgot Password request [POST]
+This will cause an email to be sent to the user with a link to click on to reset their password.
+
++ Request Request password reset (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "admin@example.org"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bda4bb50c",
+                "method": "forgotpassword",
+                "response":{
+                    "success": "Password reset was submitted, please check your email for further instructions."
+                }
+            }
+
+## Forgot Password Confirm [/forgotpassword/confirm/{userid}]
++ Parameters
+
+    + userid: `1` (required) - The user ID.
+
+
+### Confirm a Forgot Password request [POST]
+This will confirm a forgot-password request for the given user, a successful confirmation will send the user an email to confirm the password was chagned.
+
++ Request Confirm password reset (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "BcEBEQAxCAMwSQPaKyCH8fNv4RNnS1EiD7rNfIiMHuHmfZvPv8VWTdgJ0egBzx8",
+                    "password": "n3w_p@55w0rd"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934be2091a0a",
+                "method": "forgotpassword/confirm/1",
+                "response":{
+                    "success": "Password was changed, you can now login."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934be3c48047",
+                "method": "forgotpassword/confirm/1",
+                "error": "User does not require password reset."
+            }
+
+## Register new account [/register]
+### Initiate a registration request [POST]
+This will cause an email to be sent to the user with a link to click on to confirm their registration.
+
++ Request Registration (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "user10@example.org",
+                    "realname": "User Ten"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bea6b4a1c",
+                "method": "register",
+                "response":{
+                    "id": "56",
+                    "email": "user10@example.org",
+                    "realname": "User Ten"
+                }
+            }
+
+## Registration Confirmation [/register/confirm/{userid}]
++ Parameters
+
+    + userid: `56` (required) - The new user ID.
+
+
+### Confirm a Forgot Password request [POST]
+This will confirm a registration request for the given user.
+
++ Request Confirm registration (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "C28E68B6-17A9-4F43-8F03-3CFF519FC3DA",
+                    "password": "n3w_p@55w0rd"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bf2bc9a5d",
+                "method": "register/confirm/56",
+                "response":{
+                   "success": "Registration was successful, you can now log in."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934bf4001861",
+                "method": "register/confirm/56",
+                "error": "User does not require verification."
+            }
+
+
 # Group Users
 Endpoints for dealing with user accounts
 
@@ -250,7 +386,9 @@ This will allow a user with the `manage_users` permission to delete the user spe
 ### Create a user [POST]
 This allows a user with the `manage_users` permission to create new users.
 
-This behaves similarily to update user except that you must pass in `password`, `email` and `realname` fields.
+This behaves similarily to update user except that you must pass in the `email` and `realname` fields.
+
+You can also either pass in a `password` field to set the password, or to simulate a user registration you can pass in `sendWelcome` with a value of `true`
 
 + Request Change realname and Password (application/json)
     + Body
@@ -286,6 +424,40 @@ This behaves similarily to update user except that you must pass in `password`, 
                 "respid": "58bcbe8c7ac06",
                 "method": "users/create",
                 "error": "Error creating user."
+            }
+
+## Resend Welcome Message [/users/{userid}/resendwelcome]
++ Parameters
+
+    + userid: `1` (required) - The user ID.
+
+### Request a welcome email be resent to a user. [POST]
+If a user is still pending verification, we can re-send the welcome email to them. (This requires the `manage_users` permission)
+
++ Request request a welcome email be resent (application/json)
+    The body of this request is empty
+    + Body
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934c0a6e5bf3",
+                "method": "users/56/resendwelcome",
+                "response":{
+                    "success": "Registration email resent."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934c05e6b420",
+                "method": "users/56/resendwelcome",
+                "error": "User has already completed registration."
             }
 
 ## API Keys [/users/{userid}/keys]
