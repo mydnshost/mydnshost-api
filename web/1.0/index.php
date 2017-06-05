@@ -236,7 +236,7 @@
 		// request as unauthenticated.
 		if (!empty($reason)) {
 			$resp->setErrorCode('403', 'Forbidden');
-			$resp->sendError('Access denied: ' . $reason);
+			$resp->sendError('Access denied.', 'Account has been suspended: ' . $reason);
 		}
 	}
 

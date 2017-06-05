@@ -11,4 +11,4 @@ RUN \
   ln -s /dnsapi/web /var/www/html && \
   mkdir /bind && \
   chown -Rfv www-data: /dnsapi/ /var/www/ /bind && \
-  su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer update"
+  su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer install"
