@@ -25,6 +25,9 @@
 		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s };};\' >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
+		$config['hooks']['bind']['defaults']['catalogZoneName'] = 'catalog.invalid';
+
 
 		foreach ($config['hooks']['bind']['defaults'] as $setting => $value) {
 			if (!isset($config['hooks']['bind'][$setting])) {
