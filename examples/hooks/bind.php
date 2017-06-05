@@ -133,7 +133,12 @@
 				list($filename, $filename2) = $bind->getFileNames();
 
 				$ips = getAllowedIPs($domain, false);
-				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), escapeshellarg($filename), implode(';', $ips));
+				if (empty($ips)) {
+					$ips[] = '"none"';
+				}
+				$ips[] = '';
+
+				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), escapeshellarg($filename), implode('; ', $ips));
 				exec($cmd);
 			}
 		}
