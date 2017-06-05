@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": ">=7.0",
+        "php": ">=7.1",
         "jeremykendall/php-domain-parser": "~2.0",
         "twig/twig": "~2.0",
         "phpmailer/phpmailer": "^5.2",
