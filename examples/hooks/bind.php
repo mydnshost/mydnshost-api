@@ -148,9 +148,9 @@
 		HookManager::get()->addHook('bind_zone_changed', [new BindCommandRunner($bindConfig['reloadZoneCommand']), 'run']);
 		HookManager::get()->addHook('bind_zone_removed', [new BindCommandRunner($bindConfig['delZoneCommand']), 'run']);
 
-		HookManager::get()->addHook('bind_zone_added', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
-		HookManager::get()->addHook('bind_zone_changed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
-		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, false); });
+		HookManager::get()->addHook('bind_zone_added', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, 'added'); });
+		HookManager::get()->addHook('bind_zone_changed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, 'changed'); });
+		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, 'removed'); });
 
 		function getAllowedIPs($domain, $APL) {
 			global $__BIND__DNSCACHE;
@@ -197,7 +197,7 @@
 			}
 		}
 
-		function updateCatalogZone($bindConfig, $domain, $add = false) {
+		function updateCatalogZone($bindConfig, $domain, $mode = 'removed') {
 			// Update the catalog
 			if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && file_exists($bindConfig['catalogZoneFile'])) {
 				$fp = fopen($bindConfig['catalogZoneFile'] . '.lock', 'r+');
@@ -216,9 +216,11 @@
 
 					$bind->unsetRecord($hash . '.zones', 'PTR');
 					$bind->unsetRecord('allow-transfer.' . $hash . '.zones', 'APL');
-					if ($add) {
+					if ($mode == 'added' || $mode == 'changed') {
 						addCatalogRecords($bind, $domain);
+					}
 
+					if ($mode == 'changed') {
 						if (!empty($oldAllowTransfer)) {
 							$newAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
 							if (!empty($newAllowTransfer) && $newAllowTransfer != $oldAllowTransfer) {
@@ -226,6 +228,11 @@
 								$zoneBind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 								call_user_func_array([new BindCommandRunner($bindConfig['delZoneCommand']), 'run'], [$domain, $zoneBind]);
 								call_user_func_array([new BindCommandRunner($bindConfig['addZoneCommand']), 'run'], [$domain, $zoneBind]);
+							} else {
+								// Transfer list has not changed, abort.
+								flock($fp, LOCK_UN);
+								fclose($fp);
+								return;
 							}
 						}
 					}
