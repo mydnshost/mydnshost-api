@@ -149,6 +149,7 @@
 		HookManager::get()->addHook('bind_zone_removed', [new BindCommandRunner($bindConfig['delZoneCommand']), 'run']);
 
 		HookManager::get()->addHook('bind_zone_added', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
+		HookManager::get()->addHook('bind_zone_changed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, true); });
 		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, false); });
 
 		function getAllowedIPs($domain, $APL) {
@@ -210,10 +211,23 @@
 
 					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
 
+					$oldAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
+					if (!empty($oldAllowTransfer)) { $oldAllowTransfer = $oldAllowTransfer[0]; }
+
 					$bind->unsetRecord($hash . '.zones', 'PTR');
 					$bind->unsetRecord('allow-transfer.' . $hash . '.zones', 'APL');
 					if ($add) {
 						addCatalogRecords($bind, $domain);
+
+						if (!empty($oldAllowTransfer)) {
+							$newAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
+							if (!empty($newAllowTransfer) && $newAllowTransfer != $oldAllowTransfer) {
+								// Allowed-Transfer list has changed, re-add domain to bind
+								$zoneBind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
+								call_user_func_array([new BindCommandRunner($bindConfig['delZoneCommand']), 'run'], [$domain, $zoneBind]);
+								call_user_func_array([new BindCommandRunner($bindConfig['addZoneCommand']), 'run'], [$domain, $zoneBind]);
+							}
+						}
 					}
 					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
