@@ -96,6 +96,7 @@
 		};
 
 		HookManager::get()->addHookType('bind_rebuild_catalog');
+		HookManager::get()->addHookType('bind_readd_zones');
 
 		HookManager::get()->addHookType('bind_zone_added');
 		HookManager::get()->addHookType('bind_zone_changed');
@@ -224,6 +225,26 @@
 				}
 			}
 		}
+
+		// Hook to remove and re-add all zones to bind.
+		HookManager::get()->addHook('bind_readd_zones', function () use ($bindConfig) {
+			$s = new Search(DB::get()->getPDO(), 'domains', ['domain', 'disabled']);
+			$s->order('domain');
+			$rows = $s->getRows();
+
+			$add = [new BindCommandRunner($bindConfig['addZoneCommand']), 'run'];
+			$del = [new BindCommandRunner($bindConfig['delZoneCommand']), 'run'];
+
+			foreach ($rows as $row) {
+				$domain = Domain::loadFromDomain(DB::get(), $row['domain']);
+				$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
+
+				call_user_func_array($del, [$domain, $bind]);
+
+				if (strtolower($row['disabled']) == 'true') { continue; }
+				call_user_func_array($add, [$domain, $bind]);
+			}
+		});
 
 		// Hook to rebuild the whole catalog.
 		HookManager::get()->addHook('bind_rebuild_catalog', function ($zoneName, $zoneFile) use ($bindConfig) {
