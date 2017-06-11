@@ -853,6 +853,10 @@
 			$nameFilter = array_key_exists('name', $filter) ? $filter['name'] : NULL;
 			$typeFilter = array_key_exists('type', $filter) ? $filter['type'] : NULL;
 
+			if (endsWith($nameFilter, $domain->getDomain() . '.')) {
+				$nameFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '\.$#', '', $nameFilter);
+			}
+
 			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$count = 0;
 			foreach ($records as $record) {
