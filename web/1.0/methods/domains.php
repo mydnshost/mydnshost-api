@@ -116,12 +116,16 @@
 			$nameFilter = array_key_exists('name', $filter) ? $filter['name'] : NULL;
 			$typeFilter = array_key_exists('type', $filter) ? $filter['type'] : NULL;
 
+			if (endsWith($nameFilter, $domain->getDomain() . '.')) {
+				$nameFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '\.$#', '', $nameFilter);
+			}
+
 			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$list = [];
 			foreach ($records as $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
-				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
 				$list[] = $r;
 			}
 			$this->getContextKey('response')->set('records', $list);
@@ -742,7 +746,7 @@
 				unset($r['domain_id']);
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
-				$r['name'] = preg_replace('#.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
 				$result[] = $r;
 				if ($r['updated']) {
 					HookManager::get()->handle('update_record', [$domain, $record]);
@@ -789,8 +793,12 @@
 			             );
 
 			if (array_key_exists('name', $data)) {
-				if (!empty($data['name']) && !endsWith($data['name'], '.')) { $data['name'] .= '.'; }
-				$data['name'] .= $domain->getDomain();
+				if (!empty($data['name']) && endsWith($data['name'], $domain->getDomain() . '.')) {
+					$data['name'] = rtrim($data['name'], '.');
+				} else {
+					if (!empty($data['name']) && !endsWith($data['name'], '.')) { $data['name'] .= '.'; }
+					$data['name'] .= $domain->getDomain();
+				}
 			}
 
 			if (array_key_exists('ttl', $data)) {
