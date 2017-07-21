@@ -2,7 +2,7 @@
 
 This repo holds the code for the api backend for mydnshost.
 
-This is the code that does the main heavy-lifting and is exposed as a JSON API for https://github.com/ShaneMcC/mydnshost-frontend to access.
+This is the code that does the main heavy-lifting and is exposed as a JSON API for https://github.com/mydnshost/mydnshost-frontend to access.
 
 Domain/Record data is all stored in our own database and then pushed out to our DNS Server(s) via hooks.
 
