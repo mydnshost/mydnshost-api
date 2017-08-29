@@ -1,5 +1,7 @@
 #!/usr/bin/env php
 <?php
+	use shanemcc\phpdb\DB;
+
 	require_once(dirname(__FILE__) . '/init_functions.php');
 
 	echo 'Updating public suffixes...';
@@ -8,8 +10,17 @@
 
 	initDataServer(DB::get());
 
+	public function getUserCount() {
+		$query = "SELECT count(id) AS `count` FROM `users`";
+		$statement = DB::get()->getPDO()->prepare($query);
+		$statement->execute();
+		$result = $statement->fetch(PDO::FETCH_ASSOC);
+
+		return !isset($result['count']) ? 0 : $result['count'];
+	}
+
 	// Check for users, if there isn't one - add a default admin user.
-	if (DB::get()->getUserCount() == 0) {
+	if (getUserCount() == 0) {
 		echo 'Inserting default admin user.', "\n";
 
 		$password = getEnvOrDefault('ADMIN_PASS', 'password');

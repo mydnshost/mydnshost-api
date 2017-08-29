@@ -2,6 +2,8 @@
 <?php
 	require_once(dirname(__FILE__) . '/init_functions.php');
 
+	use shanemcc\phpdb\DB;
+
 	// This will delete the database and seed it with test data.
 	$pdo = DB::get()->getPDO();
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 0;');

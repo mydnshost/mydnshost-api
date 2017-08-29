@@ -16,7 +16,8 @@
         "twig/twig": "~2.0",
         "phpmailer/phpmailer": "^5.2",
         "phpgangsta/googleauthenticator": "dev-master",
-        "cocur/background-process": "^0.7.0"
+        "cocur/background-process": "^0.7.0",
+        "shanemcc/php-db": "0.1"
     },
     "autoload": {
         "classmap": [

@@ -1,4 +1,7 @@
 <?php
+	use shanemcc\phpdb\DB;
+	use shanemcc\phpdb\Search;
+
 	// --------------------
 	// Bind
 	// --------------------

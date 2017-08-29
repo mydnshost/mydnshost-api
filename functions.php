@@ -1,4 +1,5 @@
 <?php
+	use shanemcc\phpdb\DB;
 
 	// Load Config
 	if (!function_exists('getEnvOrDefault')) {

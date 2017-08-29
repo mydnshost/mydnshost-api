@@ -2,6 +2,8 @@
 <?php
 	require_once(dirname(__FILE__) . '/../functions.php');
 
+	use shanemcc\phpdb\DB;
+
 	HookManager::get()->addHook('hook_error', function($ex) {
 		echo '--', "\n";
 		echo 'Hook Error: ', $ex->getMessage(), "\n";

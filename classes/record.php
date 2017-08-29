@@ -1,5 +1,8 @@
 <?php
 
+use shanemcc\phpdb\DBObject;
+use shanemcc\phpdb\ValidationFailed;
+
 class Record extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'domain_id' => NULL,

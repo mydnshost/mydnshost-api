@@ -1,5 +1,8 @@
 <?php
 
+	use shanemcc\phpdb\DB;
+	use shanemcc\phpdb\DBObject;
+
 	/**
 	 * Hook Manager.
 	 */

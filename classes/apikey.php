@@ -1,5 +1,8 @@
 <?php
 
+use shanemcc\phpdb\DBObject;
+use shanemcc\phpdb\ValidationFailed;
+
 class APIKey extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'apikey' => NULL,

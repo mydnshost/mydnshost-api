@@ -1,4 +1,7 @@
 <?php
+
+	use shanemcc\phpdb\ValidationFailed;
+
 	$router->post('/register', new class extends RouterMethod {
 		function run() {
 			global $config;

@@ -1,5 +1,7 @@
 <?php
 
+use shanemcc\phpdb\DBObject;
+
 class Hook extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'hook' => NULL,

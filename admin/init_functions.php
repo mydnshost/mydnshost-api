@@ -1,73 +1,30 @@
 <?php
 	require_once(dirname(__FILE__) . '/../functions.php');
 
-	class DBChange {
-		protected $query = '';
-		protected $result = null;
-
-		public function __construct($query) {
-			$this->query = $query;
-		}
-
-		public function run($pdo) {
-			if ($pdo->exec($this->query) !== FALSE) {
-				$this->result = TRUE;
-				echo 'success', "\n";
-			} else {
-				$ei = $pdo->errorInfo();
-				$this->result = $ei[2];
-				echo 'failed', "\n";
-			}
-
-			return $this->getLastResult();
-		}
-
-		public function getLastResult() {
-			return ($this->result === TRUE);
-		}
-
-		public function getLastError() {
-			return ($this->result === TRUE) ? NULL : $this->result;
-		}
-	}
+	use shanemcc\phpdb\DBChange;
+	use shanemcc\phpdb\DBChanger;
+	use shanemcc\phpdb\Search;
 
 	function initDataServer($db) {
-		global $dataChanges;
-		return runChanges($db, $dataChanges, 'dataVersion');
+		return $db->runChanges(new DataServerChanges());
 	}
 
-	function runChanges($db, $changes, $versionField) {
-		$currentVersion = (int)$db->getMetaData($versionField, 0);
+	public class DataServerChanges implements DBChanger {
 
-		echo 'Current Version: ', $currentVersion, "\n";
-
-		foreach ($changes as $version => $change) {
-			if ($version <= $currentVersion) { continue; }
-			echo 'Updating to version ', $version, ': ';
-
-			if ($change->run($db->getPDO())) {
-				$db->setMetaData($versionField, $version);
-				$currentVersion = $version;
-			} else {
-				echo "\n", 'Error updating to version ', $version, ': ', $change->getLastError(), "\n";
-				return $currentVersion;
-			}
+		public function getVersionField() {
+			return 'dataVersion';
 		}
 
-		return $currentVersion;
-	}
+		public function getChanges() {
+			// -------------------------------------------------------------------------
+			// Data Changes
+			// -------------------------------------------------------------------------
+			$dataChanges = array();
 
-
-
-	// -------------------------------------------------------------------------
-	// Meta Changes
-	// -------------------------------------------------------------------------
-	$dataChanges = array();
-
-	// -------------------------------------------------------------------------
-	// Create metadata table in DB.
-	// -------------------------------------------------------------------------
-	$dataChanges[1] = new DBChange(<<<MYSQLQUERY
+			// -------------------------------------------------------------------------
+			// Create metadata table in DB.
+			// -------------------------------------------------------------------------
+			$dataChanges[1] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE IF NOT EXISTS `__MetaData` (
   `key` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `value` varchar(255) COLLATE utf8_unicode_ci NOT NULL
@@ -76,10 +33,10 @@ CREATE TABLE IF NOT EXISTS `__MetaData` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Initial Schema
-	// ------------------------------------------------------------------------
-	$dataChanges[2] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Initial Schema
+			// ------------------------------------------------------------------------
+			$dataChanges[2] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` VARCHAR(250) NOT NULL,
@@ -128,10 +85,10 @@ CREATE TABLE `domain_access` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// API Keys
-	// ------------------------------------------------------------------------
-	$dataChanges[3] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// API Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[3] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `apikeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `apikey` VARCHAR(250) NOT NULL,
@@ -148,18 +105,18 @@ CREATE TABLE `apikeys` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Suspendable Users
-	// ------------------------------------------------------------------------
-	$dataChanges[4] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Suspendable Users
+			// ------------------------------------------------------------------------
+			$dataChanges[4] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `users` ADD COLUMN `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `admin`;
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Background Hooks
-	// ------------------------------------------------------------------------
-	$dataChanges[5] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Background Hooks
+			// ------------------------------------------------------------------------
+			$dataChanges[5] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `hooks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `hook` varchar(64) NOT NULL,
@@ -169,10 +126,10 @@ CREATE TABLE `hooks` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// User Permissions - Part 1 - Add new permissions table
-	// ------------------------------------------------------------------------
-	$dataChanges[6] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// User Permissions - Part 1 - Add new permissions table
+			// ------------------------------------------------------------------------
+			$dataChanges[6] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `permissions` (
   `user_id` int(11) NOT NULL,
   `permission` varchar(64) NOT NULL,
@@ -182,59 +139,59 @@ CREATE TABLE `permissions` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// User Permissions - Part 2 - Convert old admins
-	// ------------------------------------------------------------------------
-	$dataChanges[7] = new class(null) extends DBChange {
-		public function run($pdo) {
-			$this->result = TRUE;
+			// ------------------------------------------------------------------------
+			// User Permissions - Part 2 - Convert old admins
+			// ------------------------------------------------------------------------
+			$dataChanges[7] = new class(null) extends DBChange {
+				public function run($pdo) {
+					$this->result = TRUE;
 
-			$failed = false;
-			$setQuery = 'INSERT INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
-			$setStatement = $pdo->prepare($setQuery);
+					$failed = false;
+					$setQuery = 'INSERT INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
+					$setStatement = $pdo->prepare($setQuery);
 
-			$rows = (new Search($pdo, 'users', ['id', 'email']))->where('admin', 'true')->getRows();
+					$rows = (new Search($pdo, 'users', ['id', 'email']))->where('admin', 'true')->getRows();
 
-			if (count($rows) > 0) {
-				echo "\n";
-				foreach ($rows as $row) {
-					echo "\t", 'Setting admin permissions for: ', $row['email'], ' - ';
-					foreach (['manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'] as $permission) {
-						echo $permission, ' ';
-						$res = $setStatement->execute([':user' => $row['id'], ':permission' => $permission]);
-						if (!$res) {
-							$failed = true;
-							$this->result = $setStatement->errorInfo()[2];
-							break;
+					if (count($rows) > 0) {
+						echo "\n";
+						foreach ($rows as $row) {
+							echo "\t", 'Setting admin permissions for: ', $row['email'], ' - ';
+							foreach (['manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'] as $permission) {
+								echo $permission, ' ';
+								$res = $setStatement->execute([':user' => $row['id'], ':permission' => $permission]);
+								if (!$res) {
+									$failed = true;
+									$this->result = $setStatement->errorInfo()[2];
+									break;
+								}
+							}
+							if ($failed) {
+								echo '- Failed.', "\n";
+								break;
+							} else {
+								echo '- Done.', "\n";
+							}
 						}
-					}
-					if ($failed) {
-						echo '- Failed.', "\n";
-						break;
 					} else {
-						echo '- Done.', "\n";
+						echo 'success', "\n";
 					}
+
+					return $this->result === true;
 				}
-			} else {
-				echo 'success', "\n";
-			}
+			};
 
-			return $this->result === true;
-		}
-	};
-
-	// ------------------------------------------------------------------------
-	// User Permissions - Part 3 - Remove admin column
-	// ------------------------------------------------------------------------
-	$dataChanges[8] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// User Permissions - Part 3 - Remove admin column
+			// ------------------------------------------------------------------------
+			$dataChanges[8] = new DBChange(<<<MYSQLQUERY
   ALTER TABLE `users` DROP COLUMN `admin`;
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// 2FA Keys
-	// ------------------------------------------------------------------------
-	$dataChanges[9] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// 2FA Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[9] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `twofactorkeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
@@ -248,39 +205,39 @@ CREATE TABLE `twofactorkeys` (
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Improved 2FA Keys
-	// ------------------------------------------------------------------------
-	$dataChanges[10] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Improved 2FA Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[10] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `twofactorkeys`
   ADD COLUMN `created` int(11) NOT NULL AFTER `description`,
   ADD COLUMN `active` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `lastused`;
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Default Record TTL
-	// ------------------------------------------------------------------------
-	$dataChanges[11] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Default Record TTL
+			// ------------------------------------------------------------------------
+			$dataChanges[11] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `domains` ADD COLUMN `defaultttl` int(11) NOT NULL DEFAULT '86400' AFTER `domain`;
 MYSQLQUERY
 );
 
 
-	// ------------------------------------------------------------------------
-	// Add times to API Keys
-	// ------------------------------------------------------------------------
-	$dataChanges[12] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Add times to API Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[12] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `apikeys`
   ADD COLUMN `lastused` int(11) NOT NULL AFTER `description`,
   ADD COLUMN `created` int(11) NOT NULL AFTER `description`;
 MYSQLQUERY
 );
 
-	// ------------------------------------------------------------------------
-	// Domain Keys
-	// ------------------------------------------------------------------------
-	$dataChanges[13] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// Domain Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[13] = new DBChange(<<<MYSQLQUERY
 CREATE TABLE `domainkeys` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `domainkey` VARCHAR(250) NOT NULL,
@@ -297,11 +254,14 @@ MYSQLQUERY
 );
 
 
-	// ------------------------------------------------------------------------
-	// User registration
-	// ------------------------------------------------------------------------
-	$dataChanges[14] = new DBChange(<<<MYSQLQUERY
+			// ------------------------------------------------------------------------
+			// User registration
+			// ------------------------------------------------------------------------
+			$dataChanges[14] = new DBChange(<<<MYSQLQUERY
 	ALTER TABLE `users` ADD COLUMN `verifycode` VARCHAR(64) DEFAULT NULL AFTER `password`;
 	ALTER TABLE `users` ADD COLUMN `disabledreason` VARCHAR(250) DEFAULT NULL AFTER `disabled`;
 MYSQLQUERY
 );
+
+		}
+	}

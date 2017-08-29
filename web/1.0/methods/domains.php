@@ -1,5 +1,7 @@
 <?php
 
+	use shanemcc\phpdb\ValidationFailed;
+
 	class Domains extends RouterMethod {
 		public function isAdminMethod() {
 			return $this->getContextKey('Admin Method') === true;

@@ -1,5 +1,7 @@
 <?php
 
+	use shanemcc\phpdb\ValidationFailed;
+
 	class UserAdmin extends RouterMethod {
 		public function check() {
 			$user = $this->getContextKey('user');
