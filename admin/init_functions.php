@@ -9,7 +9,7 @@
 		return $db->runChanges(new DataServerChanges());
 	}
 
-	public class DataServerChanges implements DBChanger {
+	class DataServerChanges implements DBChanger {
 
 		public function getVersionField() {
 			return 'dataVersion';
