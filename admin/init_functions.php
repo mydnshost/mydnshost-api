@@ -263,5 +263,6 @@ MYSQLQUERY
 MYSQLQUERY
 );
 
+			return $dataChanges;
 		}
 	}
