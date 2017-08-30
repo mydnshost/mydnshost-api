@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "3d69190f831e9f495acb0e19f07d7229",
-    "content-hash": "41b29d6b0175efeac03c26c2c3bc1913",
+    "hash": "40966c0e9a9d86e4d09bc350547c5a1a",
+    "content-hash": "c105fc805ab3e08437815e5677b1a1ce",
     "packages": [
         {
             "name": "cocur/background-process",
@@ -228,16 +228,16 @@
         },
         {
             "name": "shanemcc/php-db",
-            "version": "0.1",
+            "version": "0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ShaneMcC/php-db.git",
-                "reference": "f7a165ca5419989f3b54fb6d401d43d7b1b168ec"
+                "reference": "01a2d3ba52ec7c19b54a834c38250ca3bd5ead40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ShaneMcC/php-db/zipball/f7a165ca5419989f3b54fb6d401d43d7b1b168ec",
-                "reference": "f7a165ca5419989f3b54fb6d401d43d7b1b168ec",
+                "url": "https://api.github.com/repos/ShaneMcC/php-db/zipball/01a2d3ba52ec7c19b54a834c38250ca3bd5ead40",
+                "reference": "01a2d3ba52ec7c19b54a834c38250ca3bd5ead40",
                 "shasum": ""
             },
             "require": {
@@ -262,7 +262,7 @@
             ],
             "description": "Basic PHP ORM",
             "homepage": "https://github.com/shanemcc/php-db",
-            "time": "2017-07-31 03:20:10"
+            "time": "2017-08-30 22:17:04"
         },
         {
             "name": "symfony/polyfill-mbstring",

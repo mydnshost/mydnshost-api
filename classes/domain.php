@@ -3,6 +3,7 @@
 use shanemcc\phpdb\DB;
 use shanemcc\phpdb\DBObject;
 use shanemcc\phpdb\ValidationFailed;
+use shanemcc\phpdb\Operations\OrderByFunction;
 
 class Domain extends DBObject {
 	protected static $_fields = ['id' => NULL,
@@ -173,7 +174,7 @@ class Domain extends DBObject {
 			}
 		}
 
-		$search = Record::getSearch($this->getDB())->order('name')->order('type')->order('priority');
+		$search = Record::getSearch($this->getDB())->addOperation(new OrderByFunction('length', 'name'))->order('name')->order('type')->order('priority');
 		$result = $search->search($searchParams, $searchFilters);
 		return ($result) ? $result : [];
 	}

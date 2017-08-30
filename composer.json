@@ -17,7 +17,7 @@
         "phpmailer/phpmailer": "^5.2",
         "phpgangsta/googleauthenticator": "dev-master",
         "cocur/background-process": "^0.7.0",
-        "shanemcc/php-db": "0.1"
+        "shanemcc/php-db": "0.2"
     },
     "autoload": {
         "classmap": [
