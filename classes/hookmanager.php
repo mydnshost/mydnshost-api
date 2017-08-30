@@ -169,6 +169,7 @@
 		private function handleBackground($hook, $args = []) {
 			$data = serialize(['hook' => $hook, 'args' => $args]);
 			$code = <<<'CODE'
+    use shanemcc\phpdb\DB;
 	require_once(__DIR__ . '/../functions.php');
 
 	$data = unserialize(file_get_contents("php://stdin"));

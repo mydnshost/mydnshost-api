@@ -1,4 +1,6 @@
 <?php
+	use shanemcc\phpdb\DB;
+
 	// We only output json.
 	header('Content-Type: application/json');
 
