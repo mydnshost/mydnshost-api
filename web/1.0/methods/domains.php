@@ -1,6 +1,7 @@
 <?php
 
 	use shanemcc\phpdb\ValidationFailed;
+	use shanemcc\phpdb\Search;
 
 	class Domains extends RouterMethod {
 		public function isAdminMethod() {
