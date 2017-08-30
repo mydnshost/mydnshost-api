@@ -17,7 +17,7 @@
 
 			$time = time();
 			$uuid = md5(genUUID());
-			$code = trim(base64_encode(gzdeflate($time . '/' . $uuid . '/' . crc32($user->getRawPassword() . $uuid . $time))), '=');
+			$code = trim(str_replace('/', '_', base64_encode(gzdeflate($time . '/' . $uuid . '/' . crc32($user->getRawPassword() . $uuid . $time)))), '=');
 
 			$user->setVerifyCode($code);
 			$user->save();
@@ -63,7 +63,11 @@
 			}
 
 			// Check code validity.
-			$bits = explode('/', @gzinflate(@base64_decode($data['data']['code'])));
+			$bits = explode('/', @gzinflate(@base64_decode(str_replace('_', '/', $data['data']['code']))));
+			if (!isset($bits[2])) {
+				$this->getContextKey('response')->sendError('Malformed verification code.');
+			}
+
 			$time = $bits[0];
 			$uuid = $bits[1];
 			$crc32 = $bits[2];

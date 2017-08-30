@@ -89,6 +89,30 @@ class User extends DBObject {
 		return $this->getData('verifycode');
 	}
 
+	public function isPendingPasswordReset() {
+		$code = $this->getVerifyCode();
+		if (empty($code)) { return FALSE; }
+
+		// Check code validity.
+		$bits = explode('/', @gzinflate(@base64_decode(str_replace('_', '/', $code))));
+		if (!isset($bits[2])) { return FALSE; }
+
+		$time = $bits[0];
+		$uuid = $bits[1];
+		$crc32 = $bits[2];
+		$wanted_crc32 = crc32($this->getRawPassword() . $uuid . $time);
+
+		if ($crc32 != $wanted_crc32) {
+			return FALSE;
+		}
+
+		if (time() - 3600 > $time) {
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+
 	public function getPermissions() {
 		return $this->_permissions;
 	}

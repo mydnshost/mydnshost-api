@@ -67,8 +67,11 @@
 			foreach ($users as $user) {
 				$u = $user->toArray();
 				unset($u['password']);
+				unset($u['verifycode']);
 				if ($user->isUnVerified()) {
 					$u['unverified'] = true;
+				} else if ($user->isPendingPasswordReset()) {
+					$u['pendingreset'] = true;
 				}
 				$list[] = $u;
 			}
