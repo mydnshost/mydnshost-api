@@ -10,7 +10,7 @@
 
 	initDataServer(DB::get());
 
-	public function getUserCount() {
+	function getUserCount() {
 		$query = "SELECT count(id) AS `count` FROM `users`";
 		$statement = DB::get()->getPDO()->prepare($query);
 		$statement->execute();
