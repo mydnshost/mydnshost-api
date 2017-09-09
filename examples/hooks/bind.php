@@ -21,6 +21,7 @@
 	// $config['hooks']['bind']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
 	// $config['hooks']['bind']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 	// $config['hooks']['bind']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
 		// Default config settings
@@ -30,7 +31,7 @@
 		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
 		$config['hooks']['bind']['defaults']['catalogZoneName'] = 'catalog.invalid';
-
+		$config['hooks']['bind']['defaults']['slaveServers'] = [];
 
 		foreach ($config['hooks']['bind']['defaults'] as $setting => $value) {
 			if (!isset($config['hooks']['bind'][$setting])) {
@@ -88,13 +89,13 @@
 			if ($hasNS) {
 				$bind->saveZoneFile();
 				if ($new) {
-					HookManager::get()->handle('bind_zone_added', [$domain, $bind]);
+					HookManager::get()->handle('bind_zone_added', [$domain, $bind, $bindConfig]);
 				} else {
-					HookManager::get()->handle('bind_zone_changed', [$domain, $bind]);
+					HookManager::get()->handle('bind_zone_changed', [$domain, $bind, $bindConfig]);
 				}
 			} else if (file_exists($filename)) {
 				unlink($filename);
-				HookManager::get()->handle('bind_zone_removed', [$domain, $bind]);
+				HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
 			}
 		};
 
@@ -115,7 +116,7 @@
 				@unlink($filename);
 			}
 			$oldDomain = $domain->clone()->setDomain($oldName);
-			HookManager::get()->handle('bind_zone_removed', [$oldDomain, $bind]);
+			HookManager::get()->handle('bind_zone_removed', [$oldDomain, $bind, $bindConfig]);
 
 			call_user_func_array($writeZoneFile, [$domain]);
 		});
@@ -127,16 +128,16 @@
 			if (file_exists($filename)) {
 				@unlink($filename);
 			}
-			HookManager::get()->handle('bind_zone_removed', [$domain, $bind]);
+			HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
 		});
 
 		class BindCommandRunner {
 			private $command;
 			public function __construct($command) { $this->command = $command; }
-			public function run($domain, $bind) {
+			public function run($domain, $bind, $bindConfig) {
 				list($filename, $filename2) = $bind->getFileNames();
 
-				$ips = getAllowedIPs($domain, false);
+				$ips = getAllowedIPs($bindConfig, $domain, false);
 				if (empty($ips)) {
 					$ips[] = '"none"';
 				}
@@ -155,7 +156,7 @@
 		HookManager::get()->addHook('bind_zone_changed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, 'changed'); });
 		HookManager::get()->addHook('bind_zone_removed', function ($domain, $bind) use ($bindConfig) { updateCatalogZone($bindConfig, $domain, 'removed'); });
 
-		function getAllowedIPs($domain, $APL) {
+		function getAllowedIPs($bindConfig, $domain, $APL) {
 			global $__BIND__DNSCACHE;
 
 			// Get NS Records
@@ -183,16 +184,28 @@
 				}
 			}
 
-			return $ips;
+			// Add slave IPs
+			$slaveServers = is_array($bindConfig['slaveServers']) ? $bindConfig['slaveServers'] : explode(',', $bindConfig['slaveServers']);
+			foreach ($slaveServers as $s) {
+				$s = trim($s);
+
+				if (filter_var($s, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+					$ips[] = ($APL) ? '1:' . $s . '/32' : $s;
+				} else if (filter_var($s, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+					$ips[] = ($APL) ? '2:' . $s . '/128' : $s;
+				}
+			}
+
+			return array_unique($ips);
 		}
 
-		function addCatalogRecords($bind, $domain) {
+		function addCatalogRecords($bindConfig, $bind, $domain) {
 			$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
 
 			$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
 
 			// Convert NS Records to IPs
-			$ips = getAllowedIPs($domain, true);
+			$ips = getAllowedIPs($bindConfig, $domain, true);
 
 			// Save IPs
 			if (!empty($ips)) {
@@ -220,7 +233,7 @@
 					$bind->unsetRecord($hash . '.zones', 'PTR');
 					$bind->unsetRecord('allow-transfer.' . $hash . '.zones', 'APL');
 					if ($mode == 'added' || $mode == 'changed') {
-						addCatalogRecords($bind, $domain);
+						addCatalogRecords($bindConfig, $bind, $domain);
 					}
 
 					if ($mode == 'changed') {
@@ -297,7 +310,7 @@
 						foreach ($domain->getRecords() as $record) {
 							if ($record->isDisabled()) { continue; }
 							if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
-								addCatalogRecords($bind, $domain);
+								addCatalogRecords($bindConfig, $bind, $domain);
 								break;
 							}
 						}
