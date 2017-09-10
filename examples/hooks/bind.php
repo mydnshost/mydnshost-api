@@ -242,8 +242,8 @@
 							if (!empty($newAllowTransfer) && $newAllowTransfer != $oldAllowTransfer) {
 								// Allowed-Transfer list has changed, re-add domain to bind
 								$zoneBind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
-								call_user_func_array([new BindCommandRunner($bindConfig['delZoneCommand']), 'run'], [$domain, $zoneBind]);
-								call_user_func_array([new BindCommandRunner($bindConfig['addZoneCommand']), 'run'], [$domain, $zoneBind]);
+								call_user_func_array([new BindCommandRunner($bindConfig['delZoneCommand']), 'run'], [$domain, $zoneBind, $bindConfig]);
+								call_user_func_array([new BindCommandRunner($bindConfig['addZoneCommand']), 'run'], [$domain, $zoneBind, $bindConfig]);
 							} else {
 								// Transfer list has not changed, abort.
 								flock($fp, LOCK_UN);
@@ -276,10 +276,10 @@
 				$domain = Domain::loadFromDomain(DB::get(), $row['domain']);
 				$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 
-				call_user_func_array($del, [$domain, $bind]);
+				call_user_func_array($del, [$domain, $bind, $bindConfig]);
 
 				if (strtolower($row['disabled']) == 'true') { continue; }
-				call_user_func_array($add, [$domain, $bind]);
+				call_user_func_array($add, [$domain, $bind, $bindConfig]);
 			}
 		});
 
