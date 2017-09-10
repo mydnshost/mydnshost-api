@@ -37,14 +37,15 @@
 	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns2.example.com'];
 	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns3.example.com'];
 
-	// Allowed-Transfer Slave Server IPs
-	$config['slaveServers'] = [];
-	$config['slaveServers'][] = '1.1.1.1';
-	$config['slaveServers'][] = '2.2.2.2';
-	$config['slaveServers'][] = '3.3.3.3';
-
 	// Default SOA
 	$config['defaultSOA'] = ['primaryNS' => 'ns1.example.com.'];
+
+	// Influx DB
+	$config['influx']['host'] = getEnvOrDefault('INFLUX_HOST', 'localhost');
+	$config['influx']['port'] = getEnvOrDefault('INFLUX_PORT', '8086');
+	$config['influx']['user'] = getEnvOrDefault('INFLUX_USER', '');
+	$config['influx']['pass'] = getEnvOrDefault('INFLUX_PASS', '');
+	$config['influx']['db'] = getEnvOrDefault('INFLUX_DB', 'MyDNSHost');
 
 	// Local configuration.
 	if (file_exists(dirname(__FILE__) . '/config.local.php')) {

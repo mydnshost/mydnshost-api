@@ -156,7 +156,7 @@ MYSQLQUERY
 						echo "\n";
 						foreach ($rows as $row) {
 							echo "\t", 'Setting admin permissions for: ', $row['email'], ' - ';
-							foreach (['manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'] as $permission) {
+							foreach (['domains_stats', 'manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'] as $permission) {
 								echo $permission, ' ';
 								$res = $setStatement->execute([':user' => $row['id'], ':permission' => $permission]);
 								if (!$res) {
