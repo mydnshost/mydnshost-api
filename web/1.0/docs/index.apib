@@ -779,7 +779,7 @@ See what domains you have access to, and what level of access to each.
                 "respid": "58bcc0357e7eb",
                 "method": "domains",
                 "response":{
-                    "test1.com": "owner",
+                    "example.org": "owner",
                     "test2.com": "owner",
                     "example1.org": "write",
                     "example2.org": "read"
@@ -1359,6 +1359,47 @@ As with other update methods, only fields that are provided will be changed, you
                 }
             }
 
+## Domain Statistics [/domains/{domain}/stats{?type}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + type: `raw` (optional, string) - Type of stats (raw or derivative)
+
+### Get raw statistics for this domain [GET]
++ Parameters
+    + type: `raw`
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59b5900b12a2e",
+                "method": "domains/example.org/stats",
+                "response":{
+                    "stats": {
+                        "A": [{"time": 1505074560, "value": 249101},
+                              {"time": 1505074620, "value": 249122},
+                              {"time": 1505074680, "value": 249132},
+                              // More data
+                              {"time": 1505078040, "value": 250476},
+                              {"time": 1505078100, "value": 250497}],
+                        "AAAA": [{"time": 1505074560, "value": 97971},
+                                 {"time": 1505074620, "value": 97975},
+                                 {"time": 1505074680, "value": 97975},
+                                 // More data
+                                 {"time": 1505078040, "value": 98409},
+                                 {"time": 1505078100, "value": 98409}],
+                        // More RR Types
+                        "TXT": [{"time": 1505074560, "value": 176},
+                                {"time": 1505074620, "value": 176},
+                                {"time": 1505074680, "value": 176},
+                                // More data
+                                {"time": 1505078040, "value": 176},
+                                {"time": 1505078100, "value": 176}]
+                    }
+                }
+            }
+
 ## Domain export [/domains/{domain}/export]
 
 + Parameters
@@ -1370,9 +1411,9 @@ As with other update methods, only fields that are provided will be changed, you
 
             {
                 "respid": "58cef4d2a5104",
-                "method": "domains/test1.com/export",
+                "method": "domains/example.org/export",
                 "response":{
-                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN test1.com.\ntest1.com. IN SOA ns1.test1.com. dnsadmin.test1.com. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\ntest1.com. 86400 IN NS dev.mydnshost.co.uk.\ntest1.com. 86400 IN A 127.0.0.1\nwww.test1.com. 86400 IN A 127.0.0.1\ntest1.com. 86400 IN AAAA ::1\nwww.test1.com. 86400 IN AAAA ::1\ntest.test1.com. 86400 IN CNAME www.test1.com.\ntxt.test1.com. 86400 IN TXT \"Some Text Record\"\ntest1.com. 86400 IN MX 10 test1.com.\ntest1.com. 86400 IN MX 50 www.test1.com.\n"
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS dev.mydnshost.co.uk.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\nexample.org. 86400 IN AAAA ::1\nwww.example.org. 86400 IN AAAA ::1\ntest.example.org. 86400 IN CNAME www.example.org.\ntxt.example.org. 86400 IN TXT \"Some Text Record\"\nexample.org. 86400 IN MX 10 example.org.\nexample.org. 86400 IN MX 50 www.example.org.\n"
                 }
             }
 
@@ -1387,7 +1428,7 @@ As with other update methods, only fields that are provided will be changed, you
 
             {
                 "data":{
-                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN test1.com.\ntest1.com. IN SOA ns1.test1.com. dnsadmin.test1.com. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\ntest1.com. 86400 IN NS dev.mydnshost.co.uk.\ntest1.com. 86400 IN A 127.0.0.1\nwww.test1.com. 86400 IN A 127.0.0.1\ntest1.com. 86400 IN AAAA ::1\nwww.test1.com. 86400 IN AAAA ::1\ntest.test1.com. 86400 IN CNAME www.test1.com.\ntxt.test1.com. 86400 IN TXT \"Some Text Record\"\ntest1.com. 86400 IN MX 10 test1.com.\ntest1.com. 86400 IN MX 50 www.test1.com.\n"
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS dev.mydnshost.co.uk.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\nexample.org. 86400 IN AAAA ::1\nwww.example.org. 86400 IN AAAA ::1\ntest.example.org. 86400 IN CNAME www.example.org.\ntxt.example.org. 86400 IN TXT \"Some Text Record\"\nexample.org. 86400 IN MX 10 example.org.\nexample.org. 86400 IN MX 50 www.example.org.\n"
                 }
             }
 
@@ -1398,7 +1439,7 @@ If the import is successful, the zone serial will be returned.
 
             {
                 "respid": "58cef5a9d7216",
-                "method": "domains/test1.com/import",
+                "method": "domains/example.org/import",
                 "response":{
                     "serial": "2017031900"
                 }
@@ -1560,7 +1601,7 @@ This can be used to force the server backend to refresh its copy of the domain w
 
             {
                 "respid": "58cef6194ca63",
-                "method": "domains/test1.com/sync"
+                "method": "domains/example.org/sync"
             }
 
 
@@ -1582,7 +1623,7 @@ See what domains exist and user access levels for each.
                 "respid": "58bdf3b15c33b",
                 "method": "admin/domains",
                 "response":{
-                    "test1.com":{
+                    "example.org":{
                         "disabled": "false",
                         "users":{
                             "admin@example.org": "owner"
