@@ -15,7 +15,7 @@ class User extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'users';
 
-	protected static $VALID_PERMISSIONS = ['domains_stats', 'manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'];
+	protected static $VALID_PERMISSIONS = ['system_stats', 'domains_stats', 'manage_domains', 'domains_create', 'manage_users', 'manage_permissions', 'impersonate_users'];
 
 	// Permissions levels for unknown objects.
 	protected $_permissions = [];

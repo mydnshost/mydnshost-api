@@ -1804,3 +1804,39 @@ Some datavalues require authentication, some do not.
                     "impersonate_users"
                 ]
             }
+
+
+## System Statistics [/system/stats/{stat}{?type}]
+### Get system statistics from the API [GET]
+This lets you get system-level statistics from the api.
+
++ Parameters
+    + stat: `queries-per-server` (required, string) - The statistic to get (queries-per-server, queries-per-rrtype).
+    + type: `raw` (optional, string) - Type of stats (raw or derivative)
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59b5faf590931",
+                "method": "system/stats/queries-per-server",
+                "response":{
+                    "stats":{
+                        "ns1":[
+                            {"time": 1505094900, "value": 18},
+                            {"time": 1505094960, "value": 26},
+                            {"time": 1505095020, "value": 28},
+                            // More Stats
+                            {"time": 1505098380, "value": 23},
+                            {"time": 1505098440, "value": 8}
+                        ],
+                        // More Servers
+                        "ns4":[
+                            {"time": 1505094900, "value": 14},
+                            {"time": 1505094960, "value": 18},
+                            {"time": 1505095020, "value": 28},
+                            // More Stats
+                            {"time": 1505098380, "value": 28},
+                            {"time": 1505098440, "value": 6}
+                        ]
+            }
