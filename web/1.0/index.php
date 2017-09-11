@@ -12,10 +12,7 @@
 	foreach (recursiveFindFiles(__DIR__ . '/methods') as $file) { include_once($file); }
 
 	// Set the session handler.
-	if (isset($config['memcached']) && !empty($config['memcached'])) {
-		ini_set('session.save_handler', 'memcached');
-		ini_set('session.save_path', $config['memcached']);
-	}
+	checkSessionHandler();
 
 	// Initial response object.
 	$resp = new api_response();

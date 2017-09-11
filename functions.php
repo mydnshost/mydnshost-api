@@ -96,6 +96,53 @@
 		return $domain == $parser->getPublicSuffix($domain) || array_key_exists($domain, $list);
 	}
 
+	function checkSessionHandler() {
+		global $config;
+
+		if (isset($config['memcached']) && !empty($config['memcached'])) {
+			ini_set('session.save_handler', 'memcached');
+			ini_set('session.save_path', $config['memcached']);
+		}
+	}
+
+	function getSystemRegisterPermissions() {
+		global $config;
+		return $config['register_permissions'];
+	}
+
+	function getSystemRegisterEnabled() {
+		global $config;
+		return $config['register_enabled'];
+	}
+
+	function getSystemRegisterManualVerify() {
+		global $config;
+		return $config['register_manual_verify'];
+	}
+
+	function getSystemDefaultSOA() {
+		global $config;
+		return $config['defaultSOA'];
+	}
+
+	function getSystemDefaultRecords() {
+		global $config;
+		return $config['defaultRecords'];
+	}
+
+	function getInfluxClient() {
+		global $config;
+		$client = new InfluxDB\Client($config['influx']['host'], $config['influx']['port']);
+		return $client;
+	}
+
+	function getInfluxDB() {
+		global $config;
+		$database = getInfluxClient()->selectDB($config['influx']['db']);
+		if (!$database->exists()) { $database->create(); }
+		return $database;
+	}
+
 	class bcrypt {
 		public static function hash($password, $work_factor = 0) {
 			if ($work_factor > 0) { $options = ['cost' => $work_factor]; }

@@ -4,8 +4,7 @@
 
 	$router->post('/register', new class extends RouterMethod {
 		function run() {
-			global $config;
-			if (!$config['register_enabled']) {
+			if (!getSystemRegisterEnabled()) {
 				$this->getContextKey('response')->sendError('Registration is currently closed.');
 			}
 
@@ -32,7 +31,7 @@
 			$user->setDisabledReason("Email address has not yet been verified.");
 
 			// Set default permissions.
-			foreach ($config['register_permissions'] as $permission) {
+			foreach (getSystemRegisterPermissions() as $permission) {
 				$permission = trim($permission);
 				if (!empty($permission)) {
 					$user->setPermission($permission, true);
@@ -101,8 +100,7 @@
 			$user->setPassword($data['data']['password']);
 
 			$data = [];
-			global $config;
-			if ($config['register_manual_verify']) {
+			if (getSystemRegisterManualVerify()) {
 				$data = ['pending' => 'Registration was successful, however the account has been held pending manual approval.'];
 				$user->setDisabled(true);
 				$user->setDisabledReason('Account is pending manual approval.');

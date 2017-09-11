@@ -222,12 +222,8 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainStats($domain, $type = 'raw', $time = '3600') {
-			global $config;
-
 			try {
-				$client = new InfluxDB\Client($config['influx']['host'], $config['influx']['port']);
-				$database = $client->selectDB($config['influx']['db']);
-				if (!$database->exists()) { $database->create(); }
+				$database = getInfluxDB();
 
 				// executing a query will yield a resultset object
 //				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h and "zone" = 'mydnshost.co.uk' GROUP BY time(60s),"zone","qtype";
@@ -593,9 +589,8 @@
 				$domain->validate();
 
 				if ($isCreate) {
-					global $config;
 					$soa = $domain->getSOARecord();
-					$soa->updateSOAContent(array_merge($soa->parseSOA(), $config['defaultSOA']));
+					$soa->updateSOAContent(array_merge($soa->parseSOA(), getSystemDefaultSOA()));
 				}
 
 				$domain->getSOARecord()->validate();
@@ -652,10 +647,9 @@
 		 * @param $domain Domain object to add records to.
 		 */
 		protected function addDefaultRecords($domain) {
-			global $config;
 			// TODO: Allow some kind of per-user default, and only fall back to
 			//       these if not specified.
-			$defaultRecords = $config['defaultRecords'];
+			$defaultRecords = getSystemDefaultRecords();
 
 			foreach ($defaultRecords as $data) {
 				$record = (new Record($domain->getDB()))->setDomainID($domain->getID());

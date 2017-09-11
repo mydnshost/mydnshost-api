@@ -100,8 +100,7 @@
 				$sendWelcome = false;
 				if ($isCreate) {
 					// Set default permissions.
-					global $config;
-					foreach ($config['register_permissions'] as $permission) {
+					foreach (getSystemRegisterPermissions() as $permission) {
 						$permission = trim($permission);
 						if (!empty($permission)) {
 							$user->setPermission($permission, true);
