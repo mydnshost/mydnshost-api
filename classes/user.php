@@ -148,6 +148,15 @@ class User extends DBObject {
 	}
 
 	/**
+	 * Get valid permission names.
+	 *
+	 * @return Valid permission names.
+	 */
+	public static function getValidPermissions() {
+		return User::$VALID_PERMISSIONS;
+	}
+
+	/**
 	 * Load an object from the database based on email address.
 	 *
 	 * @param $db Database object to load from.
