@@ -33,6 +33,8 @@
 
 					array_shift($matches);
 					array_shift($matches);
+
+					$matches = array_map(function($a) { return urldecode($a); }, $matches);
 					return [$v, $matches];
 				}
 			}

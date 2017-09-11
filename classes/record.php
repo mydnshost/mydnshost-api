@@ -128,7 +128,7 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
-		if (!preg_match('#^[a-z0-9-._*]*$#i', $this->getName())) {
+		if (!empty($this->getName()) && !Domain::validDomainName($this->getName())) {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 
@@ -140,12 +140,14 @@ class Record extends DBObject {
 			if (preg_match('#^[^\s]+ [^\s]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+ [0-9]+$#', $content, $m)) {
 				$soa = $this->parseSOA();
 
-				if (!preg_match('#^[a-z0-9-._]+\.$#i', $soa['primaryNS'])) {
+				$testAddress = substr($soa['primaryNS'], 0, -1);
+				if (!Domain::validDomainName($testAddress) || substr($soa['primaryNS'], -1) != '.') {
 					throw new ValidationFailed('Primary Nameserver in SOA (' . $soa['primaryNS'] . ') does not look valid.');
 				}
 
-				if (!preg_match('#^[a-z0-9-._]+\.[a-z0-9-._]+\.[a-z]+\.$#i', $soa['adminAddress'])) {
-					throw new ValidationFailed('Admin address in SOA does not look valid.');
+				$testAddress = substr($soa['adminAddress'], 0, -1);
+				if (!Domain::validDomainName($testAddress) || substr($soa['adminAddress'], -1) != '.') {
+					throw new ValidationFailed('Admin address in SOA (' . $soa['adminAddress'] . ') does not look valid.');
 				}
 			} else {
 				throw new ValidationFailed('SOA is invalid.');
@@ -181,7 +183,7 @@ class Record extends DBObject {
 		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			if (filter_var($content, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
-			} else if (!preg_match('#^[a-z0-9-._]*$#i', $content)) {
+			} else if (!Domain::validDomainName($content)) {
 				throw new ValidationFailed('Content must be a valid name.');
 			}
 		}

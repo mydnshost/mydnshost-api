@@ -288,13 +288,14 @@ class Domain extends DBObject {
 		}
 
 		if (!self::validDomainName($this->getDomain())) {
-			throw new ValidationFailed($this->getDomain() . 'is not a valid domain name');
+			throw new ValidationFailed($this->getDomain() . ' is not a valid domain name');
 		}
 
 		return TRUE;
 	}
 
 	public static function validDomainName($name) {
-		return preg_match('#^[a-z0-9-.]+[a-z]+$#i', $name);
+		// https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
+		return preg_match('#^((?=[a-z0-9-]{1,63}\.)(xn--)?[a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,63}$#i', idn_to_ascii($name));
 	}
 }
