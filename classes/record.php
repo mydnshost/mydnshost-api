@@ -27,7 +27,7 @@ class Record extends DBObject {
 	}
 
 	public function setName($value) {
-		return $this->setData('name', $value);
+		return $this->setData('name', idn_to_ascii($value));
 	}
 
 	public function setType($value) {
@@ -68,6 +68,10 @@ class Record extends DBObject {
 	}
 
 	public function getName() {
+		return idn_to_utf8($this->getData('name'));
+	}
+
+	public function getNameRaw() {
 		return $this->getData('name');
 	}
 
@@ -105,8 +109,8 @@ class Record extends DBObject {
 		$bits = explode(' ', $this->getContent());
 		$result = array();
 
-		$result['primaryNS'] = $bits[0];
-		$result['adminAddress'] = $bits[1];
+		$result['primaryNS'] = idn_to_utf8($bits[0]);
+		$result['adminAddress'] = idn_to_utf8($bits[1]);
 		$result['serial'] = $bits[2];
 		$result['refresh'] = $bits[3];
 		$result['retry'] = $bits[4];
@@ -116,10 +120,26 @@ class Record extends DBObject {
 		return $result;
 	}
 
+	public function postLoad() {
+		$type = $this->getType();
+		$content = $this->getContent();
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+			$this->setContent(idn_to_utf8($content));
+		}
+	}
+
+	public function preSave() {
+		$type = $this->getType();
+		$content = $this->getContent();
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+			$this->setContent(idn_to_ascii($content));
+		}
+	}
+
 	public function updateSOAContent($parsed) {
 		if ($this->getType() != 'SOA') { return FALSE; }
 
-		$content = sprintf('%s %s %s %s %s %s %s', $parsed['primaryNS'], $parsed['adminAddress'], $parsed['serial'], $parsed['refresh'], $parsed['retry'], $parsed['expire'], $parsed['minttl']);
+		$content = sprintf('%s %s %s %s %s %s %s', idn_to_ascii($parsed['primaryNS']), idn_to_ascii($parsed['adminAddress']), $parsed['serial'], $parsed['refresh'], $parsed['retry'], $parsed['expire'], $parsed['minttl']);
 
 		$this->setContent($content);
 	}

@@ -101,6 +101,7 @@
 		protected function getRecordID($domain, $record) {
 			$r = $record->toArray();
 			unset($r['domain_id']);
+			$r['name'] = idn_to_utf8($r['name']);
 
 			$this->getContextKey('response')->data($r);
 
@@ -128,7 +129,7 @@
 			foreach ($records as $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
-				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
 				$list[] = $r;
 			}
 			$this->getContextKey('response')->set('records', $list);
@@ -149,6 +150,7 @@
 		 */
 		protected function getDomainInfo($domain) {
 			$r = $domain->toArray();
+			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
@@ -399,6 +401,7 @@
 		protected function getDomainAccess($domain) {
 			$r = $domain->toArray();
 			$r['access'] = $domain->getAccessUsers();
+			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
 			return true;
@@ -433,6 +436,7 @@
 
 			$r = $domain->toArray();
 			$r['access'] = $domain->getAccessUsers();
+			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
 			return true;
@@ -633,6 +637,7 @@
 			HookManager::get()->handle('records_changed', [$domain]);
 
 			$r = $domain->toArray();
+			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
@@ -731,6 +736,7 @@
 
 			$r = $record->toArray();
 			unset($r['domain_id']);
+			$r['name'] = idn_to_utf8($r['name']);
 
 			$this->getContextKey('response')->data($r);
 
@@ -796,7 +802,7 @@
 				unset($r['domain_id']);
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
-				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $r['name']);
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
 				$result[] = $r;
 				if ($r['updated']) {
 					HookManager::get()->handle('update_record', [$domain, $record]);

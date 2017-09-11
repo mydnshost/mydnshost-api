@@ -55,6 +55,7 @@
 		 * @param $file (optional) File to load domain info from
 		 */
 		function __construct($domain, $zonedirectory, $file = '') {
+			$domain = idn_to_ascii($domain);
 			$this->domain = $domain;
 			$this->zonedirectory = $zonedirectory;
 			if ($file == '' || !file_exists($file) || !is_file($file) || !is_readable($file)) {
@@ -161,7 +162,7 @@
 						}
 					}
 
-					$type = strtoupper($bits[$pos]);
+					$type = strtoupper(isset($bits[$pos]) ? $bits[$pos] : '');
 					$pos++;
 					$this->debug('parseZoneFile', 'Got Line of Type: '.$type.' ('.$line.')');
 
@@ -216,7 +217,7 @@
 									$line = trim($file[++$i]);
 									$bits = preg_split('/\s+/', $line);
 									foreach ($bits as $bit) {
-										if ($bit{0} == ';') { break; }
+										if (empty($bit) || $bit{0} == ';') { break; }
 										$soabits[] = $bit;
 									}
 								} else {
@@ -310,6 +311,8 @@
 		 * @param $soa The SOA record for this domain.
 		 */
 		function setSOA($soa) {
+			$soa['Nameserver'] = idn_to_ascii($soa['Nameserver']);
+			$soa['Email'] = idn_to_ascii($soa['Email']);
 			$this->domainInfo['SOA'][$this->domain.'.'][0] = $soa;
 		}
 
@@ -342,6 +345,7 @@
 		 * @param $priority (optional) Priority of the record (for mx)
 		 */
 		function setRecord($name, $type, $data, $ttl = '', $priority = '') {
+			$name = idn_to_ascii($name);
 			$domainInfo = $this->domainInfo;
 			if ($ttl == '') { $ttl = $domainInfo[' META ']['TTL']; }
 
@@ -349,6 +353,10 @@
 			$info['TTL'] = $ttl;
 			if ($type == 'MX' || $type == 'SRV') {
 				$info['Priority'] = $priority;
+			}
+
+			if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+				$info['Address'] = idn_to_ascii($info['Address']);
 			}
 
 			if (!isset($domainInfo[$type][$name])) { $domainInfo[$type][$name] = array(); };

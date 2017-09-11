@@ -243,7 +243,7 @@ class User extends DBObject {
 	 * @return Domain object if found else FALSE.
 	 */
 	public function getDomainByName($name) {
-		$result = $this->getDomainSearch()->where('domain', $name)->find();
+		$result = $this->getDomainSearch()->where('domain', idn_to_ascii($name))->find();
 		return ($result) ? $result[0] : FALSE;
 	}
 

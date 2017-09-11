@@ -24,7 +24,7 @@ class Domain extends DBObject {
 	}
 
 	public function setDomain($value) {
-		return $this->setData('domain', $value);
+		return $this->setData('domain', idn_to_ascii($value));
 	}
 
 	public function setDisabled($value) {
@@ -43,7 +43,7 @@ class Domain extends DBObject {
 	 * @return FALSE if no object exists, else the object.
 	 */
 	public static function loadFromDomain($db, $name) {
-		$result = static::find($db, ['domain' => $name]);
+		$result = static::find($db, ['domain' => idn_to_ascii($name)]);
 		if ($result) {
 			return $result[0];
 		} else {
@@ -133,6 +133,10 @@ class Domain extends DBObject {
 	}
 
 	public function getDomain() {
+		return idn_to_utf8($this->getData('domain'));
+	}
+
+	public function getDomainRaw() {
 		return $this->getData('domain');
 	}
 
