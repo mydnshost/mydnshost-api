@@ -12,7 +12,8 @@
 
 			$user = User::loadFromEmail($this->getContextKey('db'), $data['data']['email']);
 			if ($user == FALSE || $user->isDisabled()) {
-				$this->getContextKey('response')->sendError('Invalid user');
+				$this->getContextKey('response')->data(['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.']);
+				// $this->getContextKey('response')->sendError('Invalid user');
 			}
 
 			$time = time();
@@ -28,7 +29,7 @@
 			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 
-			$this->getContextKey('response')->data(['success' => 'Password reset was submitted, please check your email for further instructions.']);
+			$this->getContextKey('response')->data(['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.']);
 
 			return TRUE;
 		}
