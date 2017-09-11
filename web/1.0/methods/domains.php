@@ -505,6 +505,7 @@
 
 			$domains = [];
 			foreach ($rows as $row) {
+				$row['domain'] = idn_to_utf8($row['domain']);
 				if (!array_key_exists($row['domain'], $domains)) {
 					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => []];
 				}

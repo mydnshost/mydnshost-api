@@ -143,7 +143,7 @@
 				}
 				$ips[] = '';
 
-				$cmd = sprintf($this->command, escapeshellarg($domain->getDomain()), escapeshellarg($filename), implode('; ', $ips));
+				$cmd = sprintf($this->command, escapeshellarg($domain->getDomainRaw()), escapeshellarg($filename), implode('; ', $ips));
 				exec($cmd);
 			}
 		}
@@ -200,9 +200,9 @@
 		}
 
 		function addCatalogRecords($bindConfig, $bind, $domain) {
-			$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
+			$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomainRaw()) . "\0");
 
-			$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomain() . '.');
+			$bind->setRecord($hash . '.zones', 'PTR', $domain->getDomainRaw() . '.');
 
 			// Convert NS Records to IPs
 			$ips = getAllowedIPs($bindConfig, $domain, true);
@@ -225,7 +225,7 @@
 					$bindSOA['Serial']++;
 					$bind->setSOA($bindSOA);
 
-					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomain()) . "\0");
+					$hash = sha1("\7" . str_replace(".", "\3", $domain->getDomainRaw()) . "\0");
 
 					$oldAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
 					if (!empty($oldAllowTransfer)) { $oldAllowTransfer = $oldAllowTransfer[0]; }
