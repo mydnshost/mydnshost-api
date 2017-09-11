@@ -119,33 +119,6 @@ This is used to see what version of the API you are accessing, this does not req
                 }
             }
 
-## System Information [/system/datavalue/{datavalue}]
-### Get system datavalues from the API [GET]
-This lets you get system datavalues from the api. These are mostly used by the frontend to allow it to dynamically adapt to certain backend changes.
-
-Some datavalues require authentication, some do not.
-
-+ Parameters
-
-    + datavalue: `validPermissions` (required, string) - The datavalue to get.
-
-+ Response 200 (application/json)
-    + Body
-
-            {
-                "respid": "59b5f1440fca4",
-                "method": "system/datavalue/validPermissions",
-                "response":{
-                "validPermissions":[
-                    "domains_stats",
-                    "manage_domains",
-                    "domains_create",
-                    "manage_users",
-                    "manage_permissions",
-                    "impersonate_users"
-                ]
-            }
-
 ## Session tokens [/session]
 ### Open a new session and get a session token [GET]
 This will obtain a new session token for use in future requests.
@@ -1799,3 +1772,35 @@ If owner is blank, no owner will be set.
                 "errorData": "Duplicate entry 'example.net' for key 'domain_domain_unique'"
             }
 
+
+# Group System
+Endpoints for dealing with system internals.
+
+Whilst every effort will be made to keep the API stable, resources available under this endpoint are subject to change without warning as required.
+
+## System Information [/system/datavalue/{datavalue}]
+### Get system datavalues from the API [GET]
+This lets you get system datavalues from the api. These are mostly used by the frontend to allow it to dynamically adapt to certain backend changes.
+
+Some datavalues require authentication, some do not.
+
++ Parameters
+
+    + datavalue: `validPermissions` (required, string) - The datavalue to get.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59b5f1440fca4",
+                "method": "system/datavalue/validPermissions",
+                "response":{
+                "validPermissions":[
+                    "domains_stats",
+                    "manage_domains",
+                    "domains_create",
+                    "manage_users",
+                    "manage_permissions",
+                    "impersonate_users"
+                ]
+            }
