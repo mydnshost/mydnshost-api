@@ -159,8 +159,6 @@
 			if ($keys !== FALSE) {
 				$r['DNSSEC'] = ['DS' => $keys];
 			}
-var_dump($keys);
-die();
 
 			$this->getContextKey('response')->data($r);
 
