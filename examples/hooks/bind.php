@@ -101,6 +101,7 @@
 
 		HookManager::get()->addHookType('bind_rebuild_catalog');
 		HookManager::get()->addHookType('bind_readd_zones');
+		HookManager::get()->addHookType('bind_rebuild_zones');
 
 		HookManager::get()->addHookType('bind_zone_added');
 		HookManager::get()->addHookType('bind_zone_changed');
@@ -263,6 +264,18 @@
 			}
 		}
 
+		// Hook to rebuild all zone files.
+		HookManager::get()->addHook('bind_rebuild_zones', function () use ($bindConfig, $writeZoneFile) {
+			$s = new Search(DB::get()->getPDO(), 'domains', ['domain', 'disabled']);
+			$s->order('domain');
+			$rows = $s->getRows();
+
+			foreach ($rows as $row) {
+				$domain = Domain::loadFromDomain(DB::get(), $row['domain']);
+				call_user_func_array($writeZoneFile, [$domain]);
+			}
+		});
+
 		// Hook to remove and re-add all zones to bind.
 		HookManager::get()->addHook('bind_readd_zones', function () use ($bindConfig) {
 			$s = new Search(DB::get()->getPDO(), 'domains', ['domain', 'disabled']);
@@ -356,7 +369,17 @@
 /*
 	require_once('/dnsapi/functions.php');
 	$bindConfig = $config['hooks']['bind'];
+	HookManager::get()->handle('bind_rebuild_zones');
+
+
+	require_once('/dnsapi/functions.php');
+	$bindConfig = $config['hooks']['bind'];
 	HookManager::get()->handle('bind_rebuild_catalog', [$bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']]);
 	$cmd = sprintf($bindConfig['reloadZoneCommand'], $bindConfig['catalogZoneName'], $bindConfig['catalogZoneFile']);
 	exec($cmd);
+
+
+	require_once('/dnsapi/functions.php');
+	$bindConfig = $config['hooks']['bind'];
+	HookManager::get()->handle('bind_readd_zones');
 */

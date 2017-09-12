@@ -195,7 +195,6 @@
 
 					// Add params to this bit first, we add it to domainInfo afterwards
 					$info = array();
-
 					switch ($type) {
 						case 'SOA':
 							// SOAs can span multiple lines.
@@ -311,8 +310,8 @@
 		 * @param $soa The SOA record for this domain.
 		 */
 		function setSOA($soa) {
-			$soa['Nameserver'] = idn_to_ascii($soa['Nameserver']);
-			$soa['Email'] = idn_to_ascii($soa['Email']);
+			$soa['Nameserver'] = idn_to_ascii(substr($soa['Nameserver'], -1) == '.' ? substr($soa['Nameserver'], 0, -1) : $soa['Nameserver']) . '.';
+			$soa['Email'] = idn_to_ascii(substr($soa['Email'], -1) == '.' ? substr($soa['Email'], 0, -1) : $soa['Email']) . '.';
 			$this->domainInfo['SOA'][$this->domain.'.'][0] = $soa;
 		}
 
