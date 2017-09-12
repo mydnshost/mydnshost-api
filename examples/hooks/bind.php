@@ -240,7 +240,7 @@
 					if ($mode == 'changed') {
 						if (!empty($oldAllowTransfer)) {
 							$newAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
-							if (!empty($newAllowTransfer) && $newAllowTransfer != $oldAllowTransfer) {
+							if (!empty($newAllowTransfer) && $newAllowTransfer[0] != $oldAllowTransfer) {
 								// Allowed-Transfer list has changed, re-add domain to bind
 								$zoneBind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 								call_user_func_array([new BindCommandRunner($bindConfig['delZoneCommand']), 'run'], [$domain, $zoneBind, $bindConfig]);
