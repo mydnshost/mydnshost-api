@@ -232,7 +232,7 @@ class Record extends DBObject {
 
 		if ($type == 'DS') {
 			if (!preg_match('#^[0-9]+ [0-9]+ [0-9]+ [0-9A-F]+$#i', $content, $m)) {
-				throw new ValidationFailed('DS Record content should have the format: <KeyTag> <algorithm> <digesttype> <digest>');
+				throw new ValidationFailed('DS Record content should have the format: <keytag> <algorithm> <digesttype> <digest>');
 			}
 		}
 
