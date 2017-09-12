@@ -135,7 +135,7 @@
 
 		$keyName = $config['dnssec']['dskeys'] . '/' . $domain . '.dskey';
 		if (file_exists($keyName)) {
-			return explode("\n", file_get_contents($keyName));
+			return explode("\n", trim(file_get_contents($keyName)));
 		}
 
 		return FALSE;
