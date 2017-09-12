@@ -14,6 +14,9 @@
 	$config['register_manual_verify'] = parseBool(getEnvOrDefault('REGISTER_MANUAL_VERIFY', 'false'));
 	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
 
+	// Location of <zone>.dskey files
+	$config['dnssec']['dskeys'] = getEnvOrDefault('DNSSEC_DSKEY_FILES', '/etc/bind/keys/');
+
 	// General details (used by emails)
 	$config['sitename'] = getEnvOrDefault('SITE_NAME', 'MyDNSHost');
 	$config['siteurl'] = getEnvOrDefault('SITE_URL', 'https://mydnshost.co.uk/');

@@ -155,6 +155,11 @@
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
+			$keys = getDSKeys($domain->getDomainRaw());
+			if ($keys !== FALSE) {
+				$r['DNSSEC'] = ['DS' => $keys];
+			}
+
 			$this->getContextKey('response')->data($r);
 
 			return true;

@@ -130,6 +130,17 @@
 		return $config['defaultRecords'];
 	}
 
+	function getDSKeys($domain) {
+		global $config;
+
+		$keyName = $config['dnssec']['dskeys'] . '/' . $domain . '.dskey';
+		if (file_exists($keyName)) {
+			return explode("\n", file_get_contents($keyName));
+		}
+
+		return FALSE;
+	}
+
 	function getInfluxClient() {
 		global $config;
 		$client = new InfluxDB\Client($config['influx']['host'], $config['influx']['port']);
