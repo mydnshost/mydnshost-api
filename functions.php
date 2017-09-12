@@ -130,6 +130,7 @@
 		return $config['defaultRecords'];
 	}
 
+	// TODO: This shouldn't rely on text files on disk if possible.
 	function getDSKeys($domain) {
 		global $config;
 

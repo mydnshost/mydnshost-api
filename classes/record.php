@@ -18,6 +18,12 @@ class Record extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'records';
 
+	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS'];
+
+	public static function getValidRecordTypes() {
+		return User::$VALID_RRs;
+	}
+
 	public function __construct($db) {
 		parent::__construct($db);
 	}
@@ -152,7 +158,7 @@ class Record extends DBObject {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 
-		if (!in_array($type, ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA'])) {
+		if (!in_array($type, Record::$VALID_RRs)) {
 			throw new ValidationFailed('Unknown record type: '. $type);
 		}
 
@@ -221,6 +227,12 @@ class Record extends DBObject {
 		if ($type == 'CAA') {
 			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#', $content, $m)) {
 				throw new ValidationFailed('CAA Record content should have the format: <flag> <tag> "<value>"');
+			}
+		}
+
+		if ($type == 'DS') {
+			if (!preg_match('#^[0-9]+ [0-9]+ [0-9]+ [0-9A-F]+$#i', $content, $m)) {
+				throw new ValidationFailed('DS Record content should have the format: <KeyTag> <algorithm> <digesttype> <digest>');
 			}
 		}
 
