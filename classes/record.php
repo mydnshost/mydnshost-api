@@ -154,7 +154,10 @@ class Record extends DBObject {
 		$type = $this->getType();
 		$content = $this->getContent();
 
-		if (!empty($this->getName()) && !Domain::validDomainName($this->getName())) {
+		$testName = $this->getName();
+		$testName = preg_replace('#^*\.#', 'WILDCARD.', $testName);
+
+		if (!empty($testName) && !Domain::validDomainName()) {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
 		}
 
