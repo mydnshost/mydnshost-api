@@ -18,7 +18,7 @@ class Record extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'records';
 
-	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS'];
+	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP'];
 
 	public static function getValidRecordTypes() {
 		return User::$VALID_RRs;
@@ -228,8 +228,14 @@ class Record extends DBObject {
 		}
 
 		if ($type == 'CAA') {
-			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#', $content, $m)) {
+			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#i', $content, $m)) {
 				throw new ValidationFailed('CAA Record content should have the format: <flag> <tag> "<value>"');
+			}
+		}
+
+		if ($type == 'SSHFP') {
+			if (!preg_match('#^[0-9]+ [0-9]+ [0-9A-F]+$#i', $content, $m)) {
+				throw new ValidationFailed('SSHFP Record content should have the format: <algorithm> <fingerprint type> <fingerprint>');
 			}
 		}
 
