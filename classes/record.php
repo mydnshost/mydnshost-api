@@ -18,7 +18,7 @@ class Record extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'records';
 
-	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP'];
+	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP', 'TLSA'];
 
 	public static function getValidRecordTypes() {
 		return User::$VALID_RRs;
@@ -236,6 +236,12 @@ class Record extends DBObject {
 		if ($type == 'SSHFP') {
 			if (!preg_match('#^[0-9]+ [0-9]+ [0-9A-F]+$#i', $content, $m)) {
 				throw new ValidationFailed('SSHFP Record content should have the format: <algorithm> <fingerprint type> <fingerprint>');
+			}
+		}
+
+		if ($type == 'TLSA') {
+			if (!preg_match('#^[0-9]+ [0-9]+ [0-9]+ [0-9A-F]+$#i', $content, $m)) {
+				throw new ValidationFailed('TLSA Record content should have the format: <usage> <selector> <matching type> <fingerprint>');
 			}
 		}
 
