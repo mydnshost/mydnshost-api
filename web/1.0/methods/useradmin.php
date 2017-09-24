@@ -763,7 +763,11 @@
 			$domains = $this->getContextKey('user')->getDomains();
 			foreach ($domains as $domain) { $zones[] = $domain->getDomain(); }
 
-			$result = getGlobalQueriesPerZone($type, $time, $zones);
+			if (empty($zones)) {
+				$result = ['stats' => []];
+			} else {
+				$result = getGlobalQueriesPerZone($type, $time, $zones);
+			}
 			if ($result !== false) {
 				$this->getContextKey('response')->data($result);
 				return true;
