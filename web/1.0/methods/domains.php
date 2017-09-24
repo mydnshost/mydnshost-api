@@ -222,54 +222,7 @@
 			return true;
 		}
 
-		/**
-		 * Get zone statistics.
-		 *
-		 * @param $domain Domain object based on the 'domain' parameter.
-		 * @return TRUE if we handled this method.
-		 */
-		protected function getDomainStats($domain, $type = 'raw', $time = '3600') {
-			try {
-				$database = getInfluxDB();
 
-				// executing a query will yield a resultset object
-//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h and "zone" = 'mydnshost.co.uk' GROUP BY time(60s),"zone","qtype";
-//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h AND zone = 'mydnshost.co.uk' GROUP BY time(60s),zone,qtype"
-				$result = $database->getQueryBuilder();
-
-				if ($type == 'derivative') {
-					$result = $result->select('non_negative_derivative(sum("value")) AS value');
-				} else {
-					$result = $result->select('sum("value") AS value');
-				}
-
-				$result = $result->from('zone_qtype')
-				                 ->where(["time > now() - " . $time . "s", "\"zone\" = '" . $domain->getDomain() . "'"])
-				                 ->groupby("time(60s)")->groupby("zone")->groupby("qtype")
-				                 ->getResultSet();
-
-				// $results = json_decode($result->getRaw(), true);
-
-				$stats = [];
-				foreach ($result->getSeries() AS $series) {
-					$type = $series['tags']['qtype'];
-					$stats[$type] = [];
-
-					foreach ($series['values'] as $val) {
-						if ($val[1] === NULL) { continue; }
-						$stat = ['time' => strtotime($val[0]), 'value' => (int)$val[1]];
-
-						$stats[$type][] = $stat;
-					}
-				}
-
-				$this->getContextKey('response')->data(['stats' => $stats]);
-
-				return true;
-			} catch (Exception $ex) { }
-
-			return false;
-		}
 
 		/**
 		 * Import zone data as BIND format.
@@ -1136,7 +1089,12 @@
 			$time = isset($_REQUEST['time']) && ctype_digit($_REQUEST['time']) ? $_REQUEST['time'] : 3600;
 			$type = isset($_REQUEST['type'])? $_REQUEST['type'] : "raw";
 
-			return $this->getDomainStats($domain, $type, $time);
+			$result = getDomainStats($domain, $type, $time);
+			if ($result !== false) {
+				$this->getContextKey('response')->data($result);
+				return true;
+			}
+			return false;
 		}
 	});
 

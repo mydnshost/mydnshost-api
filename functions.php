@@ -165,3 +165,178 @@
 			return password_verify($password, $stored_hash);
 		}
 	}
+
+	function getGlobalQueriesPerServer($type = 'raw', $time = '3600') {
+		try {
+			$database = getInfluxDB();
+
+			// executing a query will yield a resultset object
+			$result = $database->getQueryBuilder();
+
+			if ($type == 'derivative') {
+				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+			} else {
+				$result = $result->select('sum("value") AS value');
+			}
+
+			$result = $result->from('opcode_query')
+			                 ->where(["time > now() - " . $time . "s"])
+			                 ->groupby("time(60s)")->groupby("host")
+			                 ->getResultSet();
+
+			$stats = [];
+			foreach ($result->getSeries() AS $series) {
+				$host = $series['tags']['host'];
+				$stats[$host] = [];
+
+				foreach ($series['values'] as $val) {
+					if ($val[1] === NULL) { continue; }
+					$stat = ['time' => strtotime($val[0]), 'value' => (int)$val[1]];
+
+					$stats[$host][] = $stat;
+				}
+			}
+
+			return ['stats' => $stats];
+		} catch (Exception $ex) { }
+
+		return false;
+	}
+
+	function getGlobalQueriesPerRRType($type = 'raw', $time = '3600') {
+		try {
+			$database = getInfluxDB();
+
+			// executing a query will yield a resultset object
+			$result = $database->getQueryBuilder();
+
+			if ($type == 'derivative') {
+				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+			} else {
+				$result = $result->select('sum("value") AS value');
+			}
+
+			$result = $result->from('qtype')
+			                 ->where(["time > now() - " . $time . "s"])
+			                 ->groupby("time(60s)")->groupby("qtype")
+			                 ->getResultSet();
+
+			$stats = [];
+			foreach ($result->getSeries() AS $series) {
+				$qtype = $series['tags']['qtype'];
+				$stats[$qtype] = [];
+
+				$total = 0;
+				foreach ($series['values'] as $val) {
+					if ($val[1] === NULL) { continue; }
+					$stat = ['time' => strtotime($val[0]), 'value' => (int)$val[1]];
+					$total += $stat['value'];
+
+					$stats[$qtype][] = $stat;
+				}
+				if ($total == 0) { unset($stats[$qtype]); }
+			}
+
+			return ['stats' => $stats];
+		} catch (Exception $ex) { }
+
+		return false;
+	}
+
+	function getGlobalQueriesPerZone($type = 'raw', $time = '3600', $zones = []) {
+		try {
+			$database = getInfluxDB();
+
+			// executing a query will yield a resultset object
+			$result = $database->getQueryBuilder();
+
+			if ($type == 'derivative') {
+				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+			} else {
+				$result = $result->select('sum("value") AS value');
+			}
+
+			$where = ["time > now() - " . $time . "s"];
+			if (!empty($zones)) {
+				$zoneq = [];
+				foreach ($zones as $z) {
+					if (Domain::validDomainName($z)) {
+						$zoneq[] = "\"zone\" = '" . $z ."'";
+					}
+				}
+				$where[] = "(" . implode(" OR ", $zoneq) . ")";
+			}
+
+			$result = $result->from('zone_qtype')
+			                 ->where($where)
+			                 ->groupby("time(60s)")->groupby("zone")
+			                 ->getResultSet();
+
+			$stats = [];
+			foreach ($result->getSeries() AS $series) {
+				$zone = $series['tags']['zone'];
+				$stats[$zone] = [];
+
+				$total = 0;
+				foreach ($series['values'] as $val) {
+					if ($val[1] === NULL) { continue; }
+					$stat = ['time' => strtotime($val[0]), 'value' => (int)$val[1]];
+					$total += $stat['value'];
+
+					$stats[$zone][] = $stat;
+				}
+				if ($total == 0) { unset($stats[$zone]); }
+			}
+
+			return ['stats' => $stats];
+		} catch (Exception $ex) { }
+
+		return false;
+	}
+
+	/**
+	 * Get zone statistics.
+	 *
+	 * @param $domain Domain object.
+	 * @return TRUE if we handled this method.
+	 */
+	function getDomainStats($domain, $type = 'raw', $time = '3600') {
+		try {
+			$database = getInfluxDB();
+
+			// executing a query will yield a resultset object
+//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h and "zone" = 'mydnshost.co.uk' GROUP BY time(60s),"zone","qtype";
+//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h AND zone = 'mydnshost.co.uk' GROUP BY time(60s),zone,qtype"
+			$result = $database->getQueryBuilder();
+
+			if ($type == 'derivative') {
+				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+			} else {
+				$result = $result->select('sum("value") AS value');
+			}
+
+			$result = $result->from('zone_qtype')
+			                 ->where(["time > now() - " . $time . "s", "\"zone\" = '" . $domain->getDomain() . "'"])
+			                 ->groupby("time(60s)")->groupby("zone")->groupby("qtype")
+			                 ->getResultSet();
+
+			// $results = json_decode($result->getRaw(), true);
+
+			$stats = [];
+			foreach ($result->getSeries() AS $series) {
+				$type = $series['tags']['qtype'];
+				$stats[$type] = [];
+
+				foreach ($series['values'] as $val) {
+					if ($val[1] === NULL) { continue; }
+					$stat = ['time' => strtotime($val[0]), 'value' => (int)$val[1]];
+
+					$stats[$type][] = $stat;
+				}
+			}
+
+			return ['stats' => $stats];
+		} catch (Exception $ex) { }
+
+		return false;
+	}

@@ -751,6 +751,27 @@
 		}
 	});
 
+	$router->get('/users/(self|[0-9]+)/stats/domains', new class extends UserIDUserAdmin {
+		function run($userid) {
+			$this->checkPermissions(['domains_read', 'user_read', 'domains_stats']);
+			$user = $this->getUserFromParam($userid);
+
+			$time = isset($_REQUEST['time']) && ctype_digit($_REQUEST['time']) ? $_REQUEST['time'] : 3600;
+			$type = isset($_REQUEST['type'])? $_REQUEST['type'] : "raw";
+
+			$zones = [];
+			$domains = $this->getContextKey('user')->getDomains();
+			foreach ($domains as $domain) { $zones[] = $domain->getDomain(); }
+
+			$result = getGlobalQueriesPerZone($type, $time, $zones);
+			if ($result !== false) {
+				$this->getContextKey('response')->data($result);
+				return true;
+			}
+			return false;
+		}
+	});
+
 	$router->post('/users/create', new class extends UserAdmin {
 		function run() {
 			$this->checkPermissions(['manage_users', 'user_write']);

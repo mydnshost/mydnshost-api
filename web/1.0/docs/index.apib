@@ -844,6 +844,50 @@ Returns the list of known Custom-Data Key/Value pairs.
                 ]
             }
 
+## User Domain Statistics [/users/{userid}/stats/{stattype}{?type}]
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + type: `raw` (optional, string) - Type of stats (raw or derivative)
+
+### Get statistics for all our domains [GET]
++ Parameters
+    + stattype: `domains`
+    + type: `raw`
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7c79a96fd3",
+                "method": "/users/self/stats/domains",
+                "response":{
+                    "stats": {
+                        "example.org": [{"time": 1505074560, "value": 249101},
+                                        {"time": 1505074620, "value": 249122},
+                                        {"time": 1505074680, "value": 249132},
+                                        // More data
+                                        {"time": 1505078040, "value": 250476},
+                                        {"time": 1505078100, "value": 250497}],
+                        "example.com": [{"time": 1505074560, "value": 97971},
+                                        {"time": 1505074620, "value": 97975},
+                                        {"time": 1505074680, "value": 97975},
+                                        // More data
+                                        {"time": 1505078040, "value": 98409},
+                                        {"time": 1505078100, "value": 98409}],
+                        // More Domain Names
+                        "example.net": [{"time": 1505074560, "value": 176},
+                                        {"time": 1505074620, "value": 176},
+                                        {"time": 1505074680, "value": 176},
+                                        // More data
+                                        {"time": 1505078040, "value": 176},
+                                        {"time": 1505078100, "value": 176}]
+                    }
+                }
+            }
+
+
 # Group Domains
 Endpoints for dealing with domains.
 
@@ -1890,7 +1934,7 @@ Some datavalues require authentication, some do not.
 This lets you get system-level statistics from the api.
 
 + Parameters
-    + stat: `queries-per-server` (required, string) - The statistic to get (queries-per-server, queries-per-rrtype).
+    + stat: `queries-per-server` (required, string) - The statistic to get (queries-per-server, queries-per-rrtype, queries-per-zone).
     + type: `raw` (optional, string) - Type of stats (raw or derivative)
 
 + Response 200 (application/json)
