@@ -206,8 +206,14 @@
 				$content = $record->getContent();
 				if ($record->getType() == "TXT") {
 					$content = '"' . $record->getContent() . '"';
-				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
 					$content = $record->getContent() . '.';
+				} else if ($record->getType() == 'SRV') {
+					if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+						if ($m[1] != ".") {
+							$content = $record->getContent() . '.';
+						}
+					}
 				}
 
 				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
@@ -290,12 +296,21 @@
 							$name .= $domain->getDomain();
 						}
 
-						if (in_array($type, ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+						if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
 							if (endsWith($record['Address'], '.')) {
 								$record['Address'] = rtrim($record['Address'], '.');
 							} else {
 								if (!empty($record['Address'])) { $record['Address'] .= '.'; }
 								$record['Address'] .= $domain->getDomain();
+							}
+						} else if ($type == 'SRV' && preg_match('#^([0-9]+ [0-9]+) ([^\s]+)$#', $record['Address'], $m)) {
+							if ($m[2] != '.') {
+								if (endsWith($record['Address'], '.')) {
+									$record['Address'] = rtrim($record['Address'], '.');
+								} else {
+									if (!empty($record['Address'])) { $record['Address'] .= '.'; }
+									$record['Address'] .= $domain->getDomain();
+								}
 							}
 						} else if ($type == 'TXT' && preg_match('#^"(.*)"$#', $record['Address'], $m)) {
 							$record['Address'] = $m[1];

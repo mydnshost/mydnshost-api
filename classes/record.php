@@ -155,7 +155,7 @@ class Record extends DBObject {
 		$content = $this->getContent();
 
 		$testName = $this->getName();
-		$testName = preg_replace('#^*\.#', 'WILDCARD.', $testName);
+		$testName = preg_replace('#^\*\.#', 'WILDCARD.', $testName);
 
 		if (!empty($testName) && !Domain::validDomainName()) {
 			throw new ValidationFailed('Invalid name: ' . $this->getName());
@@ -212,7 +212,7 @@ class Record extends DBObject {
 		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			$testName = $content;
 			if (substr($testName, -1) == '.') {
-				$testName = substr($content, 0, -1);
+				$testName = substr($testName, 0, -1);
 			}
 
 			if (filter_var($testName, FILTER_VALIDATE_IP) !== FALSE) {
@@ -225,9 +225,22 @@ class Record extends DBObject {
 		}
 
 		if ($type == 'SRV') {
-			if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
-				if (filter_var($m[1], FILTER_VALIDATE_IP) !== FALSE) {
+			if (preg_match('#^([0-9]+ [0-9]+) ([^\s]+)$#', $content, $m)) {
+				if (filter_var($m[2], FILTER_VALIDATE_IP) !== FALSE) {
 					throw new ValidationFailed('Target must be a name not an IP.');
+				}
+
+				if ($m[2] != ".") {
+					$testName = $m[2];
+					if (substr($testName, -1) == '.') {
+						$testName = substr($testName, 0, -1);
+					}
+
+					if (!Domain::validDomainName($testName)) {
+						throw new ValidationFailed('Target must be a valid name.');
+					} else {
+						$this->setContent($m[1] . ' ' . $testName);
+					}
 				}
 			} else {
 				throw new ValidationFailed('SRV Record content should have the format: <weight> <port> <target>');

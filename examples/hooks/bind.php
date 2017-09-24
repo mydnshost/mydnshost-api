@@ -69,8 +69,14 @@
 					$content = $record->getContent();
 					if ($record->getType() == "TXT") {
 						$content = '"' . $record->getContent() . '"';
-					} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'SRV', 'PTR'])) {
+					} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
 						$content = $record->getContent() . '.';
+					} else if ($record->getType() == 'SRV') {
+						if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+							if ($m[1] != ".") {
+								$content = $record->getContent() . '.';
+							}
+						}
 					}
 
 					if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
