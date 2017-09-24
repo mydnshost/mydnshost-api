@@ -23,6 +23,9 @@
 	// Mailer
 	Mailer::get()->setConfig($config['email']);
 
+	HookManager::get()->addHookType('new_user');
+	HookManager::get()->addHookType('new_domain');
+
 	HookManager::get()->addHookType('add_domain');
 	HookManager::get()->addHookType('rename_domain');
 	HookManager::get()->addHookType('delete_domain');

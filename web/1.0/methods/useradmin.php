@@ -163,11 +163,15 @@
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
 							HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 						}
-					} else if ($isCreate && $sendWelcome) {
-						$te = TemplateEngine::get();
-						$te->setVar('user', $user);
-						[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-						HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					} else if ($isCreate) {
+						HookManager::get()->handle('new_user', [$user]);
+
+						if ($sendWelcome) {
+							$te = TemplateEngine::get();
+							$te->setVar('user', $user);
+							[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
+							HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+						}
 					}
 
 					$this->getContextKey('response')->data($u);

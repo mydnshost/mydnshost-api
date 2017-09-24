@@ -560,6 +560,7 @@
 
 				if ($domain->save()) {
 					if ($isCreate) {
+						HookManager::get()->handle('new_domain', [$domain]);
 						HookManager::get()->handle('add_domain', [$domain]);
 					} else if ($isRename) {
 						HookManager::get()->handle('rename_domain', [$oldName, $domain]);
