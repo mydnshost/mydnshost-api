@@ -41,7 +41,7 @@ class Record extends DBObject {
 	}
 
 	public function setContent($value) {
-		return $this->setData('content', $value);
+		return $this->setData('content', trim($value));
 	}
 
 	public function setTTL($value) {
