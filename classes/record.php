@@ -210,10 +210,17 @@ class Record extends DBObject {
 		}
 
 		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
-			if (filter_var($content, FILTER_VALIDATE_IP) !== FALSE) {
+			$testName = $content;
+			if (substr($testName, -1) == '.') {
+				$testName = substr($content, 0, -1);
+			}
+
+			if (filter_var($testName, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
-			} else if (!Domain::validDomainName($content)) {
+			} else if (!Domain::validDomainName($testName)) {
 				throw new ValidationFailed('Content must be a valid name.');
+			} else if ($testName != $content) {
+				$this->setContent($testName);
 			}
 		}
 
