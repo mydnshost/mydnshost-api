@@ -764,6 +764,85 @@ This takes the same parameters as create, but will update an existing key.
                 "error": "Invalid code provided for verification."
             }
 
+## User custom data [/users/{userid}/customdata]
+This allows applications to store user-specific data within the api.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known custom data [GET]
+Returns the list of known Custom-Data Key/Value pairs.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7bac0c46e5",
+                "method": "users/self/customdata",
+                "response":{
+                    "test.ing": "testValue 2",
+                    "test.ing3": "testValue 3",
+                    "uk.co.mydnshost.www/domain/defaultpage": "records"
+                }
+            }
+
+## Manipulate specific custom data key/value [/users/{userid}/customdata/{key}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + key: `test.ing` (required) - The custom data key.
+
+### Get key valie [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7baf524aac",
+                "method": "users/self/customdata/test.ing",
+                "response":{
+                    "key": "test.ing",
+                    "value": "testValue 2"
+                }
+            }
+
+### Create/Update custom data for key [POST]
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "value": "Some Value"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the data as it exists after the change.
+    + Body
+
+            {
+                "respid": "59c7bb169ac68",
+                "method": "users/self/customdata/test.ing",
+                "response":{
+                    "key": "test.ing",
+                    "value": "Some Value",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7bb2d0cfd5",
+                "method": "users/self/customdata/test.ing"
+                "response":[
+                    "deleted"
+                ]
+            }
 
 # Group Domains
 Endpoints for dealing with domains.
