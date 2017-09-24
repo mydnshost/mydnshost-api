@@ -220,6 +220,18 @@
 			}
 		}
 
+		function bind_sleepForCatalog() {
+			global $__BIND__CATALOG_TIME;
+
+			if (isset($__BIND__CATALOG_TIME)) {
+				// Make sure there is at least 1 second between subsequent
+				// writes to the catalog.
+				$now = time();
+				if ($__BIND__CATALOG_TIME >= $now) { @time_sleep_until($now + 1); }
+			}
+			$__BIND__CATALOG_TIME = time();
+		}
+
 		function updateCatalogZone($bindConfig, $domain, $mode = 'removed') {
 			// Update the catalog
 			if (!empty($bindConfig['catalogZoneName']) && !empty($bindConfig['catalogZoneFile']) && file_exists($bindConfig['catalogZoneFile'])) {
@@ -259,6 +271,8 @@
 							}
 						}
 					}
+
+					bind_sleepForCatalog();
 					$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 
 					$cmd = sprintf($bindConfig['reloadZoneCommand'], escapeshellarg($bindConfig['catalogZoneName']), $bindConfig['catalogZoneFile']);
@@ -336,6 +350,7 @@
 					}
 				}
 
+				bind_sleepForCatalog();
 				$bind->saveZoneFile($zoneFile);
 				chmod($zoneFile, 0777);
 
@@ -362,6 +377,7 @@
 			$bind->setSOA($bindSOA);
 			$bind->setRecord('@', 'NS', 'invalid.', '3600', '');
 			$bind->setRecord('version', 'TXT', '1', '3600', '');
+			bind_sleepForCatalog();
 			$bind->saveZoneFile($bindConfig['catalogZoneFile']);
 			chmod($bindConfig['catalogZoneFile'], 0777);
 
