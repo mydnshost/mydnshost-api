@@ -41,6 +41,16 @@
 			return $key;
 		}
 
+		protected function getCustomDataFromParam($userid, $key, $allowInvalid = false) {
+			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
+			$customdata = UserCustomData::loadFromUserKey($this->getContextKey('db'), $userid, $key);
+			if ($customdata === FALSE && !$allowInvalid) {
+				$this->getContextKey('response')->sendError('Unknown custom data: ' . $key);
+			}
+
+			return $customdata;
+		}
+
 		protected function getUserData($user) {
 			if ($user === FALSE) {
 				$this->getContextKey('response')->sendError('Unknown User.');
@@ -462,6 +472,90 @@
 
 			return TRUE;
 		}
+
+		protected function getCustomDataList($user) {
+			$customdatas = UserCustomData::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->find('id');
+
+			$result = [];
+			foreach ($customdatas as $v) {
+				$k = $v->getKey();
+				$result[$k] = $v->getValue();
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
+		protected function getCustomData($user, $customdata) {
+			$k = $customdata->toArray();
+			unset($k['user_id']);
+			unset($k['id']);
+
+			$this->getContextKey('response')->data($k);
+
+			return TRUE;
+		}
+
+		protected function createCustomData($user, $key) {
+			$customdata = (new UserCustomData($this->getContextKey('db')))->setKey($key)->setUserID($user->getID());
+			return $this->updateCustomData($user, $customdata, true);
+		}
+
+		protected function updateCustomData($user, $customdata, $isCreate = false) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if ($customdata !== FALSE) {
+				$this->doUpdateCustomData($customdata, $data['data']);
+
+				try {
+					$customdata->validate();
+				} catch (ValidationFailed $ex) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating customdata.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating customdata: ' . $customdata->getKey(), $ex->getMessage());
+					}
+				}
+
+				$k = $customdata->toArray();
+				unset($k['user_id']);
+				unset($k['id']);
+				$k['updated'] = $customdata->save();
+				if (!$k['updated']) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating customdata.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating customdata: ' . $customdata->getKey(), $ex->getMessage());
+					}
+				} else {
+					$this->getContextKey('response')->data($k);
+				}
+
+				return TRUE;
+			}
+		}
+
+		private function doUpdateCustomData($customdata, $data) {
+			$keys = array('value' => 'setValue',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$customdata->$f($data[$k]);
+				}
+			}
+
+			return $customdata;
+		}
+
+		protected function deleteCustomData($user, $customdata) {
+			$this->getContextKey('response')->data('deleted', $customdata->delete() ? 'true' : 'false');
+			return TRUE;
+		}
 	}
 
 	class UserIDUserAdmin extends UserAdmin {
@@ -619,6 +713,41 @@
 			$key = $this->get2FAKeyFromParam($userid, $secretid);
 
 			return $this->verify2FAKey($user, $key);
+		}
+	});
+
+	$router->addRoute('(GET|POST)', '/users/(self|[0-9]+)/customdata', new class extends UserIDUserAdmin {
+		function get($userid) {
+			$this->checkPermissions(['user_read']);
+			$user = $this->getUserFromParam($userid);
+
+			return $this->getCustomDataList($user);
+		}
+	});
+
+	$router->addRoute('(GET|POST|DELETE)', '/users/(self|[0-9]+)/customdata/(.+)', new class extends UserIDUserAdmin {
+		function get($userid, $key) {
+			$this->checkPermissions(['user_read']);
+			$user = $this->getUserFromParam($userid);
+			$customdata = $this->getCustomDataFromParam($userid, $key);
+
+			return $this->getCustomData($user, $customdata);
+		}
+
+		function post($userid, $key) {
+			$this->checkPermissions(['user_write']);
+			$user = $this->getUserFromParam($userid);
+			$customdata = $this->getCustomDataFromParam($userid, $key, true);
+
+			return ($customdata === FALSE) ? $this->createCustomData($user, $key) : $this->updateCustomData($user, $customdata);
+		}
+
+		function delete($userid, $key) {
+			$this->checkPermissions(['user_write']);
+			$user = $this->getUserFromParam($userid);
+			$customdata = $this->getCustomDataFromParam($userid, $key);
+
+			return $this->deleteCustomData($user, $customdata);
 		}
 	});
 

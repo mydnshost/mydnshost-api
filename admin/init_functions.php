@@ -263,6 +263,23 @@ MYSQLQUERY
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// User Custom Data
+			// ------------------------------------------------------------------------
+			$dataChanges[15] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `usercustomdata` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `key` VARCHAR(250) NOT NULL,
+  `value` TEXT,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `usercustomdata_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `usercustomdata_key_user` (`key` ASC, `user_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
+
 			return $dataChanges;
 		}
 	}
