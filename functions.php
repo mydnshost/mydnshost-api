@@ -38,9 +38,15 @@
 
 	HookManager::get()->addHookType('send_mail');
 
-	HookManager::get()->addHookBackground('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
-		Mailer::get()->send($to, $subject, $message, $htmlmessage);
-	});
+	if ($config['jobserver']['type'] == 'gearman') {
+		$gmc = new GearmanClient();
+		$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
+		$gmc->setTimeout(5000);
+
+		HookManager::get()->addHook('send_mail', function($to, $subject, $message, $htmlmessage = NULL) use ($gmc) {
+			@$gmc->doBackground('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
+		});
+	}
 
 	// Load the hooks
 	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }

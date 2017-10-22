@@ -34,6 +34,17 @@
 	$config['email']['from'] = getEnvOrDefault('EMAIL_FROM', 'dns@example.org');
 	$config['email']['from_name'] = getEnvOrDefault('EMAIL_FROM_NAME', $config['sitename']);
 
+	// Config for jobserver.
+	$config['jobserver']['type'] = getEnvOrDefault('JOBSERVER_TYPE', 'gearman');
+	$config['jobserver']['host'] = getEnvOrDefault('JOBSERVER_HOST', '127.0.0.1');
+	$config['jobserver']['port'] = getEnvOrDefault('JOBSERVER_PORT', 4730);
+
+	$config['jobworkers'] = [];
+	foreach (explode(',', getEnvOrDefault('WORKER_WORKERS', '*')) AS $w) {
+		$config['jobworkers'][$w]['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', 1);
+		$config['jobworkers'][$w]['maxJobs'] = getEnvOrDefault('WORKER_' . $w . '_MAXJOBS', 5);
+	}
+
 	// Default DNS Records
 	$config['defaultRecords'] = [];
 	$config['defaultRecords'][] = ['name' => '', 'type' => 'NS', 'content' => 'ns1.example.com'];
