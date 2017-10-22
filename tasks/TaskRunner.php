@@ -18,6 +18,7 @@
 		/** Are we stopping? */
 		private $stopping = true;
 
+
 		/**
 		 * Create a new ProcessManager
 		 *
@@ -28,8 +29,8 @@
 			$loop = React\EventLoop\Factory::create();
 			$this->loop = $loop;
 
-			echo 'Creating ProcessManager for server type: ', $server['type'], "\n";
-			echo "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
 		}
 
 		/**
@@ -47,7 +48,7 @@
 			$this->checkWorkers();
 
 			// Begin the event loop.
-			echo 'Running.', "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', 'Running.', "\n";
 			$this->loop->run();
 		}
 
@@ -56,12 +57,12 @@
 		 */
 		public function stop() {
 			if ($this->stopping) {
-				echo 'Force Stopping!', "\n";
+				echo '[', date('Y-m-d H:i:s O'), '] ', 'Force Stopping!', "\n";
 				$this->loop->stop();
 				return;
 			}
 
-			echo 'Stopping...', "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', 'Stopping...', "\n";
 			$this->stopping = true;
 
 			// Stop the check timer
@@ -91,9 +92,9 @@
 			                          'workers' => []
 			                         ];
 
-			echo 'Adding worker type: ', $function, "\n";
-			echo "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
-			echo "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', 'Adding worker type: ', $function, "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
 		}
 
 		/**
@@ -171,7 +172,7 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerStart($function, $pid) {
-			echo '[', $function, '::', $pid, ']  Process started.', "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Process started.', "\n";
 
 			// Configure the worker.
 			$process = $this->jobs[$function]['workers'][$pid]['process'];
@@ -188,7 +189,7 @@
 		 * @param $data Data from the worker
 		 */
 		private function processWorkerData($function, $pid, $data) {
-			echo '[', $function, '::', $pid, ']> ', trim($data), "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']> ', trim($data), "\n";
 
 			$bits = explode(" ", $data, 2);
 			$cmd = $bits[0];
@@ -197,11 +198,11 @@
 			// Count the jobs from the worker, restarting it as needed.
 			if ($cmd == 'JOB') {
 				$this->jobs[$function]['workers'][$pid]['jobcount']++;
-				if ($this->jobs[$function]['workers'][$pid]['jobcount'] >= $this->jobs[$function]['maxJobs']) {
-					echo '[', $function, '::', $pid, ']  Terminating processes after ' . $this->jobs[$function]['workers'][$pid]['jobcount'] . ' jobs.', "\n";
+				$process = $this->jobs[$function]['workers'][$pid];
+				if ($process['jobcount'] >= $this->jobs[$function]['maxJobs']) {
+					echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Terminating process after ' . $process['jobcount'] . ' jobs.', "\n";
 
-					$process = $this->jobs[$function]['workers'][$pid]['process'];
-					$process->terminate(SIGTERM);
+					$process['process']->terminate(SIGTERM);
 
 					// Replace the worker immediately if we stop it.
 					$this->startWorker($function);
@@ -216,7 +217,7 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerExit($function, $pid, $exitCode, $termSignal) {
-			echo '[', $function, '::', $pid, ']  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
+			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
 			unset($this->jobs[$function]['workers'][$pid]);
 		}
 	}
