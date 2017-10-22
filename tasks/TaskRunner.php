@@ -135,12 +135,15 @@
 
 			// Store the process.
 			$pid = $process->getPid();
-			$this->jobs[$function]['workers'][$pid] = ['jobcount' => 0, 'process' => $process];
+			$this->jobs[$function]['workers'][$pid] = ['jobcount' => 0, 'process' => $process, 'buffers' => ['stdout' => '', 'stderr' => '']];
 
 			// Register handlers for output from the worker.
 			// STDOUT data from the worker.
 			$process->stdout->on('data', function ($data) use ($function, $pid) {
-				foreach (explode("\n", $data) as $line) {
+				$this->jobs[$function]['workers'][$pid]['buffers']['stdout'] .= $data;
+				$lines = explode("\n", $this->jobs[$function]['workers'][$pid]['buffers']['stdout']);
+				$this->jobs[$function]['workers'][$pid]['buffers']['stdout'] = array_pop($lines);
+				foreach ($lines as $line) {
 					if (!empty($line)) {
 						$this->processWorkerData($function, $pid, $line);
 					}
@@ -149,7 +152,10 @@
 
 			// STDERR data from the worker.
 			$process->stderr->on('data', function ($data) use ($function, $pid) {
-				foreach (explode("\n", $data) as $line) {
+				$this->jobs[$function]['workers'][$pid]['buffers']['stderr'] .= $data;
+				$lines = explode("\n", $this->jobs[$function]['workers'][$pid]['buffers']['stderr']);
+				$this->jobs[$function]['workers'][$pid]['buffers']['stderr'] = array_pop($lines);
+				foreach ($lines as $line) {
 					if (!empty($line)) {
 						$this->processWorkerData($function, $pid, '# STDERR: ' . $line);
 					}
