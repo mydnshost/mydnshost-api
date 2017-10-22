@@ -1,0 +1,246 @@
+#!/usr/bin/env php
+<?php
+	require_once(dirname(__FILE__) . '/../functions.php');
+
+	class ProcessManager {
+		/** Job server information. */
+		private $server;
+
+		/** React-PHP Event Loop. */
+		private $loop;
+
+		/** Job worker information. */
+		private $jobs;
+
+		/** Worker check Timer. */
+		private $checkTimer;
+
+		/** Are we stopping? */
+		private $stopping = true;
+
+		/**
+		 * Create a new ProcessManager
+		 *
+		 * @param $server Job Server information
+		 */
+		public function __construct($server) {
+			$this->server = $server;
+			$loop = React\EventLoop\Factory::create();
+			$this->loop = $loop;
+
+			echo 'Creating ProcessManager for server type: ', $server['type'], "\n";
+			echo "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+		}
+
+		/**
+		 * Run the process manager.
+		 */
+		public function run() {
+			$this->stopping = false;
+
+			// Timer to ensure that we have all of our workers running.
+			$this->checkTimer = $this->loop->addPeriodicTimer(10, function() {
+				$this->checkWorkers();
+			});
+
+			// Force start all the workers
+			$this->checkWorkers();
+
+			// Begin the event loop.
+			echo 'Running.', "\n";
+			$this->loop->run();
+		}
+
+		/**
+		 * Stop the process manager.
+		 */
+		public function stop() {
+			if ($this->stopping) {
+				echo 'Force Stopping!', "\n";
+				$this->loop->stop();
+				return;
+			}
+
+			echo 'Stopping...', "\n";
+			$this->stopping = true;
+
+			// Stop the check timer
+			$this->loop->cancelTimer($this->checkTimer);
+
+			// Kill all the worker processes.
+			foreach ($this->jobs as $function => $functionInfo) {
+				$this->jobs[$function]['maxWorkers'] = 0;
+				$this->jobs[$function]['maxJobs'] = 0;
+				foreach ($functionInfo['workers'] as $pid => $proc) {
+					$proc['process']->terminate(SIGTERM);
+				}
+			}
+		}
+
+		/**
+		 * Add a new Job Type.
+		 *
+		 * @param $function Function Name
+		 * @param $workerConfig Worker config.
+		 */
+		public function addJob($function, $workerConfig) {
+			if (isset($this->jobs[$function])) { return; }
+
+			$this->jobs[$function] = ['maxWorkers' => isset($workerConfig['processes']) ? $workerConfig['processes'] : 1,
+			                          'maxJobs' => isset($workerConfig['maxJobs']) ? $workerConfig['maxJobs'] : 1,
+			                          'workers' => []
+			                         ];
+
+			echo 'Adding worker type: ', $function, "\n";
+			echo "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
+			echo "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
+		}
+
+		/**
+		 * Check that we have all of our required workers.
+		 */
+		private function checkWorkers() {
+			if ($this->stopping) { return; }
+
+			foreach (array_keys($this->jobs) as $function) {
+				$this->startWorkers($function);
+			}
+		}
+
+		/**
+		 * Start all the workers for a given process type.
+		 *
+		 * @param $function Function to start workers for.
+		 */
+		private function startWorkers($function) {
+			if ($this->stopping) { return; }
+
+			while (count($this->jobs[$function]['workers']) < $this->jobs[$function]['maxWorkers']) {
+				$this->startWorker($function);
+			}
+		}
+
+		/**
+		 * Start a new worker for a given function.
+		 *
+		 * @param $function Function to start worker for.
+		 */
+		private function startWorker($function) {
+			if ($this->stopping) { return; }
+
+			// Create a new runWorker process.
+			$process = new React\ChildProcess\Process('exec /usr/bin/env php ' . escapeshellarg(__DIR__ . '/runWorker.php'));
+			$process->start($this->loop);
+
+			// Store the process.
+			$pid = $process->getPid();
+			$this->jobs[$function]['workers'][$pid] = ['jobcount' => 0, 'process' => $process];
+
+			// Register handlers for output from the worker.
+			// STDOUT data from the worker.
+			$process->stdout->on('data', function ($data) use ($function, $pid) {
+				foreach (explode("\n", $data) as $line) {
+					if (!empty($line)) {
+						$this->processWorkerData($function, $pid, $line);
+					}
+				}
+			});
+
+			// STDERR data from the worker.
+			$process->stderr->on('data', function ($data) use ($function, $pid) {
+				foreach (explode("\n", $data) as $line) {
+					if (!empty($line)) {
+						$this->processWorkerData($function, $pid, '# STDERR: ' . $line);
+					}
+				}
+			});
+
+			// Process terminated.
+			$process->on('exit', function($exitCode, $termSignal) use ($function, $pid) {
+				$this->processWorkerExit($function, $pid, $exitCode, $termSignal);
+			});
+
+			// Start the worker.
+			$this->processWorkerStart($function, $pid);
+		}
+
+		/**
+		 * Called when a worker starts.
+		 *
+		 * @param $function Function that this worker is for
+		 * @param $pid Process ID for this worker
+		 */
+		private function processWorkerStart($function, $pid) {
+			echo '[', $function, '::', $pid, ']  Process started.', "\n";
+
+			// Configure the worker.
+			$process = $this->jobs[$function]['workers'][$pid]['process'];
+			$process->stdin->write('addFunction ' . $function . "\n");
+			$process->stdin->write('setTaskServer ' . $this->server['type'] . ' ' . $this->server['host'] . ' ' . $this->server['port'] . "\n");
+			$process->stdin->write('run' . "\n");
+		}
+
+		/**
+		 * Called when a worker starts sends data.
+		 *
+		 * @param $function Function that this worker is for
+		 * @param $pid Process ID for this worker
+		 * @param $data Data from the worker
+		 */
+		private function processWorkerData($function, $pid, $data) {
+			echo '[', $function, '::', $pid, ']> ', trim($data), "\n";
+
+			$bits = explode(" ", $data, 2);
+			$cmd = $bits[0];
+			$args = isset($bits[1]) ? $bits[1] : '';
+
+			// Count the jobs from the worker, restarting it as needed.
+			if ($cmd == 'JOB') {
+				$this->jobs[$function]['workers'][$pid]['jobcount']++;
+				if ($this->jobs[$function]['workers'][$pid]['jobcount'] >= $this->jobs[$function]['maxJobs']) {
+					echo '[', $function, '::', $pid, ']  Terminating processes after ' . $this->jobs[$function]['workers'][$pid]['jobcount'] . ' jobs.', "\n";
+
+					$process = $this->jobs[$function]['workers'][$pid]['process'];
+					$process->terminate(SIGTERM);
+
+					// Replace the worker immediately if we stop it.
+					$this->startWorker($function);
+				}
+			}
+		}
+
+		/**
+		 * Called when a worker exits.
+		 *
+		 * @param $function Function that this worker is for
+		 * @param $pid Process ID for this worker
+		 */
+		private function processWorkerExit($function, $pid, $exitCode, $termSignal) {
+			echo '[', $function, '::', $pid, ']  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
+			unset($this->jobs[$function]['workers'][$pid]);
+		}
+	}
+
+	// Create the process manager
+	$pm = new ProcessManager($config['jobserver']);
+
+	// Add the workers.
+	if (isset($config['jobworkers']['*'])) {
+		foreach (recursiveFindFiles(__DIR__ . '/workers') as $file) {
+			$worker = pathinfo($file, PATHINFO_FILENAME);
+			$pm->addJob($worker, $config['jobworkers']['*']);
+		}
+	} else {
+		foreach ($config['jobworkers'] as $worker => $conf) {
+			$pm->addJob($worker, $conf);
+		}
+	}
+
+	// Deal with shutdown requests
+	$shutdownFunc = function() use ($pm) { $pm->stop();	};
+	pcntl_signal(SIGINT, $shutdownFunc);
+	pcntl_signal(SIGTERM, $shutdownFunc);
+	pcntl_async_signals(true);
+
+	// Run the ProcessManager
+	$pm->run();
