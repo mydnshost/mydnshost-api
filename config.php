@@ -42,7 +42,7 @@
 	$config['jobworkers'] = [];
 	foreach (explode(',', getEnvOrDefault('WORKER_WORKERS', '*')) AS $w) {
 		$config['jobworkers'][$w]['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', 1);
-		$config['jobworkers'][$w]['maxJobs'] = getEnvOrDefault('WORKER_' . $w . '_MAXJOBS', 5);
+		$config['jobworkers'][$w]['maxJobs'] = getEnvOrDefault('WORKER_' . $w . '_MAXJOBS', 250);
 	}
 
 	// Default DNS Records
