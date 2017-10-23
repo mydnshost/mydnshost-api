@@ -9,11 +9,14 @@
 		private $method;
 		private $data = array();
 		private $headers = array();
+		private $httpheaders = array();
 		private $error;
 		private $errorData = array();
 
 		private $errorCode = '400';
 		private $errorDescription = 'Bad Request';
+
+		private $rateLimit = array();
 
 		public function __construct($reqid = '', $method = '', $data = array(), $headers = array()) {
 			$this->respid = uniqid();
@@ -22,6 +25,26 @@
 			$this->method = $method;
 			$this->data = $data;
 			$this->headers = $headers;
+			$this->rateLimit = ['limit' => 9999, 'remaining' => 9999, 'reset' => time()];
+			$this->setRateLimit();
+		}
+
+		public function setRateLimit($type = '', $value = '') {
+			$type = strtolower($type);
+			if (array_key_exists($type, $this->rateLimit)) {
+				$this->rateLimit[$type] = $value;
+			} else if (!empty($type)) { return; }
+
+			$this->setHTTPHeader('X-RateLimit-Limit', $this->rateLimit['limit']);
+			$this->setHTTPHeader('X-RateLimit-Remaining', max(0, $this->rateLimit['remaining']));
+			$this->setHTTPHeader('X-RateLimit-Reset', $this->rateLimit['reset']);
+
+			if ($this->rateLimit['remaining'] < 0) {
+				$this->setErrorCode('429', 'Too Many Requests');
+				$this->setHTTPHeader('Retry-After', $this->rateLimit['reset'] - time());
+
+				$this->sendError('Rate Limit Exceeded', 'You have exceeded your rate-limit. Please try again later.');
+			}
 		}
 
 		public function setErrorCode($code, $description) {
@@ -76,6 +99,26 @@
 			return $this;
 		}
 
+		public function setHTTPHeader($name, $value) {
+			$this->httpheaders[$name] = $value;
+
+			return $this;
+		}
+
+		public function getHTTPHeader($name, $fallback = null) {
+			return $this->hasHeader($name) ? $this->httpheaders[$name] : $fallback;
+		}
+
+		public function hasHTTPHeader($name) {
+			return isset($this->httpheaders[$name]) || array_key_exists($name, $this->httpheaders);
+		}
+
+		public function removeHTTPHeader($name) {
+			unset($this->httpheaders[$name]);
+
+			return $this;
+		}
+
 		public function data($data) {
 			if (!is_array($data)) {
 				$data = array($data);
@@ -126,6 +169,10 @@
 				if (!array_key_exists($header, $data)) {
 					$data[$header] = $value;
 				}
+			}
+
+			foreach ($this->httpheaders as $header => $value) {
+				header($header . ': ' . $value);
 			}
 
 			$response = json_encode($data);

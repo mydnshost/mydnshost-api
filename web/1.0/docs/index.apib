@@ -58,6 +58,21 @@ X-Request-ID: SomeUniqueID
 
 Which will be returned in the body of any reponse as a `reqid` field.
 
+## Rate Limiting
+Requests to the API may be subject to rate limiting. The API uses standard rate-limiting headers to denote the rate limit information, for examples:
+
+```http
+X-RateLimit-Limit: 1024
+X-RateLimit-Remaining: 512
+X-RateLimit-Reset: 1508738400
+```
+
+These will show your total request limit amount for this window, how many requests you have remaining in the window, and the time that the limit resets.
+
+If you have exceeded your limit you will recieve a HTTP Error 429 message instead of the usual API response.
+
+Different keys/users may have different limits. If you need a greater limit, please get in touch.
+
 # Group General
 General API Endpoints.
 
