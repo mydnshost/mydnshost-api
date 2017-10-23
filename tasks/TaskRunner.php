@@ -18,7 +18,6 @@
 		/** Are we stopping? */
 		private $stopping = true;
 
-
 		/**
 		 * Create a new ProcessManager
 		 *
@@ -29,8 +28,12 @@
 			$loop = React\EventLoop\Factory::create();
 			$this->loop = $loop;
 
-			echo '[', date('Y-m-d H:i:s O'), '] ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
-			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+			echo $this->showTime(), ' ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
+			echo $this->showTime(), ' ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+		}
+
+		private function showTime() {
+			return date('[Y-m-d H:i:s O]');
 		}
 
 		/**
@@ -48,7 +51,7 @@
 			$this->checkWorkers();
 
 			// Begin the event loop.
-			echo '[', date('Y-m-d H:i:s O'), '] ', 'Running.', "\n";
+			echo $this->showTime(), ' ', 'Running.', "\n";
 			$this->loop->run();
 		}
 
@@ -57,12 +60,12 @@
 		 */
 		public function stop() {
 			if ($this->stopping) {
-				echo '[', date('Y-m-d H:i:s O'), '] ', 'Force Stopping!', "\n";
+				echo $this->showTime(), ' ', 'Force Stopping!', "\n";
 				$this->loop->stop();
 				return;
 			}
 
-			echo '[', date('Y-m-d H:i:s O'), '] ', 'Stopping...', "\n";
+			echo $this->showTime(), ' ', 'Stopping...', "\n";
 			$this->stopping = true;
 
 			// Stop the check timer
@@ -92,9 +95,9 @@
 			                          'workers' => []
 			                         ];
 
-			echo '[', date('Y-m-d H:i:s O'), '] ', 'Adding worker type: ', $function, "\n";
-			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
-			echo '[', date('Y-m-d H:i:s O'), '] ', "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
+			echo $this->showTime(), ' ', 'Adding worker type: ', $function, "\n";
+			echo $this->showTime(), ' ', "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
+			echo $this->showTime(), ' ', "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
 		}
 
 		/**
@@ -178,13 +181,34 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerStart($function, $pid) {
-			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Process started.', "\n";
+			echo $this->showTime(), ' ', '[', $function, '::', $pid, ']  Process started.', "\n";
 
 			// Configure the worker.
 			$process = $this->jobs[$function]['workers'][$pid]['process'];
 			$process->stdin->write('addFunction ' . $function . "\n");
 			$process->stdin->write('setTaskServer ' . $this->server['type'] . ' ' . $this->server['host'] . ' ' . $this->server['port'] . "\n");
 			$process->stdin->write('run' . "\n");
+		}
+
+		private function showIdent($function, $pid) {
+			$jobfunc = isset($this->jobs[$function]) ? $this->jobs[$function] : NULL;
+			$proc = isset($jobfunc['workers'][$pid]) ? $jobfunc['workers'][$pid] : NULL;
+
+			$result = '[' . $function . '::' . $pid;
+
+			if ($jobfunc != null && $proc != null) {
+				$result .= ' (';
+				$result .= $proc['jobcount'];
+				$result .= '/';
+				$result .= $jobfunc['maxJobs'];
+				$result .= ')';
+			} else {
+				$result .= ' (END)';
+			}
+
+			$result .= ']';
+
+			return $result;
 		}
 
 		/**
@@ -195,7 +219,7 @@
 		 * @param $data Data from the worker
 		 */
 		private function processWorkerData($function, $pid, $data) {
-			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']> ', trim($data), "\n";
+			echo $this->showTime(), ' ', $this->showIdent($function, $pid), '> ', trim($data), "\n";
 
 			$bits = explode(" ", $data, 2);
 			$cmd = $bits[0];
@@ -206,7 +230,7 @@
 				$this->jobs[$function]['workers'][$pid]['jobcount']++;
 				$process = $this->jobs[$function]['workers'][$pid];
 				if ($process['jobcount'] >= $this->jobs[$function]['maxJobs']) {
-					echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Terminating process after ' . $process['jobcount'] . ' jobs.', "\n";
+					echo $this->showTime(), ' ', $this->showIdent($function, $pid), '  Terminating process after ' . $process['jobcount'] . ' jobs.', "\n";
 
 					$process['process']->terminate(SIGTERM);
 
@@ -223,7 +247,7 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerExit($function, $pid, $exitCode, $termSignal) {
-			echo '[', date('Y-m-d H:i:s O'), '] ', '[', $function, '::', $pid, ']  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
+			echo $this->showTime(), ' ', $this->showIdent($function, $pid), '  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
 			unset($this->jobs[$function]['workers'][$pid]);
 		}
 	}
