@@ -49,6 +49,14 @@
 		}
 	}
 
+	// Load TaskServer
+	if ($type == 'gearman') {
+		$taskServer = new GearmanTaskServer($server, $port);
+	} else {
+		sendReply('ERR', 'Invalid TaskServer type: ', $type);
+		exit(2);
+	}
+
 	// Load TaskWorkers
 	$workers = [];
 	foreach ($functions as $function) {
@@ -60,14 +68,7 @@
 		}
 
 		require_once($workerFile);
-		$workers[$function['name']] = new $function['file'];
-	}
-
-	// Load TaskServer
-	if ($type == 'gearman') {
-		$taskServer = new GearmanTaskServer($server, $port);
-	} else {
-		exit(2);
+		$workers[$function['name']] = new $function['file']($taskServer);
 	}
 
 	// Add all the workers into the task server.
@@ -77,11 +78,25 @@
 
 	// Setup the signal handlers etc.
 	$signalFunc = function() use ($taskServer) { $taskServer->stop(); };
-	$shutdownFunc = function() use ($signalFunc) { call_user_func($signalFunc); sendReply('SHUTDOWN', 'Shutting down.'); };
+	$shutdownFunc = function() use ($signalFunc) {
+		call_user_func($signalFunc);
+		$lasterr =  error_get_last();
+		if ($lasterr !== null && in_array($lasterr['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR])) {
+			fwrite(STDERR, 'Last Error: ' . $lasterr['message'] . "\n");
+			fwrite(STDERR, "\t" . 'In: ' . $lasterr['file'] . ' (Line: ' . $lasterr['line'] . ')' . "\n");
+		}
+
+		sendReply('SHUTDOWN', 'Shutting down.');
+	};
 	register_shutdown_function($shutdownFunc);
 	pcntl_signal(SIGINT, $signalFunc);
 	pcntl_signal(SIGTERM, $signalFunc);
 	pcntl_async_signals(true);
+
+	// Ensure errors are displayed
+	ini_set('display_errors', 1);
+	ini_set('display_startup_errors', 1);
+	error_reporting(E_ALL);
 
 	// Run the task server!
 	$taskServer->run();

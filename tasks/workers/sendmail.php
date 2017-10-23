@@ -6,7 +6,7 @@
 	 */
 	class sendmail extends TaskWorker {
 		public function run($job) {
-			$payload = @json_decode($job->getPayload(), true);
+			$payload = $job->getPayload();
 
 			if (isset($payload['to']) && isset($payload['subject']) && isset($payload['message'])) {
 				Mailer::get()->send($payload['to'], $payload['subject'], $payload['message'], isset($payload['htmlmessage']) ? $payload['htmlmessage'] : null);

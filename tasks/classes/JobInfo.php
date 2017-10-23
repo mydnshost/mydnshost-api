@@ -2,19 +2,25 @@
 
 	class JobInfo {
 		private $jobid = 0;
+		private $function = '';
 		private $payload = '';
 		private $result = '';
 		private $hasResult = false;
 		private $errorMessage = 'Unknown Error.';
 		private $hasError = false;
 
-		public function __construct($jobid, $payload) {
+		public function __construct($jobid, $function, $payload = '') {
 			$this->jobid = $jobid;
+			$this->function = $function;
 			$this->payload = $payload;
 		}
 
 		public function getJobID() {
 			return $this->jobid;
+		}
+
+		public function getFunction() {
+			return $this->function;
 		}
 
 		public function getPayload() {
