@@ -35,7 +35,7 @@
 	$config['email']['from_name'] = getEnvOrDefault('EMAIL_FROM_NAME', $config['sitename']);
 
 	// Config for jobserver.
-	$config['jobserver']['type'] = getEnvOrDefault('JOBSERVER_TYPE', 'gearman');
+	$config['jobserver']['type'] = getEnvOrDefault('JOBSERVER_TYPE', 'none');
 	$config['jobserver']['host'] = getEnvOrDefault('JOBSERVER_HOST', '127.0.0.1');
 	$config['jobserver']['port'] = getEnvOrDefault('JOBSERVER_PORT', 4730);
 

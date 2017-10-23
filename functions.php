@@ -46,6 +46,10 @@
 		HookManager::get()->addHook('send_mail', function($to, $subject, $message, $htmlmessage = NULL) use ($gmc) {
 			@$gmc->doBackground('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
 		});
+	} else {
+		HookManager::get()->addHookBackground('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
+			Mailer::get()->send($to, $subject, $message, $htmlmessage);
+		});
 	}
 
 	// Load the hooks
