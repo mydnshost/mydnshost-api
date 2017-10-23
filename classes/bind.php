@@ -216,7 +216,7 @@
 									$line = trim($file[++$i]);
 									$bits = preg_split('/\s+/', $line);
 									foreach ($bits as $bit) {
-										if (empty($bit) || $bit{0} == ';') { break; }
+										if (trim($bit) == '' || $bit{0} == ';') { break; }
 										$soabits[] = $bit;
 									}
 								} else {
