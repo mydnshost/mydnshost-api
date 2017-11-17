@@ -26,19 +26,26 @@
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
 		if ($config['jobserver']['type'] == 'gearman') {
 			HookManager::get()->addHook('add_domain', function($domain) use ($gmc) {
-				@$gmc->doNormal('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
+				@$gmc->doBackground('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 			});
 
 			HookManager::get()->addHook('rename_domain', function($oldName, $domain) use ($gmc) {
-				@$gmc->doNormal('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
+				@$gmc->doBackground('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 			});
 
 			HookManager::get()->addHook('delete_domain', function($domain) use ($gmc) {
-				@$gmc->doNormal('bind_delete_domain', json_encode(['domain' => $domain->getDomainRaw()]));
+				@$gmc->doBackground('bind_delete_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 			});
 
 			HookManager::get()->addHook('records_changed', function($domain) use ($gmc) {
-				@$gmc->doNormal('bind_records_changed', json_encode(['domain' => $domain->getDomainRaw()]));
+				@$gmc->doBackground('bind_records_changed', json_encode(['domain' => $domain->getDomainRaw()]));
+			});
+
+			HookManager::get()->addHook('sync_domain', function($domain) use ($gmc) {
+				@$gmc->doBackground('job_sequence', json_encode(['jobs' => [['job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
+				                                                            ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'readd']],
+				                                                           ]
+				                                                 ]));
 			});
 		}
 

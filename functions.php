@@ -29,6 +29,7 @@
 	HookManager::get()->addHookType('add_domain');
 	HookManager::get()->addHookType('rename_domain');
 	HookManager::get()->addHookType('delete_domain');
+	HookManager::get()->addHookType('sync_domain');
 
 	HookManager::get()->addHookType('add_record');
 	HookManager::get()->addHookType('update_record');

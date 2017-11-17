@@ -4,7 +4,7 @@
 	require_once(dirname(__FILE__) . '/../classes/BindTaskWorker.php');
 
 	/**
-	 * Task to
+	 * Task to rebuild all zones.
 	 */
 	class bind_rebuild_zones extends BindTaskWorker {
 		public function run($job) {

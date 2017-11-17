@@ -174,9 +174,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainSync($domain) {
-			HookManager::get()->handle('delete_domain', [$domain]);
-			HookManager::get()->handle('add_domain', [$domain]);
-			HookManager::get()->handle('records_changed', [$domain]);
+			HookManager::get()->handle('sync_domain', [$domain]);
 			return true;
 		}
 

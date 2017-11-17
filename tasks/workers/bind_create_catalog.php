@@ -2,7 +2,7 @@
 	require_once(dirname(__FILE__) . '/bind_update_catalog.php');
 
 	/**
-	 * Task to
+	 * Task to create the catalog zone.
 	 */
 	class bind_create_catalog extends bind_update_catalog {
 		public function run($job) {

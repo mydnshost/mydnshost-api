@@ -4,7 +4,7 @@
 	require_once(dirname(__FILE__) . '/../classes/BindTaskWorker.php');
 
 	/**
-	 * Task to
+	 * Task to re-add all zones to bind.
 	 */
 	class bind_readd_zones extends BindTaskWorker {
 		public function run($job) {

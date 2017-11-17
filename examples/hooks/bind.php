@@ -116,6 +116,12 @@
 		HookManager::get()->addHook('add_domain', $writeZoneFile);
 		HookManager::get()->addHook('records_changed', $writeZoneFile);
 
+		HookManager::get()->addHook('sync_domain', function($domain) {
+			HookManager::get()->handle('delete_domain', [$domain]);
+			HookManager::get()->handle('add_domain', [$domain]);
+			HookManager::get()->handle('records_changed', [$domain]);
+		});
+
 		HookManager::get()->addHook('rename_domain', function($oldName, $domain) use ($bindConfig, $writeZoneFile) {
 			$bind = new Bind($oldName, $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
