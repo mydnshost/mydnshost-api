@@ -110,6 +110,13 @@
 		return $domain == $parser->getPublicSuffix($domain) || array_key_exists($domain, $list);
 	}
 
+	function hasValidPublicSuffix($domain) {
+		$list = (new Pdp\PublicSuffixListManager())->getList();
+		$parser = new Pdp\Parser($list);
+
+		return $parser->isSuffixValid($domain);
+	}
+
 	function checkSessionHandler() {
 		global $config;
 
