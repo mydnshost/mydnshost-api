@@ -527,7 +527,7 @@
 			}
 
 			if (isset($data['data']['domain'])) {
-				if (!Domain::validDomainName($data['data']['domain']) || isPublicSuffix($data['data']['domain']) || !hasValidPublicSuffix($data['data']['domain']) {
+				if (!Domain::validDomainName($data['data']['domain']) || isPublicSuffix($data['data']['domain']) || !hasValidPublicSuffix($data['data']['domain'])) {
 					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
 				}
 
