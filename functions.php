@@ -104,6 +104,7 @@
 	}
 
 	function isPublicSuffix($domain) {
+		$domain = idn_to_ascii($domain);
 		$list = (new Pdp\PublicSuffixListManager())->getList();
 		$parser = new Pdp\Parser($list);
 
@@ -111,6 +112,7 @@
 	}
 
 	function hasValidPublicSuffix($domain) {
+		$domain = idn_to_ascii($domain);
 		$list = (new Pdp\PublicSuffixListManager())->getList();
 		$parser = new Pdp\Parser($list);
 
