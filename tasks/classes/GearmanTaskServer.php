@@ -47,6 +47,15 @@
 				}
 
 				$jobinfo = new JobInfo($job->handle(), $function, $payload);
+
+				try {
+					checkDBAlive();
+				} catch (Exception $ex) {
+					sendReply('EXCEPTION', 'Unable to connect to database, requeued job: ' . $ex->getMessage());
+					$this->runBackgroundJob($jobinfo);
+					throw $ex;
+				}
+
 				try {
 					$worker->run($jobinfo);
 				} catch (Throwable $ex) {

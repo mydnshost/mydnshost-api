@@ -14,8 +14,25 @@
 	require_once(dirname(__FILE__) . '/vendor/autoload.php');
 
 	// Prep DB
-	$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
-	DB::get()->setPDO($pdo);
+	function checkDBAlive() {
+		global $database;
+
+		$errmode = NULL;
+		if (DB::get()->getPDO() !== NULL) {
+			$errmode = DB::get()->getPDO()->getAttribute(PDO::ATTR_ERRMODE);
+			try {
+				DB::get()->getPDO()->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+				DB::get()->getPDO()->query("SELECT 1");
+				return TRUE;
+			} catch (Exception $e) { }
+		}
+
+		$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
+		DB::get()->setPDO($pdo);
+
+		if ($errmode !== NULL) { DB::get()->getPDO()->setAttribute(PDO::ATTR_ERRMODE, $errmode); }
+	}
+	checkDBAlive();
 
 	// Template Engine
 	TemplateEngine::get()->setConfig($config['templates'])->setVar('sitename', $config['sitename'])->setVar('siteurl', $config['siteurl']);
