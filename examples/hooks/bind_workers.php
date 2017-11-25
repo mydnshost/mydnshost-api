@@ -50,3 +50,8 @@
 		}
 
 	}
+
+/*
+	require_once('/dnsapi/functions.php');
+	echo $gmc->doNormal('', json_encode([]));
+*/

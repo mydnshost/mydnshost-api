@@ -53,6 +53,15 @@
 			return $key;
 		}
 
+		protected function getHookFromParam($domain, $hookid) {
+			$key = DomainHook::loadFromDomainHookID($this->getContextKey('db'), $domain->getID(), $hookid);
+			if ($key === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown domain hook: ' . $hookid);
+			}
+
+			return $key;
+		}
+
 		/**
 		 * Helper function for get()/post()/delete() to get the record object or
 		 * return an error.
@@ -1010,6 +1019,89 @@
 			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
 			return TRUE;
 		}
+
+		protected function getDomainHooks($domain) {
+			$hooks = DomainHook::getSearch($this->getContextKey('db'))->where('domain_id', $domain->getID())->find('domainhook');
+
+			$result = [];
+			foreach ($hooks as $k => $v) {
+				$result[$k] = $v->toArray();
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
+		protected function getDomainHook($domain, $hook) {
+			$k = $hook->toArray();
+			$this->getContextKey('response')->data($k);
+
+			return TRUE;
+		}
+
+		protected function createDomainHook($domain) {
+			$hook = (new DomainHook($this->getContextKey('db')))->setDomainID($domain->getID())->setCreated(time());
+			return $this->updateDomainHook($domain, $hook, true);
+		}
+
+		protected function updateDomainHook($domain, $hook, $isCreate = false) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if ($hook !== FALSE) {
+				$this->doUpdateHook($hook, $data['data']);
+
+				try {
+					$hook->validate();
+				} catch (ValidationFailed $ex) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating Hook.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating Hook: ' . $hook->getID(), $ex->getMessage());
+					}
+				}
+
+				$k = $hook->toArray();
+				$k['updated'] = $hook->save();
+				if (!$k['updated']) {
+					if ($isCreate) {
+						$this->getContextKey('response')->sendError('Error creating hook.', $ex->getMessage());
+					} else {
+						$this->getContextKey('response')->sendError('Error updating hook: ' . $hook->getID(), $ex->getMessage());
+					}
+				} else if ($isCreate) {
+					$this->getContextKey('response')->data([$hook->getID() => $k]);
+				} else {
+					$this->getContextKey('response')->data($k);
+				}
+
+				return TRUE;
+
+			}
+		}
+
+		private function doUpdateHook($hook, $data) {
+			$keys = array('url' => 'setUrl',
+			              'password' => 'setPassword',
+			              'disabled' => 'setDisabled',
+			             );
+
+			foreach ($keys as $k => $f) {
+				if (array_key_exists($k, $data)) {
+					$hook->$f($data[$k]);
+				}
+			}
+
+			return $hook;
+		}
+
+		protected function deleteDomainHook($domain, $hook) {
+			$this->getContextKey('response')->data('deleted', $hook->delete() ? 'true' : 'false');
+			return TRUE;
+		}
 	}
 
 	$router->addRoute('(GET|POST)', '/domains', new class extends Domains {
@@ -1280,6 +1372,53 @@
 			$key = $this->getKeyFromParam($domain, $keyid);
 
 			return $this->deleteDomainKey($domain, $key);
+		}
+	});
+
+	$router->addRoute('(GET|POST)', '/domains/([^/]+)/hooks', new class extends Domains {
+		function get($domain) {
+			$this->checkPermissions(['domains_read']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+
+			return $this->getDomainHooks($domain);
+		}
+
+		function post($domain) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+
+			return $this->createDomainHook($domain);
+		}
+	});
+
+	$router->addRoute('(GET|POST|DELETE)', '/domains/([^/]+)/hooks/([0-9]+)', new class extends Domains {
+		function get($domain, $hookid) {
+			$this->checkPermissions(['domains_read']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getHookFromParam($domain, $hookid);
+
+			return $this->getDomainHook($domain, $key);
+		}
+
+		function post($domain, $hookid) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getHookFromParam($domain, $hookid);
+
+			return $this->updateDomainHook($domain, $key);
+		}
+
+		function delete($domain, $hookid) {
+			$this->checkPermissions(['domains_write']);
+			$domain = $this->getDomainFromParam($domain);
+			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$key = $this->getHookFromParam($domain, $hookid);
+
+			return $this->deleteDomainHook($domain, $key);
 		}
 	});
 

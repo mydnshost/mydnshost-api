@@ -279,6 +279,24 @@ CREATE TABLE `usercustomdata` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Domain Hooks
+			// ------------------------------------------------------------------------
+			$dataChanges[16] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `domainhooks` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `domain_id` int(11) NOT NULL,
+  `url` VARCHAR(250) NOT NULL,
+  `password` VARCHAR(250) NOT NULL,
+  `lastused` int(11) NOT NULL,
+  `created` int(11) NOT NULL,
+  `disabled` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `domainhooks_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
 
 			return $dataChanges;
 		}
