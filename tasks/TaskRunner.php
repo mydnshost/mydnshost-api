@@ -237,6 +237,8 @@
 					// Replace the worker immediately if we stop it.
 					$this->startWorker($function);
 				}
+			} else if ($cmd == 'EXCEPTION') {
+				HookManager::get()->handle('worker_error', [$function, $args]);
 			}
 		}
 

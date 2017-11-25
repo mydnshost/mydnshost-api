@@ -42,6 +42,7 @@
 
 	HookManager::get()->addHookType('new_user');
 	HookManager::get()->addHookType('new_domain');
+	HookManager::get()->addHookType('worker_error');
 
 	HookManager::get()->addHookType('add_domain');
 	HookManager::get()->addHookType('rename_domain');
