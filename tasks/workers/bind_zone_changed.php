@@ -29,17 +29,13 @@
 				// Add a domain (Standalone or as part of readd)
 				if ($payload['change'] == 'add' || $payload['change'] == 'readd') {
 					$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
-					if ($domain !== FALSE) {
-						$this->runCommand($this->bindConfig['addZoneCommand'], $domain, $filename);
-					}
+					$this->runCommand($this->bindConfig['addZoneCommand'], ($domain !== FALSE ? $domain : $payload['domain']), $filename);
 				}
 
 				// Reload a domain.
 				if ($payload['change'] == 'change') {
 					$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
-					if ($domain !== FALSE) {
-						$this->runCommand($this->bindConfig['reloadZoneCommand'], $domain, $filename);
-					}
+					$this->runCommand($this->bindConfig['reloadZoneCommand'], ($domain !== FALSE ? $domain : $payload['domain']), $filename);
 				}
 
 				// Update the catalog zone unless noCatalog is passed.
