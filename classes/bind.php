@@ -397,6 +397,22 @@
 			}
 		}
 
+		private function ksortr(&$array) {
+			foreach ($array as &$value) {
+				if (is_array($value)) {
+					$this->ksortr($value);
+				}
+			}
+
+			return ksort($array);
+		}
+
+		function getZoneHash() {
+			$hashData = $this->domainInfo;
+			$this->ksortr($hashData);
+			return base_convert(crc32(json_encode($hashData)), 10, 36);
+		}
+
 		/**
 		 * Clear all records (does not clear SOA or META)
 		 */
@@ -420,6 +436,7 @@
 			$lines = array();
 
 			$lines[] = '; Written at '.date('r');
+			$lines[] = '; Zone Hash: '.$this->getZoneHash();
 
 			// TTL and ORIGIN First
 			if (isset($domainInfo[' META ']['TTL'])) {

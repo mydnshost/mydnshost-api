@@ -62,10 +62,7 @@
 				$bind = new Bind($this->bindConfig['catalogZoneName'], '', $this->bindConfig['catalogZoneFile']);
 
 				$bind->parseZoneFile();
-				$bindSOA = $bind->getSOA();
-				$bindSOA['Serial']++;
-				$bind->setSOA($bindSOA);
-
+				$zoneHash = $bind->getZoneHash();
 				$hash = sha1("\7" . str_replace(".", "\3", $domainraw) . "\0");
 
 				$oldAllowTransfer = $bind->getRecords('allow-transfer.' . $hash . '.zones', 'APL');
@@ -93,11 +90,18 @@
 					}
 				}
 
-				$this->bind_sleepForCatalog();
-				$bind->saveZoneFile($this->bindConfig['catalogZoneFile']);
+				// If the zone changed, schedule a refresh.
+				if ($zoneHash != $bind->getZoneHash()) {
+					$bindSOA = $bind->getSOA();
+					$bindSOA['Serial']++;
+					$bind->setSOA($bindSOA);
 
-				$jobArgs = ['domain' => $this->bindConfig['catalogZoneName'], 'change' => 'change', 'noCatalog' => true, 'filename' => $this->bindConfig['catalogZoneFile']];
-				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
+					$this->bind_sleepForCatalog();
+					$bind->saveZoneFile($this->bindConfig['catalogZoneFile']);
+
+					$jobArgs = ['domain' => $this->bindConfig['catalogZoneName'], 'change' => 'change', 'noCatalog' => true, 'filename' => $this->bindConfig['catalogZoneFile']];
+					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
+				}
 
 				flock($fp, LOCK_UN);
 				fclose($fp);
