@@ -73,7 +73,7 @@
 
 				$bind->unsetRecord($hash . '.zones', 'PTR');
 				$bind->unsetRecord('allow-transfer.' . $hash . '.zones', 'APL');
-				if ($mode == 'add' || $mode == 'change') {
+				if ($mode != 'remove') {
 					$this->addCatalogRecords($bind, $domainraw);
 				}
 
