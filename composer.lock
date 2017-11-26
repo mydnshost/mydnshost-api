@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "e5b5fb22febceb913333618f53397601",
+    "content-hash": "fd86e113f244f99fc40ffc9f474c70f2",
     "packages": [
         {
             "name": "cocur/background-process",
@@ -699,16 +699,16 @@
         },
         {
             "name": "shanemcc/php-db",
-            "version": "0.2.1",
+            "version": "0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ShaneMcC/php-db.git",
-                "reference": "f56b2039f3f7875e1f0734812858a30af04c0c07"
+                "reference": "99c5bf18736a66812b43647ba5c8da8468562d68"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ShaneMcC/php-db/zipball/f56b2039f3f7875e1f0734812858a30af04c0c07",
-                "reference": "f56b2039f3f7875e1f0734812858a30af04c0c07",
+                "url": "https://api.github.com/repos/ShaneMcC/php-db/zipball/99c5bf18736a66812b43647ba5c8da8468562d68",
+                "reference": "99c5bf18736a66812b43647ba5c8da8468562d68",
                 "shasum": ""
             },
             "require": {
@@ -733,7 +733,7 @@
             ],
             "description": "Basic PHP ORM",
             "homepage": "https://github.com/shanemcc/php-db",
-            "time": "2017-09-08T22:07:35+00:00"
+            "time": "2017-11-26T03:19:03+00:00"
         },
         {
             "name": "symfony/event-dispatcher",

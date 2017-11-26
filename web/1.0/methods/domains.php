@@ -249,6 +249,17 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			// Delete old records.
+			$this->getContextKey('db')->beginTransaction();
+			$deletedRecords = [];
+			$records = $domain->getRecords();
+			$count = 0;
+			foreach ($records as $record) {
+				if ($record->delete()) {
+					$deletedRecords[] = $record;
+				}
+			}
+
 			$tmpname = tempnam('/tmp', 'ZONEIMPORT');
 			if ($tmpname === FALSE) {
 				$this->getContextKey('response')->sendError('Unable to import zone.');
@@ -338,6 +349,7 @@
 									try {
 										$r->validate();
 									} catch (Exception $ex) {
+										$this->getContextKey('db')->rollback();
 										$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
 									}
 
@@ -358,6 +370,7 @@
 							try {
 								$r->validate();
 							} catch (Exception $ex) {
+								$this->getContextKey('db')->rollback();
 								$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
 							}
 
@@ -367,13 +380,8 @@
 				}
 			}
 
-			// Delete old records.
-			$records = $domain->getRecords();
-			$count = 0;
-			foreach ($records as $record) {
-				if ($record->delete()) {
-					HookManager::get()->handle('delete_record', [$domain, $record]);
-				}
+			foreach ($deletedRecords as $r) {
+				HookManager::get()->handle('delete_record', [$domain, $record]);
 			}
 
 			foreach ($newRecords as $r) {
@@ -385,6 +393,8 @@
 			if ($soa->save()) {
 				HookManager::get()->handle('update_record', [$domain, $soa]);
 			}
+
+			$this->getContextKey('db')->commit();
 
 			HookManager::get()->handle('records_changed', [$domain]);
 			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
@@ -799,48 +809,70 @@
 						}
 					} else {
 						$this->doUpdateRecord($domain, $record, $r);
-						try {
-							if ($record->hasChanged()) {
-								$record->validate();
-								$recordsToBeSaved[] = $record;
-							}
-						} catch (ValidationFailed $ex) {
-							$errors[$i] = 'Unable to validate record: ' . $ex->getMessage();
-							continue;
+						if ($record->hasChanged()) {
+							$recordsToBeSaved[$i] = $record;
 						}
 					}
 				}
 			}
 
-			// TODO: Validate CNAMEs are not duplicated.
+			$this->getContextKey('db')->beginTransaction();
 
-			if (count($errors) > 0) {
-				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
+			$deletedRecords = [];
+			foreach ($recordsToBeDeleted as $record) {
+				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
+				$result[] = $r;
+				if ($r['deleted']) {
+					$deletedRecords[] = $r;
+					$changeCount++;
+				}
 			}
 
 			$changeCount = 0;
 
 			$result = array();
-			foreach ($recordsToBeSaved as $record) {
+			$updatedRecords = [];
+			$addedRecords = [];
+			foreach ($recordsToBeSaved as $i => $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
+
+				try {
+					$record->validate();
+				} catch (ValidationFailed $ex) {
+					$errors[$i] = 'Unable to validate record: ' . $ex->getMessage();
+					continue;
+				}
+
+				$new = $this->getID() === NULL;
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
 				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
 				$result[] = $r;
 				if ($r['updated']) {
-					HookManager::get()->handle('update_record', [$domain, $record]);
+					if ($new) {
+						$addedRecords[] = $record;
+					} else {
+						$updatedRecords[] = $record;
+					}
 					$changeCount++;
 				}
 			}
 
-			foreach ($recordsToBeDeleted as $record) {
-				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
-				$result[] = $r;
-				if ($r['deleted']) {
-					HookManager::get()->handle('delete_record', [$domain, $record]);
-					$changeCount++;
-				}
+			if (count($errors) > 0) {
+				$this->getContextKey('db')->rollback();
+				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
+			}
+
+			// Only call hooks if we are not rolling back.
+			foreach ($deletedRecords as $record) {
+				HookManager::get()->handle('delete_record', [$domain, $record]);
+			}
+			foreach ($updatedRecords as $record) {
+				HookManager::get()->handle('update_record', [$domain, $record]);
+			}
+			foreach ($addedRecords as $record) {
+				HookManager::get()->handle('add_record', [$domain, $record]);
 			}
 
 			if ($changeCount > 0) {
@@ -854,6 +886,8 @@
 			if ($changeCount > 0) {
 				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			}
+
+			$this->getContextKey('db')->commit();
 
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;

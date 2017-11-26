@@ -159,7 +159,7 @@ class Domain extends DBObject {
 		$searchParams = ['domain_id' => $this->getID(), 'type' => 'SOA'];
 		$searchFilters = ['type' => '!='];
 
-		if ($name != NULL) {
+		if ($name !== NULL) {
 			if ($name == '@' || $name == '') {
 				$name = $this->getDomain();
 			} else {
@@ -169,7 +169,7 @@ class Domain extends DBObject {
 			$searchParams['name'] = $name;
 		}
 
-		if ($rrtype != NULL) {
+		if ($rrtype !== NULL) {
 			if ($rrtype == 'SOA') {
 				return [];
 			} else {

@@ -140,7 +140,6 @@ class Record extends DBObject {
 		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			$this->setContent(idn_to_ascii($content));
 		}
-		$this->preSaveValidate();
 	}
 
 	public function updateSOAContent($parsed) {
@@ -278,31 +277,33 @@ class Record extends DBObject {
 			}
 		}
 
-		return TRUE;
-	}
-
-	private function preSaveValidate() {
 		$domain = Domain::load($this->getDB(), $this->getDomainID());
 		$nameFilter = $this->getName();
 		$nameFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $nameFilter);
 
 		if ($this->getType() == 'CNAME') {
-			// Look for any other records with the same name as us, and fail
-			// if they exist.
 			if ($nameFilter == '') {
 				throw new ValidationFailed('Can\'t have CNAME at domain root: ' . $this->getName());
 			}
 
+			// Look for any other records with the same name as us, and fail
+			// if they exist.
 			foreach ($domain->getRecords($nameFilter) as $r) {
+				if ($r->isDisabled() || $this->isDisabled()) { continue; }
+
 				if ($r->getID() != $this->getID()) {
 					throw new ValidationFailed('Can\'t have CNAME and other records: ' . $this->getName());
 				}
 			}
 		} else {
-			if (count($domain->getRecords($this->getName(), 'CNAME')) > 0) {
-				throw new ValidationFailed('There already exists a CNAME for this record: ' . $this->getName());
+			foreach ($domain->getRecords($nameFilter, 'CNAME') as $r) {
+				if ($r->isDisabled() || $this->isDisabled()) { continue; }
+
+				throw new ValidationFailed('There already exists a CNAME for this record: ' . $nameFilter);
 			}
 		}
+
+		return TRUE;
 	}
 
 	private function hex2str($hex) {
