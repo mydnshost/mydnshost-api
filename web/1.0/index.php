@@ -123,6 +123,7 @@
 			if ($device !== FALSE) {
 				if ($device->getCreated() > time() - (60 * 60 * 24 * 30)) {
 					$context['device'] = $device;
+					$device->setLastUsed(time())->save();
 				} else {
 					$device->delete();
 				}
