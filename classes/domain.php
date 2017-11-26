@@ -178,7 +178,15 @@ class Domain extends DBObject {
 			}
 		}
 
-		$search = Record::getSearch($this->getDB())->addOperation(new OrderByFunction('length', 'name'))->order('name')->order('type')->order('priority');
+		$search = Record::getSearch($this->getDB())->addOperation(new OrderByFunction('length', 'name'));
+
+		if (endsWith($this->getDomain(), 'ip6.arpa')) {
+			$search = $search->addOperation(new OrderByFunction('reverse', 'name'));
+		} else {
+			$search = $search->order('name');
+		}
+
+		$search = $search->order('type')->order('priority');
 		$result = $search->search($searchParams, $searchFilters);
 		return ($result) ? $result : [];
 	}
