@@ -610,7 +610,9 @@
 					$soa->updateSOAContent(array_merge($soa->parseSOA(), getSystemDefaultSOA()));
 				}
 
-				$domain->getSOARecord()->validate();
+				if (!$isCreate) {
+					$domain->getSOARecord()->validate();
+				}
 
 				if ($domain->save()) {
 					if ($isCreate) {
@@ -844,7 +846,7 @@
 					continue;
 				}
 
-				$new = $this->getID() === NULL;
+				$new = $record->getID() === NULL;
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
 				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
