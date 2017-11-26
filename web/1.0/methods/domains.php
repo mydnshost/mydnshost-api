@@ -348,6 +348,7 @@
 
 									try {
 										$r->validate();
+										if (!$r->save()) { throw new ValidationFailed('Error saving record: ' . $ex->getMessage()); }
 									} catch (Exception $ex) {
 										$this->getContextKey('db')->rollback();
 										$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
@@ -369,6 +370,7 @@
 
 							try {
 								$r->validate();
+								if (!$r->save()) { throw new ValidationFailed('Error saving record: ' . $ex->getMessage()); }
 							} catch (Exception $ex) {
 								$this->getContextKey('db')->rollback();
 								$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
@@ -380,21 +382,22 @@
 				}
 			}
 
+			if ($soa->save()) {
+				$this->getContextKey('db')->commit();
+			} else {
+				$this->getContextKey('db')->rollback();
+				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
+			}
+
 			foreach ($deletedRecords as $r) {
 				HookManager::get()->handle('delete_record', [$domain, $record]);
 			}
 
 			foreach ($newRecords as $r) {
-				if ($r->save()) {
-					HookManager::get()->handle('add_record', [$domain, $r]);
-				}
+				HookManager::get()->handle('add_record', [$domain, $r]);
 			}
 
-			if ($soa->save()) {
-				HookManager::get()->handle('update_record', [$domain, $soa]);
-			}
-
-			$this->getContextKey('db')->commit();
+			HookManager::get()->handle('update_record', [$domain, $soa]);
 
 			HookManager::get()->handle('records_changed', [$domain]);
 			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
@@ -617,13 +620,6 @@
 				if ($domain->save()) {
 					$domain->getSOARecord()->setDomainID($domain->getID());
 					$domain->getSOARecord()->validate();
-
-					if ($isCreate) {
-						HookManager::get()->handle('new_domain', [$domain]);
-						HookManager::get()->handle('add_domain', [$domain]);
-					} else if ($isRename) {
-						HookManager::get()->handle('rename_domain', [$oldName, $domain]);
-					}
 				} else {
 					$error = $domain->getLastError()[2];
 					if (preg_match('#.*Duplicate entry.*domains_domain_unique.*#', $error)) {
@@ -633,13 +629,7 @@
 					}
 				}
 
-				if ($domain->getSOARecord()->save()) {
-					if ($isCreate) {
-						HookManager::get()->handle('add_record', [$domain, $domain->getSOARecord()]);
-					} else {
-						HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
-					}
-				} else {
+				if (!$domain->getSOARecord()->save()) {
 					$error = $domain->getSOARecord()->getLastError()[2];
 					throw new ValidationFailed('Unknown Error with SOA');
 				}
@@ -653,6 +643,21 @@
 				$this->addDefaultRecords($domain);
 			}
 
+			$this->getContextKey('db')->commit();
+
+			if ($isCreate) {
+				HookManager::get()->handle('new_domain', [$domain]);
+				HookManager::get()->handle('add_domain', [$domain]);
+			} else if ($isRename) {
+				HookManager::get()->handle('rename_domain', [$oldName, $domain]);
+			}
+
+			if ($isCreate) {
+				HookManager::get()->handle('add_record', [$domain, $domain->getSOARecord()]);
+			} else {
+				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
+			}
+
 			HookManager::get()->handle('records_changed', [$domain]);
 
 			$r = $domain->toArray();
@@ -663,7 +668,6 @@
 
 			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $r['SOA']['serial'], 'time' => time()]]);
 
-			$this->getContextKey('db')->commit();
 
 			$this->getContextKey('response')->data($r);
 			return true;
@@ -871,6 +875,8 @@
 				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
 			}
 
+			$this->getContextKey('db')->commit();
+
 			// Only call hooks if we are not rolling back.
 			foreach ($deletedRecords as $record) {
 				HookManager::get()->handle('delete_record', [$domain, $record]);
@@ -893,8 +899,6 @@
 			if ($changeCount > 0) {
 				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			}
-
-			$this->getContextKey('db')->commit();
 
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;
@@ -1016,7 +1020,7 @@
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
 				HookManager::get()->handle('delete_domain', [$domain]);
-				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
+				// HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
 			}
 			return true;
 		}
