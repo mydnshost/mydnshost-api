@@ -366,6 +366,7 @@
 			}
 
 			HookManager::get()->handle('records_changed', [$domain]);
+			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
 
 			$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
 			return true;
@@ -624,6 +625,8 @@
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
+			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $r['SOA']['serial'], 'time' => time()]]);
+
 			$this->getContextKey('response')->data($r);
 			return true;
 		}
@@ -700,7 +703,7 @@
 			}
 
 			$record = $this->doUpdateRecord($domain, $record, $data['data']);
-
+			$serial = -1;
 			try {
 				if ($record->hasChanged()) {
 					$record->validate();
@@ -719,6 +722,10 @@
 			$r = $record->toArray();
 			unset($r['domain_id']);
 			$r['name'] = idn_to_utf8($r['name']);
+
+			if ($serial > 0) {
+				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_record', 'serial' => $serial, 'time' => time()]]);
+			}
 
 			$this->getContextKey('response')->data($r);
 
@@ -809,6 +816,10 @@
 				$serial = $domain->getSOARecord()->parseSOA()['serial'];
 			}
 
+			if ($changeCount > 0) {
+				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
+			}
+
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
 			return true;
 		}
@@ -875,6 +886,9 @@
 			$serial = $domain->updateSerial();
 			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
 			HookManager::get()->handle('records_changed', [$domain]);
+
+			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
+
 			$this->getContextKey('response')->set('serial', $serial);
 			return true;
 		}
@@ -907,6 +921,9 @@
 			$serial = $domain->updateSerial();
 			HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
 			HookManager::get()->handle('records_changed', [$domain]);
+
+			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
+
 			$this->getContextKey('response')->set('serial', $serial);
 
 			return true;
@@ -923,6 +940,7 @@
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
 				HookManager::get()->handle('delete_domain', [$domain]);
+				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
 			}
 			return true;
 		}

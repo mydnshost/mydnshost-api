@@ -92,6 +92,22 @@ class DomainHook extends DBObject {
 		}
 	}
 
+	/**
+	 * Load hooks from the database based on domain_id.
+	 *
+	 * @param $db Database object to load from.
+	 * @param $domain domain id to look for
+	 * @return FALSE if no object exists, else array of objects.
+	 */
+	public static function loadFromDomainID($db, $domain) {
+		$result = static::find($db, ['domain_id' => $domain]);
+		if ($result) {
+			return $result;
+		} else {
+			return FALSE;
+		}
+	}
+
 	public function validate() {
 		$required = ['url', 'domain_id'];
 		foreach ($required as $r) {
@@ -101,5 +117,30 @@ class DomainHook extends DBObject {
 		}
 
 		return TRUE;
+	}
+
+	public function call($data) {
+		if ($this->getDisabled()) { return; }
+		$domain = Domain::load($this->getDB(), $this->getDomainID());
+
+		$headers = [];
+		$headers[] = 'Content-type: application/json';
+		$content = json_encode($data);
+		if (trim($this->getPassword()) != "") {
+			$algo = 'sha1';
+			$headers[] = 'X-HMAC-SIGNATURE: ' . $algo . '=' . hash_hmac($algo, $content, trim($this->getPassword()));
+		}
+
+		$opts = array('http' => array('method'  => 'POST',
+		                              'header'  => implode("\r\n", $headers),
+		                              'content' => $content,
+		                             )
+		             );
+		$context  = stream_context_create($opts);
+		$result = file_get_contents($this->getUrl(), false, $context);
+
+		$this->setLastUsed(time())->save();
+
+		return $result;
 	}
 }

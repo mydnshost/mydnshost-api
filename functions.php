@@ -57,6 +57,8 @@
 
 	HookManager::get()->addHookType('send_mail');
 
+	HookManager::get()->addHookType('call_domain_hooks');
+
 	if ($config['jobserver']['type'] == 'gearman') {
 		$gmc = new GearmanClient();
 		$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
