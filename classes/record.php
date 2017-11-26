@@ -248,7 +248,13 @@ class Record extends DBObject {
 		}
 
 		if ($type == 'CAA') {
-			if (!preg_match('#^[0-9]+ [a-z]+ "[^\s]+"$#i', $content, $m)) {
+			// Test for cloudflare zone imports which suck.
+			if (preg_match('#^([0-9])+ ([a-f0-9]+) ([a-f0-9]+)$#i', $content, $m)) {
+				$content = $m[1] . ' ' . $this->hex2str($m[2]) . ' "' . $this->hex2str($m[3]) . '"';
+				$this->setContent($content);
+			}
+
+			if (!preg_match('#^[0-9]+ [a-z0-9]+ "[^\s]+"$#i', $content, $m)) {
 				throw new ValidationFailed('CAA Record content should have the format: <flag> <tag> "<value>"');
 			}
 		}
@@ -272,5 +278,13 @@ class Record extends DBObject {
 		}
 
 		return TRUE;
+	}
+
+	private function hex2str($hex) {
+		$str = '';
+		for ($i=0; $i<strlen($hex); $i += 2) {
+			$str .= chr(hexdec(substr($hex,$i,2)));
+		}
+		return $str;
 	}
 }

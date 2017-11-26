@@ -178,7 +178,11 @@
 					$len = strlen($this->domain)+1;
 					$end = substr($name, strlen($name) - $len);
 
-					if ($type != 'SOA') {
+					if ($type == 'SOA') {
+						if ($name == $origin) {
+							$name = $this->domain . '.';
+						}
+					} else {
 						if ($end == $this->domain.'.') {
 							if ($name != $end) {
 								$name = substr($name, 0,  strlen($name) - $len - 1);
@@ -227,7 +231,7 @@
 							$info['Refresh'] = $soabits[1];
 							$info['Retry'] = $soabits[2];
 							$info['Expire'] = $soabits[3];
-							$info['MinTTL'] = $soabits[4];
+							$info['MinTTL'] = rtrim($soabits[4], ')');
 							break;
 						case 'MX':
 						case 'SRV':

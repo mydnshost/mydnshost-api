@@ -325,23 +325,44 @@
 
 						$record['TTL'] = $bind->ttlToInt($record['TTL']);
 
-						$r->setName($name);
-						$r->setType($type);
-						$r->setTTL($record['TTL']);
-						$r->setContent($record['Address']);
-						if ($type == 'MX' || $type == 'SRV') {
-							$r->setPriority($record['Priority']);
-						}
-						$r->setChangedAt(time());
-						$r->setChangedBy($this->getContextKey('user')->getID());
+						// Test for cloudflare imports.
+						if ($type == 'NS' && $record['Address'] == 'REPLACE&ME$WITH^YOUR@NAMESERVER') {
+							foreach ($this->getDefaultRecords($domain) as $r) {
+								if ($r->getType() == 'NS') {
+									$r->setName($name);
+									$r->setType($type);
+									$r->setTTL($record['TTL']);
+									$r->setChangedAt(time());
+									$r->setChangedBy($this->getContextKey('user')->getID());
 
-						try {
-							$r->validate();
-						} catch (Exception $ex) {
-							$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
-						}
+									try {
+										$r->validate();
+									} catch (Exception $ex) {
+										$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
+									}
 
-						$newRecords[] = $r;
+									$newRecords[] = $r;
+								}
+							}
+						} else {
+							$r->setName($name);
+							$r->setType($type);
+							$r->setTTL($record['TTL']);
+							$r->setContent($record['Address']);
+							if ($type == 'MX' || $type == 'SRV') {
+								$r->setPriority($record['Priority']);
+							}
+							$r->setChangedAt(time());
+							$r->setChangedBy($this->getContextKey('user')->getID());
+
+							try {
+								$r->validate();
+							} catch (Exception $ex) {
+								$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
+							}
+
+							$newRecords[] = $r;
+						}
 					}
 				}
 			}
@@ -637,14 +658,9 @@
 		 * @param $domain Domain object to add records to.
 		 */
 		protected function addDefaultRecords($domain) {
-			// TODO: Allow some kind of per-user default, and only fall back to
-			//       these if not specified.
-			$defaultRecords = getSystemDefaultRecords();
+			$defaultRecords = $this->getDefaultRecords($domain);
 
-			foreach ($defaultRecords as $data) {
-				$record = (new Record($domain->getDB()))->setDomainID($domain->getID());
-				$record = $this->doUpdateRecord($domain, $record, $data);
-
+			foreach ($defaultRecords as $record) {
 				try {
 					$record->validate();
 					if ($record->save()) {
@@ -652,6 +668,25 @@
 					}
 				} catch (ValidationFailed $ex) { }
 			}
+		}
+
+		/**
+		 * Get default records for this domain
+		 *
+		 * @param $domain Domain object to add records to.
+		 */
+		protected function getDefaultRecords($domain) {
+			// TODO: Allow some kind of per-user default, and only fall back to
+			//       these if not specified.
+			$defaultRecords = getSystemDefaultRecords();
+
+			$records = [];
+			foreach ($defaultRecords as $data) {
+				$record = (new Record($domain->getDB()))->setDomainID($domain->getID());
+				$record = $this->doUpdateRecord($domain, $record, $data);
+				$records[] = $record;
+			}
+			return $records;
 		}
 
 		/**
