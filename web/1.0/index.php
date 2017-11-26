@@ -207,8 +207,10 @@
 						}
 					}
 					$errorExtraData = '2FA key invalid.';
+					$resp->setHeader('login_error', '2fa_invalid');
 				} else {
 					$errorExtraData = '2FA key required.';
+					$resp->setHeader('login_error', '2fa_required');
 				}
 			}
 
