@@ -602,19 +602,22 @@
 			$newName = $domain->getDomain();
 			$isRename = ($oldName != $newName);
 
+			$this->getContextKey('db')->beginTransaction();
+
 			try {
 				$domain->validate();
 
 				if ($isCreate) {
 					$soa = $domain->getSOARecord();
 					$soa->updateSOAContent(array_merge($soa->parseSOA(), getSystemDefaultSOA()));
-				}
-
-				if (!$isCreate) {
+				} else {
 					$domain->getSOARecord()->validate();
 				}
 
 				if ($domain->save()) {
+					$domain->getSOARecord()->setDomainID($domain->getID());
+					$domain->getSOARecord()->validate();
+
 					if ($isCreate) {
 						HookManager::get()->handle('new_domain', [$domain]);
 						HookManager::get()->handle('add_domain', [$domain]);
@@ -629,7 +632,6 @@
 						throw new ValidationFailed('Unknown Error');
 					}
 				}
-				$domain->getSOARecord()->setDomainID($domain->getID());
 
 				if ($domain->getSOARecord()->save()) {
 					if ($isCreate) {
@@ -642,6 +644,7 @@
 					throw new ValidationFailed('Unknown Error with SOA');
 				}
 			} catch (ValidationFailed $ex) {
+				$this->getContextKey('db')->rollback();
 				$this->getContextKey('response')->sendError('Error updating domain.', $ex->getMessage());
 			}
 
@@ -659,6 +662,8 @@
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
 			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $r['SOA']['serial'], 'time' => time()]]);
+
+			$this->getContextKey('db')->commit();
 
 			$this->getContextKey('response')->data($r);
 			return true;
