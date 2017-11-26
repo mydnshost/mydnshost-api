@@ -217,7 +217,9 @@ class Record extends DBObject {
 
 			if (filter_var($testName, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
-			} else if (!Domain::validDomainName($testName)) {
+			} else if ($type != 'PTR' && !Domain::validDomainName($testName)) {
+				throw new ValidationFailed('Content must be a valid name.');
+			} else if ($type == 'PTR' && !preg_match('#^[a-z0-9\-_]$#i', $testName)) {
 				throw new ValidationFailed('Content must be a valid name.');
 			} else if ($testName != $content) {
 				$this->setContent($testName);
