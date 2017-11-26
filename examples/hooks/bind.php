@@ -100,7 +100,9 @@
 					HookManager::get()->handle('bind_zone_changed', [$domain, $bind, $bindConfig]);
 				}
 			} else if (file_exists($filename)) {
-				unlink($filename);
+				foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+					if (file_exists($f)) { @unlink($f); }
+				}
 				HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
 			}
 		};
@@ -125,8 +127,8 @@
 		HookManager::get()->addHook('rename_domain', function($oldName, $domain) use ($bindConfig, $writeZoneFile) {
 			$bind = new Bind($oldName, $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
-			if (file_exists($filename)) {
-				@unlink($filename);
+			foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+				if (file_exists($f)) { @unlink($f); }
 			}
 			$oldDomain = $domain->clone()->setDomain($oldName);
 			HookManager::get()->handle('bind_zone_removed', [$oldDomain, $bind, $bindConfig]);
@@ -138,8 +140,8 @@
 		HookManager::get()->addHook('delete_domain', function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
-			if (file_exists($filename)) {
-				@unlink($filename);
+			foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+				if (file_exists($f)) { @unlink($f); }
 			}
 			HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
 		});

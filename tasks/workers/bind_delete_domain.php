@@ -13,10 +13,9 @@
 			if (isset($payload['domain'])) {
 				$bind = new Bind($payload['domain'], $this->bindConfig['zonedir']);
 				list($filename, $filename2) = $bind->getFileNames();
-				if (file_exists($filename)) {
-					@unlink($filename);
+				foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+					if (file_exists($f)) { @unlink($f); }
 				}
-
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', ['domain' => $payload['domain'], 'change' => 'remove', 'filename' => $filename]));
 				$job->setResult('OK');
 			} else {
