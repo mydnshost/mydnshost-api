@@ -117,6 +117,19 @@
 		return $access;
 	}
 
+	function getKnownDevice($user, &$context) {
+		if ($user != false && isset($_SERVER['HTTP_X_2FA_DEVICE_ID'])) {
+			$device = TwoFactorDevice::loadFromUserDeviceID($context['db'], $user->getID(), $_SERVER['HTTP_X_2FA_DEVICE_ID']);
+			if ($device !== FALSE) {
+				if ($device->getCreated() > time() - (60 * 60 * 24 * 30)) {
+					$context['device'] = $device;
+				} else {
+					$device->delete();
+				}
+			}
+		}
+	}
+
 	$errorExtraData = [];
 
 	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
@@ -137,6 +150,8 @@
 			}
 
 			if ($user !== FALSE) {
+				getKnownDevice($user, $context);
+
 				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
 				$context['user'] = $user;
 				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
@@ -191,6 +206,12 @@
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
 			$keys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->where('active', 'true')->find('key');
 
+			// Don't check 2FA keys if we have a valid saved device.
+			getKnownDevice($user, $context);
+			if (isset($context['device'])) {
+				$keys = [];
+			}
+
 			$valid = true;
 			if (count($keys) > 0) {
 				$valid = false;
@@ -203,6 +224,34 @@
 						if ($key->verify($testCode, 1)) {
 							$valid = true;
 							$key->setLastUsed(time())->save();
+
+							if (isset($_SERVER['HTTP_X_2FA_SAVE_DEVICE']) || isset($_SERVER['HTTP_X_2FA_DEVICE_ID'])) {
+								$device = (new TwoFactorDevice($context['db']))->setUserID($user->getID())->setCreated(time())->setLastUsed(time());
+
+								if (isset($_SERVER['HTTP_X_2FA_DEVICE_ID'])) {
+									$device->setDeviceID($_SERVER['HTTP_X_2FA_DEVICE_ID']);
+									$resp->setHeader('device_id', $_SERVER['HTTP_X_2FA_DEVICE_ID']);
+								} else {
+									$device->setDeviceID(TRUE);
+									$resp->setHeader('device_id', $device->getDeviceID());
+								}
+
+								if (isset($_SERVER['HTTP_X_2FA_SAVE_DEVICE']) && !empty($_SERVER['HTTP_X_2FA_SAVE_DEVICE']) && $_SERVER['HTTP_X_2FA_SAVE_DEVICE'] != '.') {
+									$device->setDescription($_SERVER['HTTP_X_2FA_SAVE_DEVICE']);
+								} else {
+									$device->setDescription('Device ID: ' . $device->getDeviceID());
+								}
+								$resp->setHeader('device_name', $device->getDescription());
+								try {
+									$device->validate();
+									$device->save();
+
+									$context['device'] = $device;
+								} catch (Execption $ex) {
+									$resp->removeHeader('device_name');
+									$resp->removeHeader('device_id');
+								}
+							}
 							break;
 						}
 					}
@@ -215,6 +264,7 @@
 			}
 
 			if ($valid) {
+				$resp->removeHeader('login_error');
 				$context['user'] = $user;
 				$context['access'] = getAccessPermissions($user);
 			} else {

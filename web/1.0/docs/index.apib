@@ -15,6 +15,22 @@ If a 2FA Key is required for the account, this must be passed as a HTTP Header:
 X-2FA-Key: 123456
 ```
 
+Devices can be saved as Trusted Devices to allow them to bypass the need to enter the 2FA key every time.
+
+This can be done by passing a `X-2FA-SAVE-DEVICE` header when logging in with a valid 2FA Key:
+
+```http
+X-2FA-SAVE-DEVICE: Some Device Name
+```
+
+The API Response will then include a device_id item that can be stored and used for future logins in place of the 2FA Key:
+
+```http
+X-2FA-DEVICE-ID: 84FDBE2B-0FB2-461C-9E7B-31A2AF5E52F6
+```
+
+If a `X-2FA-DEVICE-ID` is passed alongside the `X-2FA-SAVE-DEVICE` header then that device ID will be used to rememebr the device, otherwise the API will generate a new one for you.
+
 ## API Key Authentication
 If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.
 
@@ -779,6 +795,56 @@ This takes the same parameters as create, but will update an existing key.
                 "error": "Invalid code provided for verification."
             }
 
+## 2FA Devices [/users/{userid}/2fadevices]
+2FA Devices are devices that have passed the 2FA check in the past and the user has chosen to allow them to login without 2fa.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known 2FA Devices [GET]
+Returns the list of known 2FA Devices and information about them.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1af9caaffc6",
+                "method": "users/self/2fadevices",
+                "response":{
+                    "1":{
+                        "description": "Some Device",
+                        "created": "1511715554",
+                        "lastused": "1511715554",
+                    },
+                    "2":{
+                        "description": "Some Other Device",
+                        "current": true,
+                        "created": "1511717965",
+                        "lastused": "1511717965",
+                    }
+                }
+            }
+
+## Manipulate specific 2FA Device [/users/{userid}/2fadevices/{deviceid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + deviceid: `6` (required) - The Device ID.
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1afd4852d97",
+                "method": "users/self/2fadevices/6",
+                "response":[
+                    "deleted"
+                ]
+            }
+
 ## User custom data [/users/{userid}/customdata]
 This allows applications to store user-specific data within the api.
 
@@ -1270,6 +1336,141 @@ This takes the same parameters as create, but will update an existing key.
             {
                 "respid": "592f82c0d3006",
                 "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":[
+                   "deleted"
+                ]
+            }
+
+## Domain Hooks [/domains/{domain}/hooks]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+
+
+### Get known Domain Hooks [GET]
+Returns the list of known Domain Hooks and any password associated with them
+
+Domain Hooks are web pages that recieve specially-crafted POST requests when certain events happen related to a domain.
+
+If a password is specified, the POST request will include an X-HMAC-SIGNATURE header signing the data that was sent.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1afee40bc4c",
+                "method": "domains/example.org/hooks",
+                "response":{
+                    "3":{
+                        "url": "http://hooks.example.org/hook1.php",
+                        "password": "password",
+                        "disabled": "false",
+                        "created": "1511718537",
+                        "lastused": "0"
+                    },
+                    "4":{
+                        "url": "http://hooks.example.org/hook2.php",
+                        "password": "",
+                        "disabled": "false",
+                        "created": "1511718542",
+                        "lastused": "0"
+                    }
+                }
+            }
+
+### Create a new Hook [POST]
+Create a new Domain Hook.
+
++ Request Create a Hook without a password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "url": "http://hooks.example.org/hook3.php",
+                    "password": ""
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created hook
+    + Body
+
+            {
+                "respid": "5a1b003293d16",
+                "method": "domains/example.org/hooks",
+                "response":{
+                    "5":{
+                        "url": "http://hooks.example.org/hook3.php",
+                        "password": "",
+                        "disabled": false,
+                        "created": 1511718962,
+                        "lastused": 0,
+                        "updated": true
+                        }
+                    }
+                }
+            }
+
+
+## Manipulate specific Domain Hook [/domains/{domain}/hooks/{hookid}]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+    + hookid: `5` (required) - The Hook ID.
+
+### Get Hook details [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f828d6ddbd",
+                "method": "domains/example.org/hooks/5",
+                "response":{
+                        "url": "http://hooks.example.org/hook3.php",
+                        "password": "",
+                        "disabled": false,
+                        "created": 1511718962,
+                        "lastused": 0
+                }
+            }
+
+### Update Hook [POST]
+This takes the same parameters as create, but will update an existing hook.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "password": "foo"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the hook as it exists after the change.
+    + Body
+
+            {
+                "respid": "5a1b00d645f22",
+                "method": "domains/example.org/hooks/5",
+                "response":{
+                    "url": "http://hooks.example.org/hook3.php",
+                    "password": "foo",
+                    "disabled": "false",
+                    "created": "1511718900",
+                    "lastused": "0",
+                    "updated": true
+                }
+            }
+
+### Delete Hook [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f82c0d3006",
+                "method": "domains/example.org/hooks/5",
                 "response":[
                    "deleted"
                 ]

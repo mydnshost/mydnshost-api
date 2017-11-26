@@ -41,6 +41,16 @@
 			return $key;
 		}
 
+		protected function get2FADeviceFromParam($userid, $id) {
+			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
+			$device = TwoFactorDevice::loadFromUserAndID($this->getContextKey('db'), $userid, $id);
+			if ($device === FALSE) {
+				$this->getContextKey('response')->sendError('Unknown 2fadevice: ' . $id);
+			}
+
+			return $device;
+		}
+
 		protected function getCustomDataFromParam($userid, $key, $allowInvalid = false) {
 			$userid = ($userid == 'self') ? $this->getContextKey('user')->getID() : $userid;
 			$customdata = UserCustomData::loadFromUserKey($this->getContextKey('db'), $userid, $key);
@@ -363,6 +373,27 @@
 			return TRUE;
 		}
 
+		protected function get2FADevices($user) {
+			$devices = TwoFactorDevice::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->find('id');
+
+			$result = [];
+			foreach ($devices as $k => $v) {
+				if ($v->getCreated() > time() - (60 * 60 * 24 * 30)) {
+					$result[$k] = $v->toArray();
+					if ($this->hasContextKey('device') && $result[$k]['id'] == $this->getContextKey('device')->getID()) {
+						$result[$k]['current'] = true;
+					}
+					unset($result[$k]['deviceid']);
+					unset($result[$k]['id']);
+					unset($result[$k]['user_id']);
+				}
+			}
+
+			$this->getContextKey('response')->data($result);
+
+			return TRUE;
+		}
+
 		protected function get2FAKey($user, $key) {
 			$k = $key->toArray();
 			unset($k['user_id']);
@@ -473,6 +504,12 @@
 			$template = '2fakey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
 			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+
+			return TRUE;
+		}
+
+		protected function delete2FADevice($user, $device) {
+			$this->getContextKey('response')->data('deleted', $device->delete() ? 'true' : 'false');
 
 			return TRUE;
 		}
@@ -665,6 +702,25 @@
 			$key = $this->getKeyFromParam($userid, $keyid);
 
 			return $this->deleteAPIKey($user, $key);
+		}
+	});
+
+	$router->addRoute('(GET)', '/users/(self|[0-9]+)/2fadevices', new class extends UserIDUserAdmin {
+		function get($userid) {
+			$this->checkPermissions(['user_read']);
+			$user = $this->getUserFromParam($userid);
+
+			return $this->get2FADevices($user);
+		}
+	});
+
+	$router->addRoute('DELETE', '/users/(self|[0-9]+)/2fadevices/([0-9]+)', new class extends UserIDUserAdmin {
+		function delete($userid, $deviceid) {
+			$this->checkPermissions(['user_write']);
+			$user = $this->getUserFromParam($userid);
+			$device = $this->get2FADeviceFromParam($userid, $deviceid);
+
+			return $this->delete2FADevice($user, $device);
 		}
 	});
 

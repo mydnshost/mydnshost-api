@@ -1119,11 +1119,13 @@
 		}
 
 		protected function getDomainHooks($domain) {
-			$hooks = DomainHook::getSearch($this->getContextKey('db'))->where('domain_id', $domain->getID())->find('domainhook');
+			$hooks = DomainHook::getSearch($this->getContextKey('db'))->where('domain_id', $domain->getID())->find('id');
 
 			$result = [];
 			foreach ($hooks as $k => $v) {
 				$result[$k] = $v->toArray();
+				unset($result[$k]['id']);
+				unset($result[$k]['domain_id']);
 			}
 
 			$this->getContextKey('response')->data($result);
@@ -1133,6 +1135,8 @@
 
 		protected function getDomainHook($domain, $hook) {
 			$k = $hook->toArray();
+			unset($k['id']);
+			unset($k['domain_id']);
 			$this->getContextKey('response')->data($k);
 
 			return TRUE;
@@ -1163,12 +1167,14 @@
 				}
 
 				$k = $hook->toArray();
+				unset($k['id']);
+				unset($k['domain_id']);
 				$k['updated'] = $hook->save();
 				if (!$k['updated']) {
 					if ($isCreate) {
-						$this->getContextKey('response')->sendError('Error creating hook.', $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error creating hook.');
 					} else {
-						$this->getContextKey('response')->sendError('Error updating hook: ' . $hook->getID(), $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error updating hook: ' . $hook->getID());
 					}
 				} else if ($isCreate) {
 					$this->getContextKey('response')->data([$hook->getID() => $k]);

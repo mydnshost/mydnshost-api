@@ -297,6 +297,24 @@ CREATE TABLE `domainhooks` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// 2FA Saved Devices
+			// ------------------------------------------------------------------------
+			$dataChanges[17] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `twofactordevices` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `deviceid` VARCHAR(250) NOT NULL,
+  `description` VARCHAR(250) NOT NULL,
+  `lastused` int(11) NOT NULL,
+  `created` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `twofactordevices_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `twofactordevices_deviceid_user` (`deviceid` ASC, `user_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
 
 			return $dataChanges;
 		}

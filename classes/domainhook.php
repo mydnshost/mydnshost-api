@@ -109,7 +109,7 @@ class DomainHook extends DBObject {
 	}
 
 	public function validate() {
-		$required = ['url', 'domain_id'];
+		$required = ['url', 'domain_id', 'password'];
 		foreach ($required as $r) {
 			if (!$this->hasData($r)) {
 				throw new ValidationFailed('Missing required field: '. $r);
