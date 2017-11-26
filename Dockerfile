@@ -1,8 +1,6 @@
 FROM shanemcc/docker-apache-php-base:latest
 MAINTAINER Shane Mc Cormack <dataforce@dataforce.org.uk>
 
-COPY . /dnsapi
-
 RUN \
   apt-get update && apt-get install -y bind9utils sudo libgearman-dev && \
   docker-php-source extract && \
@@ -16,7 +14,11 @@ RUN \
   echo extension=gearman.so >> /usr/local/etc/php/conf.d/gearman.ini && \
   docker-php-source delete && \
   echo "www-data  ALL=NOPASSWD: /usr/sbin/rndc" >> /etc/sudoers.d/99_rndc && \
-  chmod 0440 /etc/sudoers.d/99_rndc && \
+  chmod 0440 /etc/sudoers.d/99_rndc
+
+COPY . /dnsapi
+
+RUN \
   rm -Rfv /var/www/html && \
   ln -s /dnsapi/web /var/www/html && \
   mkdir /bind && \
