@@ -184,7 +184,7 @@ class Domain extends DBObject {
 		if (endsWith($this->getDomain(), 'ip6.arpa')) {
 			$search = $search->addOperation(new OrderByFunction('reverse', 'name'));
 		} else if (endsWith($this->getDomain(), 'in-addr.arpa')) {
-			$search = $search->addOperation(new OrderByFunction('length', 'name'));
+			$search = $search->addOperation(new OrderByFunction('length', 'name'))->order('name');
 		} else {
 			$rawDomain = $this->getDomainRaw();
 			$search = $search->addOperation(new class($rawDomain) extends DBOperation {
