@@ -4,6 +4,7 @@ use shanemcc\phpdb\DB;
 use shanemcc\phpdb\DBObject;
 use shanemcc\phpdb\ValidationFailed;
 use shanemcc\phpdb\Operations\OrderByFunction;
+use shanemcc\phpdb\Operations\DBOperation;
 
 class Domain extends DBObject {
 	protected static $_fields = ['id' => NULL,
@@ -178,12 +179,20 @@ class Domain extends DBObject {
 			}
 		}
 
-		$search = Record::getSearch($this->getDB())->addOperation(new OrderByFunction('length', 'name'));
+		$search = Record::getSearch($this->getDB());
 
 		if (endsWith($this->getDomain(), 'ip6.arpa')) {
 			$search = $search->addOperation(new OrderByFunction('reverse', 'name'));
+		} else if (endsWith($this->getDomain(), 'in-addr.arpa')) {
+			$search = $search->addOperation(new OrderByFunction('length', 'name'));
 		} else {
-			$search = $search->order('name');
+			$rawDomain = $this->getDomainRaw();
+			$search = $search->addOperation(new class($rawDomain) extends DBOperation {
+				private $rawDomain;
+				public function __construct($rawDomain) { $this->rawDomain = $rawDomain; }
+				public function __toString() { return 'SUBSTRING(name, 1, LENGTH(name) - ' . strlen($this->rawDomain) . ')'; }
+				public static function operation() { return 'ORDER BY'; }
+			});
 		}
 
 		$search = $search->order('type')->order('priority');
