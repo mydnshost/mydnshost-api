@@ -443,7 +443,7 @@
 				if (!array_key_exists($email, $users)) {
 					$this->getContextKey('response')->sendError('No such user: ' . $email);
 				}
-				$this->validAccessChange($domain, $email, $access, $self);
+				$this->validAccessChange($domain, $users[$email], $access, $self);
 
 				$domain->setAccess($users[$email]->getID(), $access);
 			}
@@ -460,27 +460,32 @@
 		/**
 		 * Check if this is a valid access-change.
 		 *  - Don't allow changing own access
-		 *  - Don't allow setting access higher than own access level.
+		 *  - Don't allow setting access higher or equal than own access level.
+		 *  - Don't allow changing the access of someone higher or equal than self
 		 *
 		 * @param $domain Domain object we are changing.
-		 * @param $email Wanted email
+		 * @param $targetUser Target User
 		 * @param $access Wanted access
 		 * @param $self Self object.
 		 * @return True if valid, or send an api error.
 		 */
-		protected function validAccessChange($domain, $email, $access, $self) {
+		protected function validAccessChange($domain, $targetUser, $access, $self) {
 			if ($this->isAdminMethod()) {
 				return true;
 			}
 
 			$selfAccess = $domain->getAccess($self);
+			$targetAccess = $domain->getAccess($targetUser);
 			$levels = ['none', 'read', 'write', 'admin', 'owner'];
 
-			if ($email == $self->getEmail()) {
+			if ($targetUser->getID() == $self->getID()) {
 				$this->getContextKey('response')->sendError('You can\'t change your own access level');
 			}
 			if (array_search($access, $levels) >= array_search($selfAccess, $levels)) {
 				$this->getContextKey('response')->sendError('You can\'t set an access level greater or equal to your own.');
+			}
+			if (array_search($targetAccess, $levels) >= array_search($selfAccess, $levels)) {
+				$this->getContextKey('response')->sendError('You can\'t change the access level of someone who has greater or equal access to your own.');
 			}
 		}
 
