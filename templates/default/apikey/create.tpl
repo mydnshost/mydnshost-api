@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 New API Key Added: {{ apikey.getDescription() }}
 {% endblock %}
@@ -17,3 +18,4 @@ A new API Key has been added to your account on {{ sitename }}.
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

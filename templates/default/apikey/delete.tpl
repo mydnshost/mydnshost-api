@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 API Key Deleted: {{ apikey.getDescription() }}
 {% endblock %}
@@ -17,3 +18,4 @@ An API Key has been removed from your account on {{ sitename }}.
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

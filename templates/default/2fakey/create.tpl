@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 New 2FA Key Added: {{ twofactorkey.getDescription() }}
 {% endblock %}
@@ -11,3 +12,4 @@ A new 2FA Key has been added to your account on {{ sitename }}.
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

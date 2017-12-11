@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 Password changed on {{ sitename }}.
 {% endblock %}
@@ -11,3 +12,4 @@ If you did not request this password change, please get in touch immediately.
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

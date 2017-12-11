@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 2FA Key Deleted: {{ twofactorkey.getDescription() }}
 {% endblock %}
@@ -11,3 +12,4 @@ A 2FA Key has been removed from your account on {{ sitename }}.
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

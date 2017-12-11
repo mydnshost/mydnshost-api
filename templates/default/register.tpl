@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 New account created on {{ sitename }}.
 {% endblock %}
@@ -13,3 +14,4 @@ If you did not request this account, feel free to disregard this mail, you will 
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}

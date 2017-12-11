@@ -1,3 +1,4 @@
+{% autoescape false %}
 {% block subject %}
 Forgotten password on {{ sitename }}.
 {% endblock %}
@@ -15,3 +16,4 @@ If you did not request this password reset, feel free to disregard this mail, no
 
 {% include 'footer.txt' %}
 {% endblock %}
+{% endautoescape %}
