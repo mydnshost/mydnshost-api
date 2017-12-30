@@ -124,7 +124,7 @@
 		 */
 		function parseZoneFile() {
 			$file = $this->getZoneFileContents();
-			$ttl = '2d';
+			$zonettl = '2d';
 			$origin = $this->domain.'.';
 			$startname = $origin;
 
@@ -138,9 +138,9 @@
 
 				$bits = preg_split('/\s+/', $line);
 				if (strtolower($bits[0]) == '$ttl') {
-					$ttl = $bits[++$pos];
-					$this->debug('parseZoneFile', 'TTL is now: '.$ttl);
-					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $ttl; }
+					$zonettl = $bits[++$pos];
+					$this->debug('parseZoneFile', 'TTL is now: '.$zonettl);
+					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $zonettl; }
 				} else if (strtolower($bits[0]) == '$origin') {
 					$origin = $bits[++$pos];
 					$this->debug('parseZoneFile', 'Origin is now: '.$origin);
@@ -148,13 +148,13 @@
 				} else {
 					// Zone stuff!
 					$pos = 0;
-					$thisttl = $ttl;
+					$thisttl = $zonettl;
 
 					$name = $bits[0];
 
 					for ($pos = 1; $pos < count($bits); $pos++) {
 						if (is_numeric($bits[$pos])) {
-							$ttl = $bits[$pos];
+							$thisttl = $bits[$pos];
 						} else if (strtoupper($bits[$pos]) == 'IN') {
 							continue;
 						} else {
@@ -246,7 +246,7 @@
 							break;
 					}
 
-					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $ttl; }
+					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $thisttl; }
 
 					// And finally actually add to the domainInfo array:
 					$domainInfo[$type][$name][] = $info;
