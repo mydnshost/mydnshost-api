@@ -249,7 +249,7 @@ class Domain extends DBObject {
 	 * @return New serial to use.
 	 */
 	function getNextSerial($oldSerial = 0) {
-		$serial = date('Ymd').'00';
+		$serial = (int)(date('Ymd').'00');
 		$diff = ($oldSerial - $serial);
 
 		// If we already have a serial for today, the difference will be

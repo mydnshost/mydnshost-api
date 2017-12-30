@@ -285,7 +285,7 @@
 
 			$parsedsoa['primaryNS'] = $bindsoa['Nameserver'];
 			$parsedsoa['adminAddress'] = $bindsoa['Email'];
-			$parsedsoa['serial'] = $bindsoa['Serial'];
+			$parsedsoa['serial'] = $domain->getNextSerial($parsedsoa['serial']);
 			$parsedsoa['refresh'] = $bindsoa['Refresh'];
 			$parsedsoa['retry'] = $bindsoa['Retry'];
 			$parsedsoa['expire'] = $bindsoa['Expire'];
