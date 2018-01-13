@@ -20,7 +20,7 @@
 	// $config['hooks']['bind']['zonedir'] = '/tmp/bindzones';
 	// $config['hooks']['bind']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
 	// $config['hooks']['bind']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-	// $config['hooks']['bind']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+	// $config['hooks']['bind']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
@@ -28,7 +28,7 @@
 		$config['hooks']['bind']['defaults']['zonedir'] = '/etc/bind/zones';
 		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s }; auto-dnssec maintain; inline-signing yes; };\' >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
 		$config['hooks']['bind']['defaults']['catalogZoneName'] = 'catalog.invalid';
 		$config['hooks']['bind']['defaults']['slaveServers'] = [];

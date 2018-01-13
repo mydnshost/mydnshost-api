@@ -14,7 +14,7 @@
 			$defaults['zonedir'] = '/etc/bind/zones';
 			$defaults['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s }; auto-dnssec maintain; inline-signing yes; };\' >/dev/null 2>&1';
 			$defaults['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-			$defaults['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1';
+			$defaults['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 			$defaults['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
 			$defaults['catalogZoneName'] = 'catalog.invalid';
 			$defaults['slaveServers'] = [];
