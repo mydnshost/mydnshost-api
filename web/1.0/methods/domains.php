@@ -834,6 +834,8 @@
 
 			$this->getContextKey('db')->beginTransaction();
 
+			$changeCount = 0;
+
 			$result = array();
 			$deletedRecords = [];
 			foreach ($recordsToBeDeleted as $record) {
@@ -844,8 +846,6 @@
 					$changeCount++;
 				}
 			}
-
-			$changeCount = 0;
 
 			$updatedRecords = [];
 			$addedRecords = [];
