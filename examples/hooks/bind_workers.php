@@ -19,7 +19,7 @@
 	// $config['hooks']['bind']['catalogZoneName'] = 'catalog.invalid';
 	// $config['hooks']['bind']['zonedir'] = '/tmp/bindzones';
 	// $config['hooks']['bind']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
-	// $config['hooks']['bind']['reloadZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
+	// $config['hooks']['bind']['reloadZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
 	// $config['hooks']['bind']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
