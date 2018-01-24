@@ -92,18 +92,35 @@
 			//
 			// This means that the zone won't be added until it is actually
 			// valid.
-			if ($hasNS) {
-				$bind->saveZoneFile();
-				if ($new) {
-					HookManager::get()->handle('bind_zone_added', [$domain, $bind, $bindConfig]);
-				} else {
-					HookManager::get()->handle('bind_zone_changed', [$domain, $bind, $bindConfig]);
+
+			// Ensure the file exists to let us lock it.
+			if (!file_exists($filename)) { file_put_contents($filename, ''); }
+
+			// Try and lock the file to ensure that we are the only ones
+			// writing to it.
+			$fp = fopen($filename, 'r+');
+			if (flock($fp, LOCK_EX)) {
+				if ($hasNS) {
+					// if filemtime is the same as now, we need to wait to ensure
+					// bind does the right thing.
+					$filetime = filemtime($filename);
+					if ($filetime >= time()) { @time_sleep_until($filetime + 1); }
+
+					$bind->saveZoneFile();
+					if ($new) {
+						HookManager::get()->handle('bind_zone_added', [$domain, $bind, $bindConfig]);
+					} else {
+						HookManager::get()->handle('bind_zone_changed', [$domain, $bind, $bindConfig]);
+					}
+				} else if (file_exists($filename)) {
+					foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+						if (file_exists($f)) { @unlink($f); }
+					}
+					HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
 				}
-			} else if (file_exists($filename)) {
-				foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
-					if (file_exists($f)) { @unlink($f); }
-				}
-				HookManager::get()->handle('bind_zone_removed', [$domain, $bind, $bindConfig]);
+
+				flock($fp, LOCK_UN);
+				fclose($fp);
 			}
 		};
 

@@ -35,15 +35,13 @@
 		}
 
 		protected function bind_sleepForCatalog() {
-			global $__BIND__CATALOG_TIME;
-
-			if (isset($__BIND__CATALOG_TIME)) {
-				// Make sure there is at least 1 second between subsequent
-				// writes to the catalog.
-				$now = time();
-				if ($__BIND__CATALOG_TIME >= $now) { @time_sleep_until($now + 1); }
+			// Make sure there is at least 1 second between subsequent
+			// writes to the catalog.
+			$filetime = filemtime($this->bindConfig['catalogZoneFile']);
+			if ($filetime >= time()) {
+				echo 'Sleeping for catalog: ', $filename, "\n";
+				@time_sleep_until($filetime + 1);
 			}
-			$__BIND__CATALOG_TIME = time();
 		}
 
 		protected function updateCatalogZone($domainraw, $mode = 'remove') {

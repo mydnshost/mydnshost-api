@@ -79,16 +79,38 @@
 			// This means that the zone won't be added until it is actually
 			// valid.
 			$jobArgs = ['domain' => $domain->getDomainRaw(), 'filename' => $filename];
-			if ($hasNS) {
-				$bind->saveZoneFile();
-				if ($new) {
-					$jobArgs['change'] = 'add';
-				} else {
-					$jobArgs['change'] = 'change';
+
+			// Ensure the file exists to let us lock it.
+			if (!file_exists($filename)) { file_put_contents($filename, ''); }
+
+			// Try and lock the file to ensure that we are the only ones
+			// writing to it.
+			$fp = fopen($filename, 'r+');
+			if (flock($fp, LOCK_EX)) {
+				if ($hasNS) {
+					// if filemtime is the same as now, we need to wait to ensure
+					// bind does the right thing.
+					$filetime = filemtime($filename);
+					if ($filetime >= time()) {
+						echo 'Sleeping for zone: ', $filename, "\n";
+						@time_sleep_until($filetime + 1);
+					}
+
+					$bind->saveZoneFile();
+					if ($new) {
+						$jobArgs['change'] = 'add';
+					} else {
+						$jobArgs['change'] = 'change';
+					}
+				} else if (file_exists($filename)) {
+					foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
+						if (file_exists($f)) { @unlink($f); }
+					}
+					$jobArgs['change'] = 'remove';
 				}
-			} else if (file_exists($filename)) {
-				unlink($filename);
-				$jobArgs['change'] = 'remove';
+
+				flock($fp, LOCK_UN);
+				fclose($fp);
 			}
 
 			if (isset($jobArgs['change'])) {
