@@ -104,7 +104,7 @@
 					// if filemtime is the same as now, we need to wait to ensure
 					// bind does the right thing.
 					$filetime = filemtime($filename);
-					if ($filetime >= time()) { @time_sleep_until($filetime + 1); }
+					if ($filetime >= time()) { @time_sleep_until($filetime + 2); }
 
 					$bind->saveZoneFile();
 					if ($new) {
@@ -252,7 +252,7 @@
 				// Make sure there is at least 1 second between subsequent
 				// writes to the catalog.
 				$now = time();
-				if ($__BIND__CATALOG_TIME >= $now) { @time_sleep_until($now + 1); }
+				if ($__BIND__CATALOG_TIME >= $now) { @time_sleep_until($now + 2); }
 			}
 			$__BIND__CATALOG_TIME = time();
 		}

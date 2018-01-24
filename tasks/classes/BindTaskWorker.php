@@ -93,7 +93,7 @@
 					$filetime = filemtime($filename);
 					if ($filetime >= time()) {
 						echo 'Sleeping for zone: ', $filename, "\n";
-						@time_sleep_until($filetime + 1);
+						@time_sleep_until($filetime + 2);
 					}
 
 					$bind->saveZoneFile();

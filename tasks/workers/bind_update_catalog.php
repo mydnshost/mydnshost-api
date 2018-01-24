@@ -40,7 +40,7 @@
 			$filetime = filemtime($this->bindConfig['catalogZoneFile']);
 			if ($filetime >= time()) {
 				echo 'Sleeping for catalog: ', $filename, "\n";
-				@time_sleep_until($filetime + 1);
+				@time_sleep_until($filetime + 2);
 			}
 		}
 
