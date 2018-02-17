@@ -62,6 +62,7 @@
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
 				HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+				HookManager::get()->handle('new_user', [$user]);
 
 				return TRUE;
 			}
