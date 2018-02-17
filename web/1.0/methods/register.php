@@ -105,9 +105,13 @@
 				$data = ['pending' => 'Registration was successful, however the account has been held pending manual approval.'];
 				$user->setDisabled(true);
 				$user->setDisabledReason('Account is pending manual approval.');
+
+				HookManager::get()->handle('new_user_pending', [$user]);
 			} else {
 				$data = ['success' => 'Registration was successful, you can now log in.'];
 				$user->setDisabled(false);
+
+				HookManager::get()->handle('new_user_confirmed', [$user]);
 			}
 
 			$result = $user->save();

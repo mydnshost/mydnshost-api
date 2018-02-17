@@ -41,6 +41,8 @@
 	Mailer::get()->setConfig($config['email']);
 
 	HookManager::get()->addHookType('new_user');
+	HookManager::get()->addHookType('new_user_pending');
+	HookManager::get()->addHookType('new_user_confirmed');
 	HookManager::get()->addHookType('new_domain');
 	HookManager::get()->addHookType('worker_error');
 
