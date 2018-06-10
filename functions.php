@@ -219,9 +219,9 @@
 			$result = $database->getQueryBuilder();
 
 			if ($type == 'derivative') {
-				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+				$result = $result->select('non_negative_derivative(max("value")) AS value');
 			} else {
-				$result = $result->select('sum("value") AS value');
+				$result = $result->select('max("value") AS value');
 			}
 
 			$result = $result->from('opcode_query')
@@ -256,9 +256,9 @@
 			$result = $database->getQueryBuilder();
 
 			if ($type == 'derivative') {
-				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+				$result = $result->select('non_negative_derivative(max("value")) AS value');
 			} else {
-				$result = $result->select('sum("value") AS value');
+				$result = $result->select('max("value") AS value');
 			}
 
 			$result = $result->from('qtype')
@@ -296,9 +296,9 @@
 			$result = $database->getQueryBuilder();
 
 			if ($type == 'derivative') {
-				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+				$result = $result->select('non_negative_derivative(max("value")) AS value');
 			} else {
-				$result = $result->select('sum("value") AS value');
+				$result = $result->select('max("value") AS value');
 			}
 
 			$where = ["time > now() - " . $time . "s"];
@@ -350,14 +350,14 @@
 			$database = getInfluxDB();
 
 			// executing a query will yield a resultset object
-//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h and "zone" = 'mydnshost.co.uk' GROUP BY time(60s),"zone","qtype";
-//				SELECT sum("value") FROM "zone_qtype" WHERE time > now() - 1h AND zone = 'mydnshost.co.uk' GROUP BY time(60s),zone,qtype"
+//				SELECT max("value") FROM "zone_qtype" WHERE time > now() - 1h and "zone" = 'mydnshost.co.uk' GROUP BY time(60s),"zone","qtype";
+//				SELECT max("value") FROM "zone_qtype" WHERE time > now() - 1h AND zone = 'mydnshost.co.uk' GROUP BY time(60s),zone,qtype"
 			$result = $database->getQueryBuilder();
 
 			if ($type == 'derivative') {
-				$result = $result->select('non_negative_derivative(sum("value")) AS value');
+				$result = $result->select('non_negative_derivative(max("value")) AS value');
 			} else {
-				$result = $result->select('sum("value") AS value');
+				$result = $result->select('max("value") AS value');
 			}
 
 			$result = $result->from('zone_qtype')
