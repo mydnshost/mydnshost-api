@@ -150,6 +150,11 @@
 		}
 	}
 
+	function getSystemAllowSelfDelete() {
+		global $config;
+		return $config['self_delete'];
+	}
+
 	function getSystemRegisterPermissions() {
 		global $config;
 		return $config['register_permissions'];

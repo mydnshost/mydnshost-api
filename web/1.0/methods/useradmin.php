@@ -238,6 +238,10 @@
 
 		public function deleteUser($user, $confirmCode = '', $twoFactorCode = '') {
 			if ($this->getContextKey('user')->getID() === $user->getID()) {
+				if (!getSystemAllowSelfDelete()) {
+					$this->getContextKey('response')->sendError('You can not delete yourself.');
+				}
+
 				$wantedCode = 'DeleteConfirmCode_' . crc32(json_encode($user->toArray())) . '_' . floor(time() / 240);
 				$wantedCode = base_convert(crc32($wantedCode), 10, 16);
 

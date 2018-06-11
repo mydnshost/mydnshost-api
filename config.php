@@ -14,6 +14,9 @@
 	$config['register_manual_verify'] = parseBool(getEnvOrDefault('REGISTER_MANUAL_VERIFY', 'false'));
 	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
 
+	// Allow users to delete their own account.
+	$config['self_delete'] = parseBool(getEnvOrDefault('ALLOW_SELF_DELETE', 'true'));
+
 	// Location of <zone>.dskey files
 	$config['dnssec']['dskeys'] = getEnvOrDefault('DNSSEC_DSKEY_FILES', '/etc/bind/keys/');
 
