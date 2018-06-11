@@ -27,3 +27,17 @@
 			return TRUE;
 		}
 	});
+
+	$router->get('/system/datavalue/selfDelete', new class extends RouterMethod {
+		function check() {
+			if ($this->getContextKey('user') == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function run() {
+			$this->getContextKey('response')->set('selfDelete', getSystemAllowSelfDelete());
+
+			return TRUE;
+		}
+	});
