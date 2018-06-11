@@ -245,14 +245,19 @@
 				$wantedCode = 'DeleteConfirmCode_' . crc32(json_encode($user->toArray())) . '_' . floor(time() / 240);
 				$wantedCode = base_convert(crc32($wantedCode), 10, 16);
 
+				$keys = TwoFactorKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->where('active', 'true')->find('key');
+
 				if (empty($confirmCode)) {
-					$this->getContextKey('response')->data(['pending' => 'You need to provide a confirmation code to delete yourself.', 'confirmCode' => $wantedCode])->send();
+					$this->getContextKey('response')->set('pending', 'You need to provide a confirmation code to delete yourself.');
+					$this->getContextKey('response')->set('confirmCode', $wantedCode);
+					$this->getContextKey('response')->set('twofactor', count($keys) > 0);
+					$this->getContextKey('response')->send();
+
 					return;
 				} else if ($confirmCode != $wantedCode) {
-					$this->getContextKey('response')->sendError('Incorrect confirm code', ['confirmCode' => $wantedCode]);
+					$this->getContextKey('response')->sendError('Incorrect confirm code');
 				} else {
 					// Code is valid, check for 2FA...
-					$keys = TwoFactorKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->where('active', 'true')->find('key');
 					$valid = true;
 					if (count($keys) > 0) {
 						$valid = false;
