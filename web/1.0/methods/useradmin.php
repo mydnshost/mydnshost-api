@@ -70,6 +70,12 @@
 				unset($u['verifycode']);
 				if (!$user->isDisabled()) { unset($u['disabledreason']); }
 
+				if (getSystemRegisterRequireTerms()) {
+					$u['acceptterms'] = $u['acceptterms'] > 0;
+				} else {
+					unset($u['acceptterms']);
+				}
+
 				$list[] = $u;
 				$this->getContextKey('response')->data($u);
 				return true;
@@ -102,6 +108,22 @@
 		protected function createUser() {
 			$user = new User($this->getContextKey('db'));
 			return $this->updateUser($user, true);
+		}
+
+		protected function doUserAcceptTerms($user) {
+			$data = $this->getContextKey('data');
+			if (!isset($data['data']) || !is_array($data['data'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if (isset($data['data']['acceptterms']) && parseBool($data['data']['acceptterms'])) {
+				$user->setAcceptTerms(time());
+				$this->getContextKey('response')->data(['acceptterms' => 'Terms accepted.']);
+
+				return TRUE;
+			}
+
+			$this->getContextKey('response')->sendError('Missing Data: acceptterms');
 		}
 
 		protected function updateUser($user, $isCreate = false) {
@@ -701,6 +723,22 @@
 			$user = $this->getUserFromParam($userid);
 
 			return $this->deleteUser($user);
+		}
+	});
+
+	$router->addRoute('POST', '/users/(self|[0-9]+)/acceptterms', new class extends UserIDUserAdmin {
+		function post($userid) {
+			if (getSystemRegisterRequireTerms()) {
+				$this->checkPermissions(['user_write']);
+				$user = $this->getUserFromParam($userid);
+				if (!$this->hasContextKey('impersonator') && $this->getContextKey('user')->getID() === $user->getID()) {
+					return $this->doUserAcceptTerms($user);
+				} else {
+					$this->getContextKey('response')->sendError('You can not accept the terms on behalf of another user.');
+				}
+			}
+
+			return FALSE;
 		}
 	});
 

@@ -24,6 +24,10 @@
 				             'realname' => $user->getRealName(),
 				            ];
 
+				if (getSystemRegisterRequireTerms()) {
+					$userinfo['acceptterms'] = $user->getAcceptTerms() > 0;
+				}
+
 				$this->getContextKey('response')->set('user', $userinfo);
 			}
 			$this->getContextKey('response')->set('access', $this->getContextKey('access'));

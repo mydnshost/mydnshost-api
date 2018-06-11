@@ -542,6 +542,45 @@ If a user is still pending verification, we can re-send the welcome email to the
                 "error": "User has already completed registration."
             }
 
+## Accept terms of service [/users/{userid}/acceptterms]
++ Parameters
+
+    + userid: `self` (required) - The user ID (must be own user account or "self").
+
+### Accept terms of service. [POST]
+If a user has not accepted the terms of service this allows them to do so. (This requires the `user_write` permission)
+
++ Request Accept terms of service (application/json)
+    + Body
+
+            {
+                "data":{
+                    "acceptterms": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5b1df1e976654",
+                "method": "users/self/acceptterms",
+                "response":{
+                    "acceptterms": "Terms accepted."
+                },
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5b1df1e976654",
+                "method": "users/self/resendwelcome",
+                "error": "There was an error accepting the terms of service."
+            }
+
 ## API Keys [/users/{userid}/keys]
 + Parameters
 
