@@ -400,14 +400,65 @@ If you have `manage_permissions` you can also pass a map of permissions where th
             }
 
 ### Delete a specific user [DELETE]
-This will allow a user with the `manage_users` permission to delete the user specified. You can not delete the current user.
+This will allow a user with the `manage_users` permission to delete the user specified, or allow a user to delete themselves. If you try to delete the current user, the API will give you a confirm code that you need to use to perform a confirmed delete.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
 
 + Response 200 (application/json)
     + Body
 
             {
                 "respid": "58bcbde798d3a",
-                "method": "users/5",
+                "method": "users/2",
+                "response":[
+                    "deleted"
+                ]
+            }
+
+## Confirm delete the current user [/users/{userid}/confirm/{confirmcode}]
+
+This endpoint is used to perform a confirmed delete of a given user.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + confirmcode: `c00696d9` (required) - The confirm code provided by the initial delete attempt.
+
+### Confirm delete the current user [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/2/confirm/c00696d9",
+                "response":[
+                    "deleted"
+                ]
+            }
+
+## Confirm delete the current user with 2FA [/users/{userid}/confirm/{confirmcode}/{twofactorcode}]
+
+This endpoint is used to perform a confirmed delete of a given user who has 2fa enabled.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + confirmcode: `c00696d9` (required) - The confirm code provided by the initial delete attempt.
+    + twofactorcode: `123456` (required) - A valid 2FA code for this user.
+
+### Confirm delete the current user with 2FA [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/2/confirm/c00696d9/123456",
                 "response":[
                     "deleted"
                 ]

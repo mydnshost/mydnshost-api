@@ -236,9 +236,35 @@
 			return $user;
 		}
 
-		public function deleteUser($user) {
+		public function deleteUser($user, $confirmCode = '', $twoFactorCode = '') {
 			if ($this->getContextKey('user')->getID() === $user->getID()) {
-				$this->getContextKey('response')->sendError('You can not delete yourself.');
+				$wantedCode = 'DeleteConfirmCode_' . crc32(json_encode($user->toArray())) . '_' . floor(time() / 240);
+				$wantedCode = base_convert(crc32($wantedCode), 10, 16);
+
+				if (empty($confirmCode)) {
+					$this->getContextKey('response')->data(['pending' => 'You need to provide a confirmation code to delete yourself.', 'confirmCode' => $wantedCode])->send();
+					return;
+				} else if ($confirmCode != $wantedCode) {
+					$this->getContextKey('response')->sendError('Incorrect confirm code', ['confirmCode' => $wantedCode]);
+				} else {
+					// Code is valid, check for 2FA...
+					$keys = TwoFactorKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->where('active', 'true')->find('key');
+					$valid = true;
+					if (count($keys) > 0) {
+						$valid = false;
+						if ($twoFactorCode !== NULL) {
+							foreach ($keys as $key) {
+								if ($key->verify($twoFactorCode, 1)) {
+									$valid = true;
+								}
+							}
+						}
+					}
+
+					if (!$valid) {
+						$this->getContextKey('response')->sendError('You must provide a valid 2FA code');
+					}
+				}
 			}
 
 			$this->getContextKey('response')->data('deleted', $user->delete() ? 'true' : 'false');
@@ -660,6 +686,15 @@
 			$user = $this->getUserFromParam($userid);
 
 			return $this->deleteUser($user);
+		}
+	});
+
+	$router->addRoute('DELETE', '/users/(self|[0-9]+)/confirm/([0-9a-z]+)(?:/([0-9a-z]+))?', new class extends UserIDUserAdmin {
+		function delete($userid, $confirmCode, $twoFactorCode = '') {
+			$this->checkPermissions(['user_write']);
+			$user = $this->getUserFromParam($userid);
+
+			return $this->deleteUser($user, $confirmCode, $twoFactorCode);
 		}
 	});
 
