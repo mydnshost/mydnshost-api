@@ -99,9 +99,10 @@
 	 *
 	 * @param $user User to get permissions for.
 	 * @param $key (Optional) API Key to limit permissions by.
+	 * @param $impersonating (Optional) Are we impersonating this user?
 	 * @return Array of permissions.
 	 */
-	function getAccessPermissions($user, $key = NULL) {
+	function getAccessPermissions($user, $key = NULL, $impersonating = false) {
 		$access = ['domains_read' => ($key == null) ? true : (true && $key->getDomainRead()),
 		           'domains_write' => ($key == null) ? true : (true && $key->getDomainWrite()),
 		           'user_read' => ($key == null) ? true : (true && $key->getUserRead()),
@@ -169,7 +170,7 @@
 
 				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
 				$context['user'] = $user;
-				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key));
+				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key), false);
 			}
 		} else if (isset($_SESSION['domainkey']) && isset($_SESSION['access'])) {
 			$key = DomainKey::load($context['db'], $_SESSION['domainkey']);
@@ -193,7 +194,7 @@
 
 			if ($key != FALSE) {
 				$context['user'] = $user;
-				$context['access'] = getAccessPermissions($user, $key);
+				$context['access'] = getAccessPermissions($user, $key, false);
 				$context['key'] = $key;
 				$key->setLastUsed(time())->save();
 			} else {
@@ -281,7 +282,7 @@
 			if ($valid) {
 				$resp->removeHeader('login_error');
 				$context['user'] = $user;
-				$context['access'] = getAccessPermissions($user);
+				$context['access'] = getAccessPermissions($user, null, false);
 			} else {
 				$user = FALSE;
 			}
@@ -323,7 +324,7 @@
 				$context['impersonator'] = $user;
 
 				// Reset access to that of the user.
-				$context['access'] = getAccessPermissions($impersonating);
+				$context['access'] = getAccessPermissions($impersonating, null, true);
 
 				// Add some extra responses so that it's obvious what is happening.
 				$resp->setHeader('impersonator', $user->getEmail());
