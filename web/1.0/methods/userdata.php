@@ -25,7 +25,8 @@
 				            ];
 
 				if (getSystemRegisterRequireTerms()) {
-					$userinfo['acceptterms'] = $user->getAcceptTerms() > 0;
+					$userinfo['termstime'] = $user->getAcceptTerms();
+					$userinfo['acceptterms'] = $user->getAcceptTerms() > getSystemMinimumTermsTime();
 				}
 
 				$this->getContextKey('response')->set('user', $userinfo);

@@ -15,6 +15,25 @@
 	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
 	$config['register_require_terms'] = parseBool(getEnvOrDefault('REGISTER_REQUIRE_TERMS', 'true'));
 
+	// Minimum terms time required to be considered "accepted".
+	//
+	// If this is not met, /userdata responses will show `"acceptterms": false`
+	// and the frontend will prompt the user to accept the terms before
+	// continuing.
+	$config['minimum_terms_time'] = (int)getEnvOrDefault('TERMS_TIME', 1528752008);
+
+	// Minimum terms time required to be able to use all API functions.
+	//
+	// This should be earlier than `minimum_terms_time` to allow API functions
+	// to still work for a limited time after a change of terms (Users who have
+	// never accepted the terms have a time of -1)
+	//
+	// If the terms are not accepted after this time then only `user_read` and
+	// `user_write` permissions will be granted to a user logging in.
+	//
+	// This does not impact DomainKeys
+	$config['api_minimum_terms_time'] = (int)getEnvOrDefault('API_TERMS_TIME', -2);
+
 	// Allow users to delete their own account.
 	$config['self_delete'] = parseBool(getEnvOrDefault('ALLOW_SELF_DELETE', 'true'));
 

@@ -114,6 +114,20 @@
 			}
 		}
 
+		// Disable all permissions if we have not accepted the minimum terms
+		// version required to use the API except user_read and user_write.
+		//
+		// This will allow the user to still accept the new terms, or update
+		// their user info/delete their account etc, but won't allow them to do
+		// other useful things.
+		if ($user->getAcceptTerms() < getSystemAPIMinimumTermsTime()) {
+			foreach ($access as $permission => &$value) {
+				if (!in_array($permission, ['user_read', 'user_write'])) {
+					$value = false;
+				}
+			}
+		}
+
 		return $access;
 	}
 

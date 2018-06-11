@@ -71,7 +71,8 @@
 				if (!$user->isDisabled()) { unset($u['disabledreason']); }
 
 				if (getSystemRegisterRequireTerms()) {
-					$u['acceptterms'] = $u['acceptterms'] > 0;
+					$u['termstime'] = $u['acceptterms'];
+					$u['acceptterms'] = $u['acceptterms'] > getSystemMinimumTermsTime();
 				} else {
 					unset($u['acceptterms']);
 				}
@@ -100,7 +101,8 @@
 					$u['pendingreset'] = true;
 				}
 				if (getSystemRegisterRequireTerms()) {
-					$u['acceptterms'] = $u['acceptterms'] > 0;
+					$u['termstime'] = $u['acceptterms'];
+					$u['acceptterms'] = $u['acceptterms'] > getSystemMinimumTermsTime();
 				} else {
 					unset($u['acceptterms']);
 				}

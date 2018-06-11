@@ -155,6 +155,16 @@
 		return $config['register_require_terms'];
 	}
 
+	function getSystemMinimumTermsTime() {
+		global $config;
+		return $config['minimum_terms_time'];
+	}
+
+	function getSystemAPIMinimumTermsTime() {
+		global $config;
+		return $config['api_minimum_terms_time'];
+	}
+
 	function getSystemAllowSelfDelete() {
 		global $config;
 		return $config['self_delete'];
