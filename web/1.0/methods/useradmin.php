@@ -242,8 +242,9 @@
 					$this->getContextKey('response')->sendError('You can not delete yourself.');
 				}
 
-				$wantedCode = 'DeleteConfirmCode_' . crc32(json_encode($user->toArray())) . '_' . floor(time() / 240);
-				$wantedCode = base_convert(crc32($wantedCode), 10, 16);
+				$baseCode = 'DeleteConfirmCode_' . crc32(json_encode($user->toArray()));
+				$wantedCode = base_convert(crc32($baseCode . '_' . floor((time()) / 60)), 10, 16);
+				$previousCode = base_convert(crc32($baseCode . '_' . floor((time() - 60) / 60)), 10, 16);
 
 				$keys = TwoFactorKey::getSearch($this->getContextKey('db'))->where('user_id', $user->getID())->where('active', 'true')->find('key');
 
@@ -254,7 +255,7 @@
 					$this->getContextKey('response')->send();
 
 					return;
-				} else if ($confirmCode != $wantedCode) {
+				} else if ($confirmCode != $wantedCode && $confirmCode != $previousCode) {
 					$this->getContextKey('response')->sendError('Incorrect confirm code');
 				} else {
 					// Code is valid, check for 2FA...
