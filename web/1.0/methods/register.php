@@ -23,6 +23,16 @@
 				$this->getContextKey('response')->sendError('Missing data: realname');
 			}
 
+			if (getSystemRegisterRequireTerms()) {
+				if (!array_key_exists('acceptterms', $data['data'])) {
+					$this->getContextKey('response')->sendError('You must accept the terms of service.');
+				} else if (!parseBool($data['data']['acceptterms'])) {
+					$this->getContextKey('response')->sendError('You must accept the terms of service.');
+				} else {
+					$user->setAcceptTerms(time());
+				}
+			}
+
 			$user->setVerifyCode(genUUID());
 			$user->setEmail($data['data']['email']);
 			$user->setRealName($data['data']['realname']);

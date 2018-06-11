@@ -41,3 +41,19 @@
 			return TRUE;
 		}
 	});
+
+	$router->get('/system/datavalue/registerRequireTerms', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('registerRequireTerms', getSystemRegisterRequireTerms());
+
+			return TRUE;
+		}
+	});
+
+	$router->get('/system/datavalue/registerEnabled', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('registerEnabled', getSystemRegisterEnabled());
+
+			return TRUE;
+		}
+	});

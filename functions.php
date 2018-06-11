@@ -150,6 +150,11 @@
 		}
 	}
 
+	function getSystemRegisterRequireTerms() {
+		global $config;
+		return $config['register_require_terms'];
+	}
+
 	function getSystemAllowSelfDelete() {
 		global $config;
 		return $config['self_delete'];

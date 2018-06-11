@@ -315,6 +315,13 @@ CREATE TABLE `twofactordevices` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Accept Terms
+			// ------------------------------------------------------------------------
+			$dataChanges[18] = new DBChange(<<<MYSQLQUERY
+	ALTER TABLE `users` ADD COLUMN `acceptterms` int(11) NOT NULL DEFAULT -1 AFTER `verifycode`;
+MYSQLQUERY
+);
 
 			return $dataChanges;
 		}

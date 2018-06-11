@@ -13,6 +13,7 @@
 	$config['register_enabled'] = parseBool(getEnvOrDefault('ALLOW_REGISTER', 'true'));
 	$config['register_manual_verify'] = parseBool(getEnvOrDefault('REGISTER_MANUAL_VERIFY', 'false'));
 	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
+	$config['register_require_terms'] = parseBool(getEnvOrDefault('REGISTER_REQUIRE_TERMS', 'true'));
 
 	// Allow users to delete their own account.
 	$config['self_delete'] = parseBool(getEnvOrDefault('ALLOW_SELF_DELETE', 'true'));

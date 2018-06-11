@@ -11,6 +11,7 @@ class User extends DBObject {
 	                             'disabled' => false,
 	                             'verifycode' => NULL,
 	                             'disabledreason' => NULL,
+	                             'acceptterms' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'users';
@@ -55,6 +56,10 @@ class User extends DBObject {
 		return $this->setData('verifycode', $value);
 	}
 
+	public function setAcceptTerms($value) {
+		return $this->setData('acceptterms', $value);
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -87,6 +92,10 @@ class User extends DBObject {
 
 	public function getVerifyCode() {
 		return $this->getData('verifycode');
+	}
+
+	public function getAcceptTerms() {
+		return $this->getData('acceptterms');
 	}
 
 	public function isPendingPasswordReset() {
