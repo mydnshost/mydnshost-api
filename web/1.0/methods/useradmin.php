@@ -154,7 +154,12 @@
 				$u['id'] = $user->getID();
 				if (!$u['updated']) {
 					if ($isCreate) {
-						$this->getContextKey('response')->sendError('Error creating user.', $user->getLastError());
+						$reason = $user->getLastError()[2];
+						if (preg_match('#.*Duplicate entry.*users_email_unique.*#', $reason)) {
+							$this->getContextKey('response')->sendError('Error creating user', 'Email address already exists.');
+						} else {
+							$this->getContextKey('response')->sendError('Unknown error creating user.');
+						}
 					} else {
 						$this->getContextKey('response')->sendError('Error updating user: ' . $user->getID());
 					}

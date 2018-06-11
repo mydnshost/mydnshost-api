@@ -54,6 +54,7 @@
 
 		public function error($errorMessage, $errorData = array()) {
 			$this->error = $errorMessage;
+			if (!is_array($errorData)) { $errorData = [$errorData]; }
 			$this->errorData = $errorData;
 
 			return $this;
@@ -181,6 +182,7 @@
 		}
 
 		public function sendError($error, $errorData = array()) {
+			if (!is_array($errorData)) { $errorData = [$errorData]; }
 			$this->data(array())->error($error, $errorData)->send();
 		}
 	}
