@@ -99,6 +99,11 @@
 				} else if ($user->isPendingPasswordReset()) {
 					$u['pendingreset'] = true;
 				}
+				if (getSystemRegisterRequireTerms()) {
+					$u['acceptterms'] = $u['acceptterms'] > 0;
+				} else {
+					unset($u['acceptterms']);
+				}
 				$list[] = $u;
 			}
 			$this->getContextKey('response')->data($list);
@@ -117,10 +122,15 @@
 			}
 
 			if (isset($data['data']['acceptterms']) && parseBool($data['data']['acceptterms'])) {
-				$user->setAcceptTerms(time());
+				$user->setAcceptTerms(time())->save();
 				$this->getContextKey('response')->data(['acceptterms' => 'Terms accepted.']);
 
 				return TRUE;
+			/* } else if (isset($data['data']['acceptterms']) && !parseBool($data['data']['acceptterms'])) {
+				$user->setAcceptTerms(-1)->save();
+				$this->getContextKey('response')->data(['acceptterms' => 'Terms unaccepted.']);
+
+				return TRUE; */
 			}
 
 			$this->getContextKey('response')->sendError('Missing Data: acceptterms');
