@@ -282,7 +282,7 @@
 				}
 			}
 
-			$this->getContextKey('response')->data('deleted', $user->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $user->delete() ? 'true' : 'false']);
 			return TRUE;
 		}
 
@@ -384,7 +384,7 @@
 		}
 
 		protected function deleteAPIKey($user, $key) {
-			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $key->delete() ? 'true' : 'false']);
 
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
@@ -537,7 +537,7 @@
 		}
 
 		protected function delete2FAKey($user, $key) {
-			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $key->delete() ? 'true' : 'false']);
 
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
@@ -550,7 +550,7 @@
 		}
 
 		protected function delete2FADevice($user, $device) {
-			$this->getContextKey('response')->data('deleted', $device->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $device->delete() ? 'true' : 'false']);
 
 			return TRUE;
 		}
@@ -635,7 +635,7 @@
 		}
 
 		protected function deleteCustomData($user, $customdata) {
-			$this->getContextKey('response')->data('deleted', $customdata->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $customdata->delete() ? 'true' : 'false']);
 			return TRUE;
 		}
 	}

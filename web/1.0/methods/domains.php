@@ -1119,7 +1119,7 @@
 		}
 
 		protected function deleteDomainKey($domain, $key) {
-			$this->getContextKey('response')->data('deleted', $key->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $key->delete() ? 'true' : 'false']);
 			return TRUE;
 		}
 
@@ -1208,7 +1208,7 @@
 		}
 
 		protected function deleteDomainHook($domain, $hook) {
-			$this->getContextKey('response')->data('deleted', $hook->delete() ? 'true' : 'false');
+			$this->getContextKey('response')->data(['deleted' => $hook->delete() ? 'true' : 'false']);
 			return TRUE;
 		}
 	}
