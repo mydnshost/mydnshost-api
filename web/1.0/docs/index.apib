@@ -1062,10 +1062,15 @@ Returns the list of known Custom-Data Key/Value pairs.
 # Group Domains
 Endpoints for dealing with domains.
 
-## Get domains [/domains]
+## Get domains [/domains{?contains}]
 
 ### Get list of known domains [GET]
 See what domains you have access to, and what level of access to each.
+
++ Parameters
+
+    + contains: `foo.bar.baz.example.com` (optional, string) - Only return the domain that would contain this record
+
 + Response 200 (application/json)
     + Body
 

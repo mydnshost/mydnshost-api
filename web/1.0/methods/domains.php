@@ -499,11 +499,44 @@
 				return $this->getDomainListAdmin();
 			}
 
-			$domains = $this->getContextKey('user')->getDomains();
+			if ($_REQUEST['contains']) {
+				$domains = [];
+
+				// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
+				$bits = explode('.', $_REQUEST['contains']);
+
+				// Domains can have at most 255 characters,
+				// subdomains require a . between them leaving a maximum sub-domain count of ~128 levels deep.
+				// If someone tries to look for more than this then just ignore them.
+				$limit = 128;
+				do {
+					// Get the domain to look for ([foo, bar, baz, example, com] => foo.bar.baz.example.com)
+					$dom = implode('.', $bits);
+
+					// If we have an exact match for this domain, then only return it in the output.
+					// There may be a nicer way to do this than asking the DB every time.
+					$domain = $this->getContextKey('user')->getDomainByName($dom);
+					if ($domain !== FALSE) {
+						$domains[] = $domain;
+						break;
+					}
+
+					// Remove the first entry from the array so that the next time we check the parent domain.
+					// eg [foo, bar, baz, example, com] => [bar, baz, example, com] and the next check is bar.baz.example.com
+					array_shift($bits);
+				} while (!empty($bits) && $limit-- > 0);
+
+				$this->getContextKey('response')->setHeader('contains', $_REQUEST['contains']);
+			} else {
+				// Just get them all.
+				$domains = $this->getContextKey('user')->getDomains();
+			}
+
 			$list = [];
 			foreach ($domains as $domain) {
 				$list[$domain->getDomain()] = $domain->getAccess($this->getContextKey('user'));
 			}
+
 			$this->getContextKey('response')->data($list);
 
 			return true;
