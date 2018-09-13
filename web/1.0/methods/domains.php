@@ -499,7 +499,7 @@
 				return $this->getDomainListAdmin();
 			}
 
-			if ($_REQUEST['contains']) {
+			if (isset($_REQUEST['contains'])) {
 				$domains = [];
 
 				// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
