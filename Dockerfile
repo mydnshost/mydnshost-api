@@ -8,4 +8,6 @@ RUN \
   ln -s /dnsapi/web /var/www/html && \
   mkdir /bind && \
   chown -Rfv www-data: /dnsapi/ /var/www/ /bind && \
-  su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer install"
+  su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer install" && \
+  groupadd -for -g 999 docker && \
+  usermod -aG docker www-data
