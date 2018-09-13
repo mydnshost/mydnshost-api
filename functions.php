@@ -266,7 +266,8 @@
 
 			$logs = [];
 			foreach (getLogsFromDocker($source[1]) as $log) {
-				if (preg_match('#(\'|zone |\()' . preg_quote($domain->getDomain(), '#') . '#', $log[2])) {
+				// TODO: Better filtering of zone-specific log entries.
+				if (preg_match('#(\'| |\()' . preg_quote($domain->getDomain(), '#') . '#', $log[2])) {
 					$logs[] = $log[2];
 				}
 			}
