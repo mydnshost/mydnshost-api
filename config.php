@@ -84,6 +84,10 @@
 	$config['influx']['pass'] = getEnvOrDefault('INFLUX_PASS', '');
 	$config['influx']['db'] = getEnvOrDefault('INFLUX_DB', 'MyDNSHost');
 
+	// Domain Logs Source
+	// $config['domainlogs']['source'] = getEnvOrDefault('DOMAINLOGS_SOURCE', 'file:/var/log/bind.log');
+	$config['domainlogs']['source'] = getEnvOrDefault('DOMAINLOGS_SOURCE', 'docker:mydnshost_bind');
+
 	// Local configuration.
 	if (file_exists(dirname(__FILE__) . '/config.local.php')) {
 		include(dirname(__FILE__) . '/config.local.php');

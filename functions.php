@@ -220,8 +220,9 @@
 		return $response;
 	}
 
-	function getLogsFromDocker($container, $since = 0) {
-		$log = getFromDocker('/containers/'. $container .'/logs?stderr=1&stdout=1&since' . $since . '&timestamps=1', false);
+	function getLogsFromDocker($container, $since = -1) {
+		if ($since == -1) { $since = time() - 3600; }
+		$log = getFromDocker('/containers/'. $container .'/logs?stderr=1&stdout=1&since=' . $since . '&timestamps=1', false);
 
 		$logs = [];
 		$pos = 0;
@@ -248,12 +249,33 @@
 			$timestamp = $str[0];
 			$str = isset($str[1]) ? $str[1] : '';
 
-			$logs[] = [$type, $timestamp, $str];
+			$logs[] = [$type, $timestamp, trim($str)];
 
 			$pos += 8 + $len;
 		}
 
 		return $logs;
+	}
+
+	function getDomainLogs($domain) {
+		global $config;
+		$source = explode(':', $config['domainlogs']['source'], 2);
+
+		if ($source[0] == 'docker' && isset($source[1])) {
+			$since = time() - 3600;
+
+			$logs = [];
+			foreach (getLogsFromDocker($source[1]) as $log) {
+				if (preg_match('#(\'|zone |\()' . preg_quote($domain, '#') . '#', $log[2])) {
+					$logs[] = $log[2];
+				}
+			}
+
+			return $logs;
+
+		} else {
+			return FALSE;
+		}
 	}
 
 	// TODO: This shouldn't rely on text files on disk if possible.

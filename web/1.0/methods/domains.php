@@ -1346,6 +1346,21 @@
 		}
 	});
 
+	$router->get('/domains/([^/]+)/logs', new class extends Domains {
+		function run($domain) {
+			$this->checkPermissions(['domains_logs']);
+
+			$domain = $this->getDomainFromParam($domain);
+
+			$result = getDomainLogs($domain);
+			if ($result !== false) {
+				$this->getContextKey('response')->data($result);
+				return true;
+			}
+			return false;
+		}
+	});
+
 	$router->addRoute('(GET|POST|DELETE)', '/domains/([^/]+)/records', new class extends Domains {
 		function get($domain) {
 			$this->checkPermissions(['domains_read']);

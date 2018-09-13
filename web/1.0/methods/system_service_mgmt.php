@@ -32,7 +32,7 @@
 
 	$router->get('/system/service/([^/]+)/logs', new class extends SystemServiceMgmt {
 		function run($service) {
-			$since = isset($_REQUEST['since']) ? 0 + $_REQUEST['since'] : time() - 3600;
+			$since = isset($_REQUEST['since']) ? 0 + $_REQUEST['since'] : -1;
 			$logs = getLogsFromDocker($service, $since);
 			$this->getContextKey('response')->data($logs);
 
