@@ -21,22 +21,42 @@
 					list($filename, $filename2) = $bind->getFileNames();
 				}
 
+				$domain = $payload['domain'];
+
+				$commands = [];
+
+				// %1$s == Domain Name
+				// %2$s == Zone Filename
+				// %3$s == Allowed IPs
+
 				// Remove a domain (or delete as part of readd)
 				if ($payload['change'] == 'remove' || $payload['change'] == 'readd') {
-					$this->runCommand($this->bindConfig['delZoneCommand'], $payload['domain'], $filename);
+  					$commands[] = '/usr/sbin/rndc sync -clean %1$s';
+					$commands[] = '/usr/sbin/rndc delzone %1$s';
+					$commands[] = 'rm "%2$s.db.*"';
 				}
 
 				// Add a domain (Standalone or as part of readd)
 				if ($payload['change'] == 'add' || $payload['change'] == 'readd') {
 					$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
-					$this->runCommand($this->bindConfig['addZoneCommand'], ($domain !== FALSE ? $domain : $payload['domain']), $filename);
+					if ($domain === FALSE) { $domain = $payload['domain']; }
+
+					$commands[] = 'chmod a+rwx %2$s';
+					$commands[] = '/usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s }; auto-dnssec maintain; inline-signing yes; };\'';
 				}
 
 				// Reload a domain.
 				if ($payload['change'] == 'change') {
 					$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
-					$this->runCommand($this->bindConfig['reloadZoneCommand'], ($domain !== FALSE ? $domain : $payload['domain']), $filename);
+					if ($domain === FALSE) { $domain = $payload['domain']; }
+
+					$commands[] = '/usr/sbin/rndc sync -clean %1$s';
+					$commands[] = 'chmod a+rwx %2$s';
+					$commands[] = '/usr/sbin/rndc reload %1$s';
 				}
+
+				// Run the appropriate commands.
+				foreach ($commands as $cmd) { $this->runCommand('/usr/bin/sudo -n ' . $cmd . ' >/dev/null 2>&1', $domainStr, $filename); }
 
 				// Update the catalog zone unless noCatalog is passed.
 				// (This will be passed when we are being called because of the catalog zone being updated.)

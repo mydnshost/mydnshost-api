@@ -10,25 +10,16 @@
 	// zonedir = Directory to put zone files
 	// catalogZone = If non-empty, this file (full path) will be used as a
 	//               catalog zone.
-	// addZoneCommand = Command to run to load new zones
-	// reloadZoneCommand = Command to run to refresh zones
-	// delZoneCommand = Command to run to remove zones	//
 	// --------------------
 	// $config['hooks']['bind']['enabled'] = 'true';
 	// $config['hooks']['bind']['catalogZoneFile'] = '/tmp/bindzones/catalog.db';
 	// $config['hooks']['bind']['catalogZoneName'] = 'catalog.invalid';
 	// $config['hooks']['bind']['zonedir'] = '/tmp/bindzones';
-	// $config['hooks']['bind']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s";};\' >/dev/null 2>&1';
-	// $config['hooks']['bind']['reloadZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-	// $config['hooks']['bind']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
 		// Default config settings
 		$config['hooks']['bind']['defaults']['zonedir'] = '/etc/bind/zones';
-		$config['hooks']['bind']['defaults']['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s }; auto-dnssec maintain; inline-signing yes; };\' >/dev/null 2>&1';
-		$config['hooks']['bind']['defaults']['reloadZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
-		$config['hooks']['bind']['defaults']['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 		$config['hooks']['bind']['defaults']['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
 		$config['hooks']['bind']['defaults']['catalogZoneName'] = 'catalog.invalid';
 		$config['hooks']['bind']['defaults']['slaveServers'] = [];
@@ -41,6 +32,10 @@
 
 		@mkdir($config['hooks']['bind']['zonedir'], 0777, true);
 		$bindConfig = $config['hooks']['bind'];
+
+		$bindConfig['addZoneCommand'] = 'chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc addzone %1$s \'{type master; file "%2$s"; allow-transfer { %3$s }; auto-dnssec maintain; inline-signing yes; };\' >/dev/null 2>&1';
+		$bindConfig['reloadZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; chmod a+rwx %2$s; /usr/bin/sudo -n /usr/sbin/rndc reload %1$s >/dev/null 2>&1';
+		$bindConfig['delZoneCommand'] = '/usr/bin/sudo -n /usr/sbin/rndc sync -clean %1$s >/dev/null 2>&1; /usr/bin/sudo -n /usr/sbin/rndc delzone %1$s >/dev/null 2>&1; rm "%2$s.db.*" >/dev/null 2>&1';
 
 		$writeZoneFile = function($domain) use ($bindConfig) {
 			$bind = new Bind($domain->getDomain(), $bindConfig['zonedir']);
