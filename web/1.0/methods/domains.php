@@ -200,7 +200,7 @@
 						$data = $m[2];
 
 						if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
-						$r['DNSSEC'][$rr][] .= $line;
+						$r['DNSSEC'][$rr][] = $line;
 
 						if ($rr == 'DS') {
 							$dsCount++;
