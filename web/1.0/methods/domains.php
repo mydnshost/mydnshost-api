@@ -165,7 +165,7 @@
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
 			$keys = $domain->getDSKeys();
-			if ($keys !== FALSE) {
+			if (!empty($keys)) {
 				$r['DNSSEC'] = [];
 				$r['DNSSEC']['parsed'] = [];
 
@@ -194,29 +194,12 @@
 				$flagTypes[256] = 'ZSK';
 				$flagTypes[257] = 'KSK';
 
-				foreach ($keys as $key) {
-					if (is_string($key) && !empty($key)) {
-						try {
-							$rec = new Record($domain->getDB());
-							$rec->setDomainID($domain->getID());
-							$rec->setTTL($domain->getDefaultTTL());
-							$rec->parseString($key, $domain->getDomainRaw());
-
-							$key = $rec;
-						} catch (Exception $e) {
-							$key = '';
-						}
-					}
-
-					if ($key instanceof Record) {
-						$rr = $key->getType();
-						$data = $key->getContent();
-					} else {
-						continue;
-					}
+				foreach ($keys as $keyrec) {
+					$rr = $keyrec->getType();
+					$data = $keyrec->getContent();
 
 					if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
-					$r['DNSSEC'][$rr][] = $key->__toString();
+					$r['DNSSEC'][$rr][] = $keyrec->__toString();
 
 					if ($rr == 'DS') {
 						$dsCount++;

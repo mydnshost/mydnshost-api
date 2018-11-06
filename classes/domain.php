@@ -252,17 +252,20 @@ class Domain extends DBObject {
 		$keys = getDSKeys($this->getDomainRaw());
 
 		$result = [];
-		foreach ($keys as $key) {
-			if (!empty($key)) {
-				try {
-					$rec = new Record($this->getDB());
-					$rec->setDomainID($this->getID());
-					$rec->setTTL($this->getDefaultTTL());
-					$rec->parseString($key, $this->getDomainRaw());
 
-					$result[] = $rec;
-				} catch (Exception $e) {
-					$key = '';
+		if ($keys !== FALSE) {
+			foreach ($keys as $key) {
+				if (!empty($key)) {
+					try {
+						$rec = new Record($this->getDB());
+						$rec->setDomainID($this->getID());
+						$rec->setTTL($this->getDefaultTTL());
+						$rec->parseString($key, $this->getDomainRaw());
+
+						$result[] = $rec;
+					} catch (Exception $e) {
+						$key = '';
+					}
 				}
 			}
 		}
