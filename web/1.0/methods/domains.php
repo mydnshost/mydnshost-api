@@ -217,6 +217,8 @@
 						$r['DNSSEC']['parsed']['Protocol'] = $bits[1];
 					}
 				}
+
+				if (empty($r['DNSSEC']['parsed'])) { unset($r['DNSSEC']['parsed']); }
 			}
 
 			$this->getContextKey('response')->data($r);
