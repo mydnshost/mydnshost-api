@@ -164,7 +164,7 @@
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
-			$keys = getDSKeys($domain->getDomainRaw());
+			$keys = $domain->getDSKeys();
 			if ($keys !== FALSE) {
 				$r['DNSSEC'] = [];
 				$r['DNSSEC']['parsed'] = [];
@@ -194,29 +194,44 @@
 				$flagTypes[256] = 'ZSK';
 				$flagTypes[257] = 'KSK';
 
-				foreach ($keys as $line) {
-					if (preg_match('#^[^\s]+\s+IN\s+([^\s]+)\s(.*)$#', $line, $m)) {
-						$rr = $m[1];
-						$data = $m[2];
+				foreach ($keys as $key) {
+					if (is_string($key) && !empty($key)) {
+						try {
+							$rec = new Record($domain->getDB());
+							$rec->setDomainID($domain->getID());
+							$rec->setTTL($domain->getDefaultTTL());
+							$rec->parseString($key, $domain->getDomainRaw());
 
-						if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
-						$r['DNSSEC'][$rr][] = $line;
-
-						if ($rr == 'DS') {
-							$dsCount++;
-							$bits = explode(' ', $data);
-
-							$r['DNSSEC']['parsed']['Key ID'] = $bits[0];
-							$r['DNSSEC']['parsed']['Digest ' . $dsCount] = $bits[3];
-							$r['DNSSEC']['parsed']['Digest ' . $dsCount . ' Type'] = (isset($digestTypes[$bits[2]]) ? $digestTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
-						} else if ($rr == 'DNSKEY') {
-							$bits = explode(' ', $data, 4);
-
-							$r['DNSSEC']['parsed']['Algorithm'] = (isset($algorithmTypes[$bits[2]]) ? $algorithmTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
-							$r['DNSSEC']['parsed']['Public Key'] = preg_replace('#\s+#', "\n", $bits[3]);
-							$r['DNSSEC']['parsed']['Flags'] = (isset($flagTypes[$bits[0]]) ? $flagTypes[$bits[0]] : 'Other') . ' (' . $bits[0] . ')';
-							$r['DNSSEC']['parsed']['Protocol'] = $bits[1];
+							$key = $rec;
+						} catch (Exception $e) {
+							$key = '';
 						}
+					}
+
+					if ($key instanceof Record) {
+						$rr = $key->getType();
+						$data = $key->getContent();
+					} else {
+						continue;
+					}
+
+					if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
+					$r['DNSSEC'][$rr][] = $key->__toString();
+
+					if ($rr == 'DS') {
+						$dsCount++;
+						$bits = explode(' ', $data);
+
+						$r['DNSSEC']['parsed']['Key ID'] = $bits[0];
+						$r['DNSSEC']['parsed']['Digest ' . $dsCount] = $bits[3];
+						$r['DNSSEC']['parsed']['Digest ' . $dsCount . ' Type'] = (isset($digestTypes[$bits[2]]) ? $digestTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
+					} else if ($rr == 'DNSKEY') {
+						$bits = explode(' ', $data, 4);
+
+						$r['DNSSEC']['parsed']['Algorithm'] = (isset($algorithmTypes[$bits[2]]) ? $algorithmTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
+						$r['DNSSEC']['parsed']['Public Key'] = preg_replace('#\s+#', "\n", $bits[3]);
+						$r['DNSSEC']['parsed']['Flags'] = (isset($flagTypes[$bits[0]]) ? $flagTypes[$bits[0]] : 'Other') . ' (' . $bits[0] . ')';
+						$r['DNSSEC']['parsed']['Protocol'] = $bits[1];
 					}
 				}
 			}
