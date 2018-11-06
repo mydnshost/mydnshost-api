@@ -56,7 +56,7 @@
 				}
 
 				// Run the appropriate commands.
-				foreach ($commands as $cmd) { $this->runCommand('/usr/bin/sudo -n ' . $cmd . ' >/dev/null 2>&1', $domainStr, $filename); }
+				foreach ($commands as $cmd) { $this->runCommand('/usr/bin/sudo -n ' . $cmd . ' >/dev/null 2>&1', $domain, $filename); }
 
 				// Update the catalog zone unless noCatalog is passed.
 				// (This will be passed when we are being called because of the catalog zone being updated.)
