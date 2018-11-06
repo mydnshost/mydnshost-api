@@ -243,6 +243,34 @@ class Domain extends DBObject {
 	}
 
 	/**
+	 * Get the DNSSEC public ksk data for this domain. (Subject to change.)
+	 *
+	 * @return Array of `Record` objects for DNSSEC public ksk data.
+	 */
+	public function getDSKeys() {
+		// TODO: Pull from Database.
+		$keys = getDSKeys($this->getDomainRaw());
+
+		$result = [];
+		foreach ($keys as $key) {
+			if (!empty($key)) {
+				try {
+					$rec = new Record($this->getDB());
+					$rec->setDomainID($this->getID());
+					$rec->setTTL($this->getDefaultTTL());
+					$rec->parseString($key, $this->getDomainRaw());
+
+					$result[] = $rec;
+				} catch (Exception $e) {
+					$key = '';
+				}
+			}
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Get the next serial number to use.
 	 *
 	 * @param $oldSerial Current serial to ensure we are greater than.
