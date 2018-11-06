@@ -21,7 +21,7 @@ class Record extends DBObject {
 	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP', 'TLSA'];
 
 	public static function getValidRecordTypes() {
-		return User::$VALID_RRs;
+		return Record::$VALID_RRs;
 	}
 
 	public function __construct($db) {
@@ -45,6 +45,20 @@ class Record extends DBObject {
 	}
 
 	public function setTTL($value) {
+		if (preg_match('#^([0-9]+)([smhdw])$#i', $value, $m)) {
+			$value = $m[1];
+
+			if ($m[2] == 'm') {
+				$value *= 60;
+			} else if ($m[2] == 'h') {
+				$value *= 3600;
+			} else if ($m[2] == 'd') {
+				$value = 86400;
+			} else if ($m[2] == 'w') {
+				$value *= 604800;
+			}
+		}
+
 		return $this->setData('ttl', $value);
 	}
 
@@ -158,7 +172,7 @@ class Record extends DBObject {
 		$testName = preg_replace('#^\*\.#', 'WILDCARD.', $testName);
 
 		if (!empty($testName) && !Domain::validDomainName($testName)) {
-			throw new ValidationFailed('Invalid name: ' . $this->getName());
+			throw new ValidationFailed('Invalid name: "' . $this->getName() . '"');
 		}
 
 		if (!in_array($type, Record::$VALID_RRs)) {
@@ -279,29 +293,31 @@ class Record extends DBObject {
 			}
 		}
 
-		$domain = Domain::load($this->getDB(), $this->getDomainID());
-		$nameFilter = $this->getName();
-		$nameFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $nameFilter);
+		$domain = $this->getDomainID() !== NULL ? Domain::load($this->getDB(), $this->getDomainID()) : FALSE;
+		if ($domain !== FALSE) {
+			$nameFilter = $this->getName();
+			$nameFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $nameFilter);
 
-		if ($this->getType() == 'CNAME') {
-			if ($nameFilter == '') {
-				throw new ValidationFailed('Can\'t have CNAME at domain root: ' . $this->getName());
-			}
-
-			// Look for any other records with the same name as us, and fail
-			// if they exist.
-			foreach ($domain->getRecords($nameFilter) as $r) {
-				if ($r->isDisabled() || $this->isDisabled()) { continue; }
-
-				if ($r->getID() != $this->getID()) {
-					throw new ValidationFailed('Can\'t have CNAME and other records: ' . $this->getName());
+			if ($this->getType() == 'CNAME') {
+				if ($nameFilter == '') {
+					throw new ValidationFailed('Can\'t have CNAME at domain root: ' . $this->getName());
 				}
-			}
-		} else {
-			foreach ($domain->getRecords($nameFilter, 'CNAME') as $r) {
-				if ($r->isDisabled() || $this->isDisabled()) { continue; }
 
-				throw new ValidationFailed('There already exists a CNAME for this record: ' . $nameFilter);
+				// Look for any other records with the same name as us, and fail
+				// if they exist.
+				foreach ($domain->getRecords($nameFilter) as $r) {
+					if ($r->isDisabled() || $this->isDisabled()) { continue; }
+
+					if ($r->getID() != $this->getID()) {
+						throw new ValidationFailed('Can\'t have CNAME and other records: ' . $this->getName());
+					}
+				}
+			} else {
+				foreach ($domain->getRecords($nameFilter, 'CNAME') as $r) {
+					if ($r->isDisabled() || $this->isDisabled()) { continue; }
+
+					throw new ValidationFailed('There already exists a CNAME for this record: ' . $nameFilter);
+				}
 			}
 		}
 
@@ -314,5 +330,95 @@ class Record extends DBObject {
 			$str .= chr(hexdec(substr($hex,$i,2)));
 		}
 		return $str;
+	}
+
+	public function __toString() {
+		$content = $this->getContent();
+		if ($this->getType() == "TXT") {
+			$content = '"' . $this->getContent() . '"';
+		} else if (in_array($this->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
+			$content = $this->getContent() . '.';
+		} else if ($this->getType() == 'SRV') {
+			if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+				if ($m[1] != ".") {
+					$content = $this->getContent() . '.';
+				}
+			}
+		}
+
+		return sprintf('%-30s %7s    IN %7s   %-6s %s', $this->getNameRaw() . '.', $this->getTTL(), $this->getType(), $this->getPriority(), $content);
+	}
+
+	public function parseString($str, $domain = '') {
+		$bits = preg_split('/\s+/', $str);
+
+		$name = array_shift($bits);
+
+		if ((empty($name) && $name !== "0") || $name == '@') {
+			$name = $domain . '.';
+		} else if ($name[strlen($name) - 1] != '.') {
+			$name = $name . '.' . $domain . '.';
+		}
+		$len = strlen($domain) + 1;
+		$end = substr($name, strlen($name) - $len);
+
+		if ($end == $domain . '.') {
+			if ($name != $end) {
+				if ($domain == '') {
+					$name = substr($name, 0,  strlen($name) - $len);
+				} else {
+					$name = substr($name, 0,  strlen($name) - $len - 1);
+				}
+			} else {
+				$name = '';
+			}
+		}
+
+		if ($domain != '') {
+			if ($name != '') { $name .= '.'; }
+			$name =  $domain;
+		}
+
+		$this->setName($name);
+
+		$next = array_shift($bits);
+		if (is_numeric($next)) {
+			$this->setTTL($next);
+			$next = array_shift($bits);
+		}
+
+		if (strtoupper($next) != 'IN') { throw new Exception('Unknown bit: ' . $next); }
+
+		$type = array_shift($bits);
+		$this->setType($type);
+
+		if ($this->getType() == "MX" || $this->getType() == "SRV") {
+			$this->setPriority(array_shift($bits));
+		}
+
+		$content = implode(' ', $bits);
+
+		if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
+			if (endsWith($content, '.')) {
+				$content = rtrim($content, '.');
+			} else {
+				if (!empty($content)) { $content .= '.'; }
+				$content .= $domain;
+			}
+		} else if ($type == 'SRV' && preg_match('#^([0-9]+ [0-9]+) ([^\s]+)$#', $content, $m)) {
+			if ($m[2] != '.') {
+				if (endsWith($content, '.')) {
+					$content = rtrim($content, '.');
+				} else {
+					if (!empty($content)) { $content .= '.'; }
+					$content .= $domain;
+				}
+			}
+		} else if ($type == 'TXT' && preg_match('#^"(.*)"$#', $content, $m)) {
+			$content = $m[1];
+		}
+		$this->setContent($content);
+
+		return $this;
 	}
 }
