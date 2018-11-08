@@ -387,9 +387,12 @@ class Record extends DBObject {
 			$next = array_shift($bits);
 		}
 
-		if (strtoupper($next) != 'IN') { throw new Exception('Unknown bit: ' . $next); }
+		if (in_array(strtoupper($next), ['IN', 'CS', 'CH', 'HS'])) {
+			if ($next != 'IN') { throw new Exception('Unsupported Class: ' . $next); }
+			$next = array_shift($bits);
+		}
 
-		$type = array_shift($bits);
+		$type = $next;
 		$this->setType($type);
 
 		if ($this->getType() == "MX" || $this->getType() == "SRV") {
