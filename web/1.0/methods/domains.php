@@ -169,8 +169,6 @@
 				$r['DNSSEC'] = [];
 				$r['DNSSEC']['parsed'] = [];
 
-				$dsCount = 0;
-
 				$digestTypes = [];
 				$digestTypes[1] = 'SHA-1';
 				$digestTypes[2] = 'SHA-256';
@@ -194,6 +192,8 @@
 				$flagTypes[256] = 'ZSK';
 				$flagTypes[257] = 'KSK';
 
+				$dsCount = [];
+
 				foreach ($keys as $keyrec) {
 					$rr = $keyrec->getType();
 					$data = $keyrec->getContent();
@@ -202,19 +202,33 @@
 					$r['DNSSEC'][$rr][] = $keyrec->__toString();
 
 					if ($rr == 'DS') {
-						$dsCount++;
 						$bits = explode(' ', $data);
 
-						$r['DNSSEC']['parsed']['Key ID'] = $bits[0];
-						$r['DNSSEC']['parsed']['Digest ' . $dsCount] = $bits[3];
-						$r['DNSSEC']['parsed']['Digest ' . $dsCount . ' Type'] = (isset($digestTypes[$bits[2]]) ? $digestTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
+						$keyID = $bits[0];
+						$algorithm = $bits[1];
+						$type = $bits[2];
+						$digest = $bits[3];
+
+						if (!isset($dsCount[$keyID])) { $dsCount[$keyID] = 0; }
+						$dsCount[$keyID]++;
+
+						$r['DNSSEC']['parsed'][$keyID]['Key ID'] = $keyID;
+						$r['DNSSEC']['parsed'][$keyID]['Digest ' . $dsCount[$keyID]] = $digest;
+						$r['DNSSEC']['parsed'][$keyID]['Digest ' . $dsCount[$keyID] . ' Type'] = (isset($digestTypes[$type]) ? $digestTypes[$type] : 'Other') . ' (' . $type . ')';
 					} else if ($rr == 'DNSKEY') {
 						$bits = explode(' ', $data, 4);
 
-						$r['DNSSEC']['parsed']['Algorithm'] = (isset($algorithmTypes[$bits[2]]) ? $algorithmTypes[$bits[2]] : 'Other') . ' (' . $bits[2] . ')';
-						$r['DNSSEC']['parsed']['Public Key'] = preg_replace('#\s+#', "\n", $bits[3]);
-						$r['DNSSEC']['parsed']['Flags'] = (isset($flagTypes[$bits[0]]) ? $flagTypes[$bits[0]] : 'Other') . ' (' . $bits[0] . ')';
-						$r['DNSSEC']['parsed']['Protocol'] = $bits[1];
+						$flags = $bits[0];
+						$protocol = $bits[1];
+						$algorithm = $bits[2];
+						$key = preg_replace('#\s+#', "\n", $bits[3]);
+
+						$keyID = $this->generate_keytag($flags, $protocol, $algorithm, $key);
+
+						$r['DNSSEC']['parsed'][$keyID]['Algorithm'] = (isset($algorithmTypes[$algorithm]) ? $algorithmTypes[$algorithm] : 'Other') . ' (' . $algorithm . ')';
+						$r['DNSSEC']['parsed'][$keyID]['Public Key'] = $key;
+						$r['DNSSEC']['parsed'][$keyID]['Flags'] = (isset($flagTypes[$flags]) ? $flagTypes[$flags] : 'Other') . ' (' . $flags . ')';
+						$r['DNSSEC']['parsed'][$keyID]['Protocol'] = $protocol;
 					}
 				}
 
@@ -226,7 +240,24 @@
 			return true;
 		}
 
+		// From https://robin.waarts.eu/2012/07/14/get-the-keytag-from-dnskey-data-in-php/
+		private function generate_keytag($flags, $prot, $algo, $key){
+			$rdata = base64_decode($key);
+			$sum = 0;
+			$wire = pack("ncc", $flags, $prot, $algo) . $rdata;
+			if ($algo == 1) {
+				$keytag = 0xffff & unpack("n", substr($wire, -3, 2));
+			} else {
+				$sum = 0;
+				for ($i = 0; $i < strlen($wire); $i++) {
+					$a = unpack("C", substr($wire,$i,1));
+					$sum += ($i & 1) ? $a[1] : $a[1] << 8;
+				}
+				$keytag = 0xffff & ($sum + ($sum >> 16));
+			}
 
+			return $keytag;
+		}
 
 		/**
 		 * Force domain to re sync.
