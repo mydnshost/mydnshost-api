@@ -18,6 +18,7 @@
 	$pdo->exec('DROP TABLE twofactordevices;');
 	$pdo->exec('DROP TABLE domainkeys;');
 	$pdo->exec('DROP TABLE domainhooks;');
+	$pdo->exec('DROP TABLE zonekeys;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());

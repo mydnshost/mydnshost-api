@@ -247,12 +247,20 @@ class Domain extends DBObject {
 	 *
 	 * @return Array of `Record` objects for DNSSEC public ksk data.
 	 */
-	public function getDSKeys() {
-		// TODO: Pull from Database.
-		$keys = getDSKeys($this->getDomainRaw());
-
+	public function getDSKeys($fromDB = false) {
 		$result = [];
 
+		$keys = $this->getZoneKeys(257);
+		if (!empty($keys)) {
+			foreach ($keys as $key) {
+				foreach ($key->getKeyPublicRecords() as $rec) {
+					$result[] = $rec;
+				}
+			}
+		}
+
+		// TODO: Remove legacy file support.
+		$keys = getDSKeys($this->getDomainRaw());
 		if ($keys !== FALSE) {
 			foreach ($keys as $key) {
 				if (!empty($key)) {
@@ -271,6 +279,23 @@ class Domain extends DBObject {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Get the ZoneKeys for this domain.
+	 *
+	 * @param  $flags [Default: NULL] Limit to keys with the given flags value.
+	 * @return Array of `ZoneKey` objects for DNSSEC public ksk data.
+	 */
+	public function getZoneKeys($flags = NULL) {
+		$searchParams = ['domain_id' => $this->getID()];
+		if ($flags !== NULL) { $searchParams['flags'] = $flags; }
+
+		$search = ZoneKey::getSearch($this->getDB());
+
+		$search = $search->order('created');
+		$result = $search->search($searchParams);
+		return ($result) ? $result : [];
 	}
 
 	/**

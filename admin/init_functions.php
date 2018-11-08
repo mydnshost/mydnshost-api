@@ -323,6 +323,34 @@ MYSQLQUERY
 MYSQLQUERY
 );
 
+
+			// ------------------------------------------------------------------------
+			// Zone Keys
+			// ------------------------------------------------------------------------
+			$dataChanges[18] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `zonekeys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `key_id` int(11) NOT NULL,
+  `domain_id` int(11) NOT NULL,
+  `flags` int(11) NOT NULL,
+  `keyprivate` TEXT,
+  `keypublic` TEXT,
+  `created` int(11) NOT NULL,
+  `publish` int(11) NOT NULL,
+  `activate` int(11) NOT NULL,
+  `revoke` int(11),
+  `inactive` int(11),
+  `delete` int(11),
+  `syncPublish` int(11),
+  `syncDelete` int(11),
+  `comment` VARCHAR(250),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `zonekeys_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `zonekeys_keyid_domainid` (`domain_id` ASC, `key_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}
