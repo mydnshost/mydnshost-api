@@ -111,8 +111,49 @@
 				fclose($fp);
 			}
 
+			$this->writeZoneKeys($domain);
+
 			if (isset($jobArgs['change'])) {
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
+			}
+		}
+
+		public function writeZoneKeys($domain) {
+			// Lock the zone file while we are making changes.
+			$bind = new Bind($domain->getDomainRaw(), $this->bindConfig['zonedir']);
+			list($filename, $filename2) = $bind->getFileNames();
+
+			$fp = fopen($filename, 'r+');
+			if (flock($fp, LOCK_EX)) {
+				// Output any missing keys.
+				$keys = $domain->getZoneKeys();
+
+				$validFiles = [];
+				foreach ($keys as $key) {
+					$private = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('private');
+					$public = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('key');
+
+					if (!file_exists($private) || !file_exists($public)) {
+						echo 'Writing missing keys: ', $key->getKeyFileName(), "\n";
+						file_put_contents($private, $key->getKeyPrivateFileContent());
+						file_put_contents($public, $key->getKeyPublicFileContent());
+					}
+
+					$validFiles[] = $private;
+					$validFiles[] = $public;
+				}
+
+				// Remove no-longer required keys.
+				$keys = glob($this->bindConfig['keydir'] . '/K' . $domain->getDomainRaw() . '.+*');
+				foreach ($keys as $key) {
+					if (!in_array($key, $validFiles)) {
+						echo 'Removing invalid keyfile: ', $key, "\n";
+						unlink($key);
+					}
+				}
+
+				flock($fp, LOCK_UN);
+				fclose($fp);
 			}
 		}
 
