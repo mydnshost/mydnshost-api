@@ -24,6 +24,7 @@
 			}
 
 			@mkdir($this->bindConfig['zonedir'], 0777, true);
+			@mkdir($this->bindConfig['keydir'], 0777, true);
 		}
 
 		public function writeZoneFile($domain) {
