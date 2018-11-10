@@ -23,12 +23,13 @@
 					$zsk->save();
 
 					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'change']));
-
 				} else {
 					$job->setError('Unknown domain: ' . $payload['domain']);
 				}
 			} else {
 				$job->setError('Missing fields in payload.');
 			}
+
+			$job->setResult('OK');
 		}
 	}
