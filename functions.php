@@ -63,9 +63,16 @@
 
 	if ($config['jobserver']['type'] == 'gearman') {
 		$gmc = new GearmanClient();
-		$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
-		$gmc->setTimeout(5000);
+		try {
+			$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
+			$gmc->setTimeout(5000);
+		} catch (Exception $e) {
+			$config['jobserver']['type'] == 'none';
+			$gmc == null;
+		}
+	}
 
+	if ($gmc !== null) {
 		HookManager::get()->addHook('send_mail', function($to, $subject, $message, $htmlmessage = NULL) use ($gmc) {
 			@$gmc->doBackground('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
 		});
