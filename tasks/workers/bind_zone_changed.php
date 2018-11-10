@@ -56,7 +56,7 @@
 
 					$commands[] = '/usr/sbin/rndc signing -clear all %1$s';
 					$commands[] = '/usr/sbin/rndc sign %1$s';
-					if ($domain !== FALSE) {
+					if ($domain instanceof Domain) {
 						$nsec3param = $domain->getNSEC3Params();
 						if (!empty($nsec3param)) {
 							$commands[] = '/usr/sbin/rndc signing -nsec3param ' . $nsec3param . ' %1$s';
