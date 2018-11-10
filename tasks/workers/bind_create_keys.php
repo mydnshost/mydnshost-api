@@ -22,6 +22,8 @@
 					$zsk->validate();
 					$zsk->save();
 
+					$this->writeZoneKeys($domain);
+
 					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'change']));
 				} else {
 					$job->setError('Unknown domain: ' . $payload['domain']);
