@@ -58,7 +58,7 @@
 					if ($domain !== FALSE) {
 						$nsec3param = $domain->getNSEC3Params();
 						if (!empty($nsec3param)) {
-							$commands[] = '/usr/sbin/rndc signing -nsec3param ' . $domain . ' %1$s';
+							$commands[] = '/usr/sbin/rndc signing -nsec3param ' . $nsec3param . ' %1$s';
 						}
 					}
 				}
