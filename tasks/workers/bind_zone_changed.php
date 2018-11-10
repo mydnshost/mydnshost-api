@@ -53,6 +53,14 @@
 					$commands[] = '/usr/sbin/rndc sync -clean %1$s';
 					$commands[] = 'chmod a+rwx %2$s';
 					$commands[] = '/usr/sbin/rndc reload %1$s';
+
+					$commands[] = '/usr/sbin/rndc sign %1$s';
+					if ($domain !== FALSE) {
+						$nsec3param = $domain->getNSEC3Params();
+						if (!empty($nsec3param)) {
+							$commands[] = '/usr/sbin/rndc signing -nsec3param ' . $domain . ' %1$s';
+						}
+					}
 				}
 
 				// Run the appropriate commands.
