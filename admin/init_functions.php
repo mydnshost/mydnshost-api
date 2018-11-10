@@ -351,6 +351,14 @@ CREATE TABLE `zonekeys` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// NSEC3PARAMS
+			// ------------------------------------------------------------------------
+			$dataChanges[19] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `domains` ADD COLUMN `nsec3params` varchar(50) DEFAULT NULL AFTER `defaultttl`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

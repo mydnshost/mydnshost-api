@@ -11,6 +11,7 @@ class Domain extends DBObject {
 	                             'domain' => NULL,
 	                             'disabled' => false,
 	                             'defaultttl' => 86400,
+	                             'nsec3params' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'domains';
@@ -34,6 +35,10 @@ class Domain extends DBObject {
 
 	public function setDefaultTTL($value) {
 		return $this->setData('defaultttl', $value);
+	}
+
+	public function setNSEC3Params($value) {
+		return $this->setData('nsec3params', $value);
 	}
 
 	/**
@@ -147,6 +152,10 @@ class Domain extends DBObject {
 
 	public function getDefaultTTL() {
 		return $this->getData('defaultttl');
+	}
+
+	public function getNSEC3Params() {
+		return $this->getData('nsec3params');
 	}
 
 	/**
