@@ -12,6 +12,7 @@
 
 			// Default config settings
 			$defaults['zonedir'] = '/etc/bind/zones';
+			$defaults['keydir'] = '/etc/bind/keys';
 			$defaults['catalogZoneFile'] = '/etc/bind/zones/catalog.db';
 			$defaults['catalogZoneName'] = 'catalog.invalid';
 			$defaults['slaveServers'] = [];

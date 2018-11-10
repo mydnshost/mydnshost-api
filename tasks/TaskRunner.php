@@ -133,7 +133,7 @@
 			if ($this->stopping) { return; }
 
 			// Create a new runWorker process.
-			$process = new React\ChildProcess\Process('exec /usr/bin/env php ' . escapeshellarg(__DIR__ . '/runWorker.php'));
+			$process = new React\ChildProcess\Process('exec /usr/bin/env php ' . escapeshellarg(__DIR__ . '/runWorker.php') . ' ' . escapeshellarg($function));
 			$process->start($this->loop);
 
 			// Store the process.

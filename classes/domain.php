@@ -308,6 +308,16 @@ class Domain extends DBObject {
 	}
 
 	/**
+	 * Get a specific ZoneKey for this domain.
+	 *
+	 * @param $keyid The KeyID to get
+	 * @return ZoneKey with the given KeyID, or FALSE.
+	 */
+	public function getZoneKey($keyID) {
+		return ZoneKey::loadFromDomainKey($this->getDB(), $this->getID(), $keyID);
+	}
+
+	/**
 	 * Get the next serial number to use.
 	 *
 	 * @param $oldSerial Current serial to ensure we are greater than.

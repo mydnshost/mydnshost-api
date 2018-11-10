@@ -33,7 +33,7 @@ class ZoneKey extends DBObject {
 	}
 
 	public function setKeyID($value) {
-		return $this->setData('key_id', $value);
+		return $this->setData('key_id', ltrim($value, '0'));
 	}
 
 	public function setFlags($value) {
@@ -251,8 +251,8 @@ class ZoneKey extends DBObject {
 	 * @param $key key id to look for
 	 * @return FALSE if no object exists, else the object.
 	 */
-	public static function loadFromUserKey($db, $domain, $key) {
-		$result = static::find($db, ['domain_id' => $domain, 'key_id' => $key]);
+	public static function loadFromDomainKey($db, $domain, $key) {
+		$result = static::find($db, ['domain_id' => $domain, 'key_id' => ltrim($key, '0')]);
 		if ($result) {
 			return $result[0];
 		} else {
