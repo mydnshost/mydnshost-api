@@ -33,7 +33,7 @@
 				if ($payload['change'] == 'remove' || $payload['change'] == 'readd') {
   					$commands[] = '/usr/sbin/rndc sync -clean %1$s';
 					$commands[] = '/usr/sbin/rndc delzone %1$s';
-					$commands[] = 'rm "%2$s.db.*"';
+					$commands[] = 'rm "%2$s.db".*';
 				}
 
 				// Add a domain (Standalone or as part of readd)
@@ -54,6 +54,7 @@
 					$commands[] = 'chmod a+rwx %2$s';
 					$commands[] = '/usr/sbin/rndc reload %1$s';
 
+					$commands[] = '/usr/sbin/rndc signing -clear all %1$s';
 					$commands[] = '/usr/sbin/rndc sign %1$s';
 					if ($domain !== FALSE) {
 						$nsec3param = $domain->getNSEC3Params();

@@ -129,27 +129,31 @@
 				// Output any missing keys.
 				$keys = $domain->getZoneKeys();
 
-				$validFiles = [];
-				foreach ($keys as $key) {
-					$private = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('private');
-					$public = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('key');
+				if (empty($keys)) {
+					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_create_keys', ['domain' => $domain->getDomainRaw()]));
+				} else {
+					$validFiles = [];
+					foreach ($keys as $key) {
+						$private = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('private');
+						$public = $this->bindConfig['keydir'] . '/' . $key->getKeyFileName('key');
 
-					if (!file_exists($private) || !file_exists($public)) {
-						echo 'Writing missing keys: ', $key->getKeyFileName(), "\n";
-						file_put_contents($private, $key->getKeyPrivateFileContent());
-						file_put_contents($public, $key->getKeyPublicFileContent());
+						if (!file_exists($private) || !file_exists($public)) {
+							echo 'Writing missing keys: ', $key->getKeyFileName(), "\n";
+							file_put_contents($private, $key->getKeyPrivateFileContent());
+							file_put_contents($public, $key->getKeyPublicFileContent());
+						}
+
+						$validFiles[] = $private;
+						$validFiles[] = $public;
 					}
 
-					$validFiles[] = $private;
-					$validFiles[] = $public;
-				}
-
-				// Remove no-longer required keys.
-				$keys = glob($this->bindConfig['keydir'] . '/K' . $domain->getDomainRaw() . '.+*');
-				foreach ($keys as $key) {
-					if (!in_array($key, $validFiles)) {
-						echo 'Removing invalid keyfile: ', $key, "\n";
-						unlink($key);
+					// Remove no-longer required keys.
+					$keys = glob($this->bindConfig['keydir'] . '/K' . $domain->getDomainRaw() . '.+*');
+					foreach ($keys as $key) {
+						if (!in_array($key, $validFiles)) {
+							echo 'Removing invalid keyfile: ', $key, "\n";
+							unlink($key);
+						}
 					}
 				}
 
