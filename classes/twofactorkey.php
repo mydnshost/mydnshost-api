@@ -3,6 +3,8 @@
 use shanemcc\phpdb\DBObject;
 use shanemcc\phpdb\ValidationFailed;
 
+class TwoFactorKeyAutoValueException extends Exception { }
+
 class TwoFactorKey extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'user_id' => NULL,
@@ -25,8 +27,9 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function setKey($value) {
+		$type = $this->getType();
+
 		if ($value === TRUE) {
-			$type = $this->getType();
 			switch ($type) {
 				case "rfc6238":
 					$ga = new PHPGangsta_GoogleAuthenticator();
@@ -37,10 +40,34 @@ class TwoFactorKey extends DBObject {
 					$value = implode("-", str_split(strtoupper(substr(sha1(openssl_random_pseudo_bytes('512')), 0, 16)), 4));
 					break;
 
+				case "yubikeyotp":
+					throw new TwoFactorKeyAutoValueException($type . ' does not use auto-generated keys.');
+					break;
+
 				default:
 					throw new Exception('Unknown key type: ' . $type);
 			}
 		}
+
+		switch ($type) {
+			case "yubikeyotp":
+				if (self::canUseYubikey()) {
+					$response = $this->yubikey_getData($value);
+					if ($response['response']->success()) {
+						$value = $response['request']->getYubikeyId();
+					} else {
+						throw new Exception('Error with key: ' . $response->current()->status);
+					}
+				} else {
+					throw new Exception('Unknown key type: ' . $type);
+				}
+
+				break;
+
+			default:
+				break;
+		}
+
 		return $this->setData('key', $value);
 	}
 
@@ -69,6 +96,9 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function setType($value) {
+		// Clear key when changing type.
+		$this->setData('key', NULL);
+
 		return $this->setData('type', strtolower($value));
 	}
 
@@ -132,11 +162,22 @@ class TwoFactorKey extends DBObject {
 		return parseBool($this->getData('internaldata'));
 	}
 
+	public static function getKeyTypes() {
+		$result = ["rfc6238", "plain"];
+
+		if (self::canUseYubikey()) {
+			$result[] = "yubikeyotp";
+		}
+
+		return $result;
+	}
+
 	/**
 	 * Keys are usable if:
 	 *   - They are active
 	 *   - They are not one time, or they have not been used
 	 *   - expiry date is "0" or in the future
+	 *   - We have the required ability to validate
 	 *
 	 * @return True if key is usable.
 	 */
@@ -149,6 +190,11 @@ class TwoFactorKey extends DBObject {
 
 		// Key does not expire, or expiry has not been reached.
 		$usable &= ($this->getExpires() <= 0 || $this->getExpires() >= time());
+
+		// Can we validate the key?
+		if ($this->getType() == 'yubikeyotp' && !self::canUseYubikey()) {
+			$usable = false;
+		}
 
 		return $usable;
 	}
@@ -178,7 +224,7 @@ class TwoFactorKey extends DBObject {
 			}
 		}
 
-		if (!in_array($this->getType(), ["rfc6238", "plain"])) {
+		if (!in_array($this->getType(), self::getKeyTypes())) {
 			throw new ValidationFailed('Unknown key type: ' . $this->getType());
 		}
 
@@ -189,14 +235,51 @@ class TwoFactorKey extends DBObject {
 		$type = $this->getType();
 		switch ($type) {
 			case "rfc6238":
-				return verify_rfc6238($code, $discrepancy);
+				return $this->verify_rfc6238($code, $discrepancy);
 
 			case "plain":
 				return strtoupper($code) == strtoupper($this->getKey());
 
+			case "yubikeyotp":
+				return $this->verify_yubikey($code);
+
 			default:
 				throw new Exception('Unknown key type: ' . $type);
 		}
+	}
+
+	private static function canUseYubikey() {
+		global $config;
+
+		return isset($config['twofactor']['yubikey']['enabled']) && $config['twofactor']['yubikey']['enabled'];
+	}
+
+	private function yubikey_getData($code, $check = true) {
+		global $config;
+		$code = strtolower($code);
+
+		$clientId = $config['twofactor']['yubikey']['clientid'];
+		$apiKey = $config['twofactor']['yubikey']['secret'];
+
+		$v = new \Yubikey\Validate($apiKey, $clientId);
+		$v->setOtp($code);
+		$v->setYubikeyId();
+		$response = $check ? $v->check($code) : null;
+
+		return ['request' => $v, 'response' => $response];
+	}
+
+	private function verify_yubikey($code) {
+		if (!self::canUseYubikey()) { return FALSE; }
+
+		// 1: Does the provided key match our serial?
+		$data = $this->yubikey_getData($code, false);
+		if ($data['request']->getYubikeyId() !== $this->getKey()) { return FALSE; }
+
+		// 2: Is the key valid?
+		$response = $data['request']->check($code);
+
+		return $response->success();
 	}
 
 	private function verify_rfc6238($code, $discrepancy = 1) {

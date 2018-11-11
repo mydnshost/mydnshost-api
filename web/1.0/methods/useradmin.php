@@ -501,13 +501,14 @@
 				$key->setOneTime($data['data']['onetime']);
 			}
 
-			// Some keys in future may allow this, for now do not.
-			$canSetSecret = false;
-
-			if ($canSetSecret && isset($data['data']['secret'])) {
-				$key->setKey($data['data']['secret']);
-			} else {
+			try {
 				$key->setKey(TRUE);
+			} catch (TwoFactorKeyAutoValueException $e) {
+				if (isset($data['data']['secret'])) {
+					$key->setKey($data['data']['secret']);
+				} else {
+					$this->getContextKey('response')->sendError('Missing "secret" for create.');
+				}
 			}
 
 			return $this->update2FAKey($user, $key, true);

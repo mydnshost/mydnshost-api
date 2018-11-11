@@ -15,6 +15,11 @@
 	$config['register_permissions'] = explode(',', getEnvOrDefault('REGISTER_PERMISSIONS', 'domains_create'));
 	$config['register_require_terms'] = parseBool(getEnvOrDefault('REGISTER_REQUIRE_TERMS', 'true'));
 
+	// Configuration for YUBIKEY Authentication
+	$config['twofactor']['yubikey']['clientid'] = '12345';
+	$config['twofactor']['yubikey']['secret'] = 'FOOBAR=';
+	$config['twofactor']['yubikey']['enabled'] = false;
+
 	// Minimum terms time required to be considered "accepted".
 	//
 	// If this is not met, /userdata responses will show `"acceptterms": false`

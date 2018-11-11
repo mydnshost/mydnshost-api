@@ -57,3 +57,11 @@
 			return TRUE;
 		}
 	});
+
+	$router->get('/system/datavalue/2faKeyTypes', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('2faKeyTypes', TwoFactorKey::getKeyTypes());
+
+			return TRUE;
+		}
+	});
