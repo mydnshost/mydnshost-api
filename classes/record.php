@@ -314,7 +314,7 @@ class Record extends DBObject {
 				}
 			} else {
 				foreach ($domain->getRecords($nameFilter, 'CNAME') as $r) {
-					if ($r->isDisabled() || $this->isDisabled()) { continue; }
+					if ($r->isDisabled() || $this->isDisabled() || $r->getID() == $this->getID()) { continue; }
 
 					throw new ValidationFailed('There already exists a CNAME for this record: ' . $nameFilter);
 				}
