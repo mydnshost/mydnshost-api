@@ -14,6 +14,8 @@ class TwoFactorKey extends DBObject {
 	                             'active' => false,
 	                             'type' => 'rfc6238',
 	                             'onetime' => false,
+	                             'internal' => false,
+	                             'internaldata' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'twofactorkeys';
@@ -74,6 +76,14 @@ class TwoFactorKey extends DBObject {
 		return $this->setData('onetime', parseBool($value) ? 'true' : 'false');
 	}
 
+	public function setInternal($value) {
+		return $this->setData('internal', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setInternalData($value) {
+		return $this->setData('internaldata', $value);
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -112,6 +122,14 @@ class TwoFactorKey extends DBObject {
 
 	public function isOneTime() {
 		return parseBool($this->getData('onetime'));
+	}
+
+	public function isInternal() {
+		return parseBool($this->getData('internal'));
+	}
+
+	public function getInternalData() {
+		return parseBool($this->getData('internaldata'));
 	}
 
 	/**

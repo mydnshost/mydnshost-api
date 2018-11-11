@@ -435,9 +435,13 @@
 
 			$result = [];
 			foreach ($keys as $k => $v) {
+				if ($v->isInternal()) { continue; }
+
 				$result[$k] = $v->toArray();
 				unset($result[$k]['id']);
 				unset($result[$k]['user_id']);
+				unset($result[$k]['internal']);
+				unset($result[$k]['internalmeta']);
 				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
@@ -473,9 +477,12 @@
 		protected function get2FAKey($user, $key) {
 			$k = $key->toArray();
 			unset($k['user_id']);
+			unset($k['internal']);
+			unset($k['internaldata']);
 			if ($key->isActive()) {
 				unset($k['key']);
 			}
+			$k['usable'] = $key->isUsableKey();
 
 			$this->getContextKey('response')->data($k);
 

@@ -377,6 +377,16 @@ ALTER TABLE `twofactorkeys` ADD COLUMN `expires` int(11) NOT NULL DEFAULT '0' AF
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// 2FA Key "internal" keys.
+			// ------------------------------------------------------------------------
+			$dataChanges[23] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys`
+  ADD COLUMN `internal` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `onetime`,
+  ADD COLUMN `internaldata` TEXT AFTER `internal`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}
