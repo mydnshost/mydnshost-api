@@ -369,6 +369,14 @@ ALTER TABLE `twofactorkeys`
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// 2FA Key expiry times
+			// ------------------------------------------------------------------------
+			$dataChanges[22] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys` ADD COLUMN `expires` int(11) NOT NULL DEFAULT '0' AFTER `lastused`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

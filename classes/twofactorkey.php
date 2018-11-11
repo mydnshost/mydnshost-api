@@ -10,6 +10,7 @@ class TwoFactorKey extends DBObject {
 	                             'description' => NULL,
 	                             'created' => 0,
 	                             'lastused' => 0,
+	                             'expires' => 0,
 	                             'active' => false,
 	                             'type' => 'rfc6238',
 	                             'onetime' => false,
@@ -53,6 +54,10 @@ class TwoFactorKey extends DBObject {
 		return $this->setData('lastused', $value);
 	}
 
+	public function setExpires($value) {
+		return $this->setData('expires', $value);
+	}
+
 	public function setCreated($value) {
 		return $this->setData('created', $value);
 	}
@@ -89,6 +94,10 @@ class TwoFactorKey extends DBObject {
 		return $this->getData('lastused');
 	}
 
+	public function getExpires() {
+		return $this->getData('lastused');
+	}
+
 	public function getCreated() {
 		return $this->getData('created');
 	}
@@ -105,9 +114,25 @@ class TwoFactorKey extends DBObject {
 		return parseBool($this->getData('onetime'));
 	}
 
+	/**
+	 * Keys are usable if:
+	 *   - They are active
+	 *   - They are not one time, or they have not been used
+	 *   - expiry date is "0" or in the future
+	 *
+	 * @return True if key is usable.
+	 */
 	public function isUsableKey() {
-		// Key is active and either multi-use or unused.
-		return $this->isActive() && (!$this->isOneTime() || $this->getLastUsed() == 0);
+		// Key is usable.
+		$usable = $this->isActive();
+
+		// Key is not one time or has not been used
+		$usable &= (!$this->isOneTime() || $this->getLastUsed() == 0);
+
+		// Key does not expire, or expiry has not been reached.
+		$usable &= ($this->getExpires() <= 0 || $this->getExpires() >= time());
+
+		return $usable;
 	}
 
 	/**
