@@ -233,11 +233,9 @@
 				$valid = false;
 				$testCode = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
 
-				$ga = new PHPGangsta_GoogleAuthenticator();
-
 				if ($testCode !== NULL) {
 					foreach ($keys as $key) {
-						if ($key->verify($testCode, 1)) {
+						if ($key->isUsableKey() && $key->verify($testCode, 1)) {
 							$valid = true;
 							$key->setLastUsed(time())->save();
 

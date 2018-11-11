@@ -359,6 +359,16 @@ ALTER TABLE `domains` ADD COLUMN `nsec3params` varchar(50) DEFAULT NULL AFTER `d
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Additional 2FA Key Types
+			// ------------------------------------------------------------------------
+			$dataChanges[21] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys`
+  ADD COLUMN `type` VARCHAR(32) NOT NULL DEFAULT 'rfc6238' AFTER `active`,
+  ADD COLUMN `onetime` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `type`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

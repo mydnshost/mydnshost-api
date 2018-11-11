@@ -11,6 +11,8 @@ class TwoFactorKey extends DBObject {
 	                             'created' => 0,
 	                             'lastused' => 0,
 	                             'active' => false,
+	                             'type' => 'rfc6238',
+	                             'onetime' => false,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'twofactorkeys';
@@ -21,8 +23,20 @@ class TwoFactorKey extends DBObject {
 
 	public function setKey($value) {
 		if ($value === TRUE) {
-			$ga = new PHPGangsta_GoogleAuthenticator();
-			$value = $ga->createSecret();
+			$type = $this->getType();
+			switch ($type) {
+				case "rfc6238":
+					$ga = new PHPGangsta_GoogleAuthenticator();
+					$value = $ga->createSecret();
+					break;
+
+				case "plain":
+					$value = implode("-", str_split(strtoupper(substr(sha1(openssl_random_pseudo_bytes('512')), 0, 16)), 4));
+					break;
+
+				default:
+					throw new Exception('Unknown key type: ' . $type);
+			}
 		}
 		return $this->setData('key', $value);
 	}
@@ -45,6 +59,14 @@ class TwoFactorKey extends DBObject {
 
 	public function setActive($value) {
 		return $this->setData('active', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setType($value) {
+		return $this->setData('type', strtolower($value));
+	}
+
+	public function setOneTime($value) {
+		return $this->setData('onetime', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function getID() {
@@ -75,6 +97,19 @@ class TwoFactorKey extends DBObject {
 		return parseBool($this->getData('active'));
 	}
 
+	public function getType() {
+		return $this->getData('type');
+	}
+
+	public function isOneTime() {
+		return parseBool($this->getData('onetime'));
+	}
+
+	public function isUsableKey() {
+		// Key is active and either multi-use or unused.
+		return $this->isActive() && (!$this->isOneTime() || $this->getLastUsed() == 0);
+	}
+
 	/**
 	 * Load an object from the database based on user_id AND the key id.
 	 *
@@ -96,14 +131,32 @@ class TwoFactorKey extends DBObject {
 		$required = ['key', 'user_id', 'description'];
 		foreach ($required as $r) {
 			if (!$this->hasData($r)) {
-				throw new ValidationFailed('Missing required field: '. $r);
+				throw new ValidationFailed('Missing required field: ' . $r);
 			}
+		}
+
+		if (!in_array($this->getType(), ["rfc6238", "plain"])) {
+			throw new ValidationFailed('Unknown key type: ' . $this->getType());
 		}
 
 		return TRUE;
 	}
 
 	public function verify($code, $discrepancy = 1) {
+		$type = $this->getType();
+		switch ($type) {
+			case "rfc6238":
+				return verify_rfc6238($code, $discrepancy);
+
+			case "plain":
+				return strtoupper($code) == strtoupper($this->getKey());
+
+			default:
+				throw new Exception('Unknown key type: ' . $type);
+		}
+	}
+
+	private function verify_rfc6238($code, $discrepancy = 1) {
 		$ga = new PHPGangsta_GoogleAuthenticator();
 
 		$minTimeSlice = floor($this->getLastUsed() / 30);
