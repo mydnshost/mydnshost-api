@@ -277,6 +277,10 @@
 					$errorExtraData = '2FA key required.';
 					$resp->setHeader('login_error', '2fa_required');
 				}
+			} else if (empty($keys) && isset($_SERVER['HTTP_X_2FA_KEY'])) {
+				$errorExtraData = '2FA key provided but not required.';
+				$resp->setHeader('login_error', '2fa_notrequired');
+				$valid = false;
 			}
 
 			if ($valid) {
