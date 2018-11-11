@@ -441,6 +441,7 @@
 				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
+				$result[$k]['usable'] = $v->isUsableKey();
 			}
 
 			$this->getContextKey('response')->data($result);
@@ -482,7 +483,26 @@
 		}
 
 		protected function create2FAKey($user) {
-			$key = (new TwoFactorKey($this->getContextKey('db')))->setKey(TRUE)->setUserID($user->getID())->setCreated(time());
+			$key = (new TwoFactorKey($this->getContextKey('db')))->setUserID($user->getID())->setCreated(time());
+
+			$data = $this->getContextKey('data');
+			if (isset($data['data']['type'])) {
+				$key->setType($data['data']['type']);
+			}
+
+			if (isset($data['data']['onetime'])) {
+				$key->setOneTime($data['data']['onetime']);
+			}
+
+			// Some keys in future may allow this, for now do not.
+			$canSetSecret = false;
+
+			if ($canSetSecret && isset($data['data']['secret'])) {
+				$key->setKey($data['data']['secret']);
+			} else {
+				$key->setKey(TRUE);
+			}
+
 			return $this->update2FAKey($user, $key, true);
 		}
 
@@ -564,7 +584,10 @@
 			}
 
 			// Activate the key once verified.
-			$key->setActive(true)->setLastUsed(time())->save();
+			$key->setActive(true);
+			if (!$key->isOneTime()) { $key->setLastUsed(time()); }
+			$key->save();
+
 			$this->getContextKey('response')->data(['success' => 'Valid code provided.']);
 
 			return TRUE;

@@ -220,13 +220,16 @@
 		$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
 
 		if ($user !== FALSE && $user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
-			$keys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->where('active', 'true')->find('key');
+			$possibleKeys = TwoFactorKey::getSearch($context['db'])->where('user_id', $user->getID())->where('active', 'true')->find('key');
 
 			// Don't check 2FA keys if we have a valid saved device.
 			getKnownDevice($user, $context);
 			if (isset($context['device'])) {
-				$keys = [];
+				$possibleKeys = [];
 			}
+
+			$keys = [];
+			foreach ($possibleKeys as $key) { if ($key->isUsableKey()) { $keys[] = $key; } }
 
 			$valid = true;
 			if (count($keys) > 0) {
@@ -235,7 +238,7 @@
 
 				if ($testCode !== NULL) {
 					foreach ($keys as $key) {
-						if ($key->isUsableKey() && $key->verify($testCode, 1)) {
+						if ($key->verify($testCode, 1)) {
 							$valid = true;
 							$key->setLastUsed(time())->save();
 
