@@ -441,7 +441,7 @@
 				unset($result[$k]['id']);
 				unset($result[$k]['user_id']);
 				unset($result[$k]['internal']);
-				unset($result[$k]['internalmeta']);
+				unset($result[$k]['internaldata']);
 				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
@@ -542,8 +542,14 @@
 				if ($key->isActive()) {
 					unset($k['key']);
 				}
+				unset($k['internal']);
+				unset($k['internaldata']);
+				$k['active'] = parseBool($k['active']);
+				$k['onetime'] = parseBool($k['onetime']);
+
 				$k['updated'] = $key->save();
 				$k['id'] = $key->getID();
+
 				if (!$k['updated']) {
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());

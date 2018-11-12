@@ -722,7 +722,7 @@ This takes the same parameters as create, but will update an existing key.
 ### Get known 2FA Keys [GET]
 Returns the list of known 2FA Key-IDs and information about them.
 
-Keys that have not yet been verified will also include the secret to allow a QR Code to be displayed.
+Keys that have not yet been verified will also include the secret to allow a QR Code to be displayed if appropriate.
 
 + Response 200 (application/json)
     + Body
@@ -748,7 +748,17 @@ Keys that have not yet been verified will also include the secret to allow a QR 
             }
 
 ### Create a new Key [POST]
-Create a new 2FA Key. The secret for the key will be randomly generated and included in the returned output.
+Create a new 2FA Key.
+
+We support multiple types of code, 'rfc6238' (Default), 'plain' and 'yubikeyotp'.
+
+If no 'type' data parameter is provided, then 'rfc6238' is assumed.
+
+For 'rfc6238' and 'plain', the secret will be randomly generated.
+
+For 'yubikeyotp' an OTP must be provided that validates against yubico cloud.
+
+If no 'onetime' data parameter is provided, then 'false' is assumed, otherwise the key will only be valid for a single use.
 
 + Request Create a key (application/json)
     + Body
@@ -756,6 +766,8 @@ Create a new 2FA Key. The secret for the key will be randomly generated and incl
             {
                 "data": {
                     "description": "Third Key",
+                    "type": "rfc6238",
+                    "onetime": false,
                 }
             }
 
@@ -773,6 +785,8 @@ Create a new 2FA Key. The secret for the key will be randomly generated and incl
                     "created": 1495155633,
                     "lastused": 0,
                     "active": false,
+                    "type": "rfc6238",
+                    "onetime": false,
                     "updated": true
                 }
             }
@@ -2207,6 +2221,47 @@ If owner is blank, no owner will be set.
             }
 
 
+# Group Articles
+Endpoints for dealing with articles.
+
+These are used to display information to users after logging in.
+
+## Articles [/articles]
+### Get articles [GET]
+This lets you get the current articles for display.
+
+All articles will have "title", "content" and "created" parameters. Some articles may include "contentfull" for additional content that can be displayed when viewing that specific article.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid":"5be8f02eaa91d",
+                "method":"articles",
+                "response":{
+                    "4":{
+                        "title":"2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.",
+                        "content":"Support has now been added for Domain Hooks which get called whenever records on a domain are changed. There has also been some minor changes to the 2FA login flow (2FA Code is now requested on a separate page, and devices can be saved to bypass the 2FA requirement in future), and CNAME-and-other-records validation has been added.",
+                        "created":"1511721570"
+                    },
+                    "3":{
+                        "title":"2017-09-24 - Domain display default page.",
+                        "content":"A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the \"Records\" or \"Zone Details\" page.",
+                        "created":"1506219150"
+                    },
+                    "2":{
+                        "title":"2017-09-13 - DNSSEC Support is now live.",
+                        "content":"Zones are automatically signed, with DS records available in the zone details section.",
+                        "created":"1505259296"
+                    },
+                    "1":{
+                        "title":"2017-09-10 - Domain Statistics.",
+                        "content":"Domain query statistics are now available from the API and from the zone details section.",
+                        "created":"1505077534"
+                    }
+                }
+            }
+
 # Group System
 Endpoints for dealing with system internals.
 
@@ -2274,3 +2329,6 @@ This lets you get system-level statistics from the api.
                             {"time": 1505098440, "value": 6}
                         ]
             }
+
+# Group Experimental
+There may be some experimental endpoints available under /experimental from time to time, these are undocumented and should not be relied on.
