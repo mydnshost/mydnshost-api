@@ -135,7 +135,7 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function getExpires() {
-		return $this->getData('lastused');
+		return $this->getData('expires');
 	}
 
 	public function getCreated() {
