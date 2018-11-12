@@ -445,7 +445,9 @@
 				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
-				$result[$k]['usable'] = $v->isUsableKey();
+				$result[$k]['usable'] = parseBool($v->isUsableKey());
+				$result[$k]['active'] = parseBool($result[$k]['active']);
+				$result[$k]['onetime'] = parseBool($result[$k]['onetime']);
 			}
 
 			$this->getContextKey('response')->data($result);
@@ -483,6 +485,8 @@
 				unset($k['key']);
 			}
 			$k['usable'] = $key->isUsableKey();
+			$k['active'] = parseBool($k['active']);
+			$k['onetime'] = parseBool($k['onetime']);
 
 			$this->getContextKey('response')->data($k);
 
