@@ -387,6 +387,36 @@ ALTER TABLE `twofactorkeys`
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Articles
+			// ------------------------------------------------------------------------
+			$dataChanges[24] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `articles` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` TEXT NOT NULL,
+  `content` TEXT NOT NULL,
+  `contentfull` TEXT,
+  `created` int(11) NOT NULL,
+  `visiblefrom` int(11) NOT NULL,
+  `visibleuntil` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Sun Sep 10 22:05:34 2017 +0100
+INSERT INTO articles (title, content, created, visiblefrom, visibleuntil) VALUES ('2017-09-10 - Domain Statistics.', 'Domain query statistics are now available from the API and from the zone details section.', 1505077534, 1505077534, -1);
+
+-- Wed Sep 13 00:34:56 2017 +0100
+INSERT INTO articles (title, content, created, visiblefrom, visibleuntil) VALUES ('2017-09-13 - DNSSEC Support is now live.', 'Zones are automatically signed, with DS records available in the zone details section.', 1505259296, 1505259296, -1);
+
+-- Sun Sep 24 03:12:30 2017 +0100
+INSERT INTO articles (title, content, created, visiblefrom, visibleuntil) VALUES ('2017-09-24 - Domain display default page.', 'A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the "Records" or "Zone Details" page.', 1506219150, 1506219150, -1);
+
+-- Sun Nov 26 18:39:30 2017 +0000
+INSERT INTO articles (title, content, created, visiblefrom, visibleuntil) VALUES ('2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.', 'Support has now been added for Domain Hooks which get called whenever records on a domain are changed. There has also been some minor changes to the 2FA login flow (2FA Code is now requested on a separate page, and devices can be saved to bypass the 2FA requirement in future), and CNAME-and-other-records validation has been added.', 1511721570, 1511721570, -1);
+
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}
