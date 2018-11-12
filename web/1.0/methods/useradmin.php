@@ -610,7 +610,7 @@
 
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
-			$te->setVar('2fakey', $key);
+			$te->setVar('twofactorkey', $key);
 			$template = '2fakey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
 			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
