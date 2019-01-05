@@ -176,23 +176,28 @@
 	}
 
 	function updatePublicSuffixes() {
-		(new Pdp\PublicSuffixListManager())->refreshPublicSuffixList();
+		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
+		$manager->refreshRules();
+		$manager->refreshTLDs();
 	}
 
 	function isPublicSuffix($domain) {
 		$domain = idn_to_ascii($domain);
-		$list = (new Pdp\PublicSuffixListManager())->getList();
-		$parser = new Pdp\Parser($list);
 
-		return $domain == $parser->getPublicSuffix($domain) || array_key_exists($domain, $list);
+		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
+		$rules = $manager->getRules();
+		$parser = $rules->resolve($domain);
+
+		return $parser->getPublicSuffix() == NULL;
 	}
 
 	function hasValidPublicSuffix($domain) {
 		$domain = idn_to_ascii($domain);
-		$list = (new Pdp\PublicSuffixListManager())->getList();
-		$parser = new Pdp\Parser($list);
+		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
+		$rules = $manager->getRules();
+		$parser = $rules->resolve($domain);
 
-		return $parser->isSuffixValid($domain);
+		return $parser->getPublicSuffix() != NULL;
 	}
 
 	function checkSessionHandler() {
