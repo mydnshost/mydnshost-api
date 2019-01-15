@@ -19,7 +19,7 @@
         "cocur/background-process": "^0.7.0",
         "shanemcc/php-db": "0.4",
         "influxdb/influxdb-php": "^1.14",
-        "react/child-process": "^0.5.0",
+        "react/child-process": "^0.6.0",
         "enygma/yubikey": "^3.3"
     },
     "autoload": {
