@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Apache sucks a bit...
+RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+RewriteRule ^(.*)$ - [E=BASE:%1]
+
+# Rewrite help to docs
+RewriteRule ^help/?(.*)$ %{ENV:BASE}docs/$1 [R,L]
+
+# Allowed
+RewriteRule ^(docs)/index.apib$ - [L]
+RewriteRule ^(docs)/index.html$ - [L]
+RewriteRule ^(docs)/$ - [L]
+
+# Everything Else
+RewriteRule ^(.*)$ index.php [L]

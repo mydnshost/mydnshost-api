@@ -1,0 +1,45 @@
+<html>
+	<head>
+		<title>[EXPERIMENTAL] HTTPREQ API Docs</title>
+	</head>
+	<body>
+		<div>
+			<h1>[EXPERIMENTAL] Support for HTTPREQ based record updates.</h1>
+			Based on: <a href="https://github.com/xenolf/lego/tree/master/providers/dns/httpreq">https://github.com/xenolf/lego/tree/master/providers/dns/httpreq</a>
+			<br><br>
+			This API is available under <a href="https://api.mydnshost.co.uk/experimental/httpreq/">https://api.mydnshost.co.uk/experimental/httpreq/</a>.
+
+			<h2>Methods Available</h2>
+			<ul>
+				<li> GET /ping </li>
+				<li> POST /present </li>
+				<li> POST /cleanup </li>
+			</ul>
+
+			<h3><pre style="display: inline">/ping</pre> method</h3>
+			The <pre style="display: inline">/ping</pre> endpoint behaves the same as the version 1.0 API <pre style="display: inline">/ping</pre> method.
+
+			<h3><pre style="display: inline">/present</pre> and <pre style="display: inline">/cleanup</pre> methods</h3>
+			Both the <pre style="display: inline">/present</pre> and <pre style="display: inline">/cleanup</pre> endpoints take JSON formatted data in the format:
+			<pre>
+{
+	"fqdn": "_acme-challenge.example1.org",
+	"value": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM"
+}
+			</pre>
+			<br>
+			Calling either endpoint will delete all TXT records with the given record name. The <pre style="display: inline">/present</pre> endpoint will then create a new TXT record with value given (or do nothing if no value is given.)
+			<br><br>
+			The response provided is similar to that from providing records to delete and create via the version 1.0 API <pre style="display: inline">/domain/example1.org/records</pre> method.
+
+			<h2>Authentication</h2>
+			Authentication is exclusively performed via basic auth.
+			<br><br>
+			The username provided can be either a domain name or email address.
+			<br><br>
+			If the username is an email address, then the password must be a valid API KEY for that user.
+			<br><br>
+			If the username is a domain name, then the password must be a valid DOMAIN KEY for that domain.
+		</div>
+	</body>
+</html>
