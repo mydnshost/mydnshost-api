@@ -57,6 +57,8 @@
 			$user = $this->getContextKey('user');
 			$data = $this->getContextKey('data');
 
+			$data['fqdn'] = rtrim($data['fqdn'], '.');
+
 			$wantedRecordFull = $wantedRecord = $data['fqdn'];
 
 			$domains = $this->findDomain($wantedRecord);
