@@ -29,6 +29,8 @@
 	$method = preg_replace('#^' . preg_quote($path . '/') . '#', '', $_SERVER['REQUEST_URI']);
 	// Remove any query strings.
 	$method = preg_replace('#\?.*$#', '', $method);
+	// Remove leading /
+	$method = preg_replace('#^/+#', '/', $method);
 	// We have our method!
 	$resp->method($method);
 

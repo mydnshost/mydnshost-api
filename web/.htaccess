@@ -1,5 +1,9 @@
 RewriteEngine On
 
+# Experimental SubDomains.
+RewriteCond %{HTTP_HOST} ^([^.]+)\.experimental\. [NC]
+RewriteRule ^/?(.*)$ /experimental/%1/$1 [L]
+
 # lets-encrypt
 RewriteRule ^.well-known/.*$ - [L]
 
