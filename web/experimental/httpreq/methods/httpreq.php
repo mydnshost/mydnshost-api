@@ -7,9 +7,8 @@
 			if ($this->getContextKey('user') == NULL) {
 				throw new RouterMethod_NeedsAuthentication();
 			}
-			if (!$this->checkPermissions(['manage_domains'], true)) {
-				throw new RouterMethod_AccessDenied();
-			}
+
+			$this->checkPermissions(['domains_write']);
 		}
 
 		protected function checkAccess($domain, $required) {

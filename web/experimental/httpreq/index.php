@@ -75,6 +75,8 @@
 	           ];
 	$user = FALSE;
 
+	$errorExtraData = [];
+
 	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 		$hasAt = strpos($_SERVER['PHP_AUTH_USER'], '@') !== FALSE;
 		$email = $hasAt ? $_SERVER['PHP_AUTH_USER'] : NULL;
