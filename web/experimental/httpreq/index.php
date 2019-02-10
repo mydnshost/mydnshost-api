@@ -30,7 +30,7 @@
 	// Remove any query strings.
 	$method = preg_replace('#\?.*$#', '', $method);
 	// Remove leading /
-	$method = preg_replace('#^/+#', '/', $method);
+	$method = preg_replace('#^/+#', '', $method);
 	// We have our method!
 	$resp->method($method);
 
