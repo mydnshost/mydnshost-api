@@ -23,6 +23,9 @@
 		protected function findDomain($domain) {
 			$domains = [];
 
+			// Remove trailing .
+			$domain = rtrim($domain, '.');
+
 			// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
 			$bits = explode('.', $domain);
 
@@ -58,7 +61,7 @@
 
 			$domains = $this->findDomain($wantedRecord);
 			if (empty($domains)) {
-				$this->getContextKey('response')->sendError('Too many matching domains found for: ' . $wantedRecord);
+				$this->getContextKey('response')->sendError('No matching domains found for: ' . $wantedRecord);
 			} else if (count($domains) > 1) {
 				$this->getContextKey('response')->sendError('Too many matching domains found for: ' . $wantedRecord);
 			}
