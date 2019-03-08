@@ -1043,6 +1043,8 @@
 			             );
 
 			if (array_key_exists('name', $data)) {
+				if ($data['name'] == '@') { $data['name'] = ''; }
+
 				if (!empty($data['name']) && endsWith($data['name'], $domain->getDomain() . '.')) {
 					$data['name'] = rtrim($data['name'], '.');
 				} else {
