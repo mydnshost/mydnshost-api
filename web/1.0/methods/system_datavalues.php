@@ -65,3 +65,11 @@
 			return TRUE;
 		}
 	});
+
+	$router->get('/system/datavalue/defaultRecords', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('defaultRecords', getSystemDefaultRecords());
+
+			return TRUE;
+		}
+	});
