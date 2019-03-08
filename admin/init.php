@@ -30,6 +30,7 @@
 		$user->setRealName(getEnvOrDefault('ADMIN_NAME', 'Admin User'));
 		$user->setPassword($password);
 		$user->setPermission('all', true);
+		$user->setAcceptTerms(time());
 
 		if ($user->save()) {
 			echo 'Added admin user: ', $user->getEmail(), ' with password: ', $password, "\n";
