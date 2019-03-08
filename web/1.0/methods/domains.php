@@ -135,13 +135,17 @@
 
 			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$list = [];
+			$hasNS = false;
 			foreach ($records as $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
 				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
 				$list[] = $r;
+
+				$hasNS |= ($r['type'] == 'NS' && !parseBool($r['disabled']) && $r['name'] === '');
 			}
 			$this->getContextKey('response')->set('records', $list);
+			$this->getContextKey('response')->set('hasNS', $hasNS);
 
 			// Only include SOA in unfiltered.
 			if (count($filter) == 0) {
