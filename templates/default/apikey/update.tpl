@@ -8,7 +8,7 @@ Hi {{ user.getRealName() }},
 
 An API Key has been changed on your account on {{ sitename }}.
 
-    Key: {{ apikey.getKey() }}
+    Key: {{ apikey.getKey(true) }}
     Description: {{ apikey.getDescription() }}
     Permissions:
         Domain Read: {{ apikey.getDomainRead() | yesno }}

@@ -329,6 +329,7 @@
 				unset($result[$k]['id']);
 				unset($result[$k]['user_id']);
 				unset($result[$k]['apikey']);
+				$result[$k]['maskedkey'] = $v->getKey(true);
 			}
 
 			$this->getContextKey('response')->data($result);
@@ -341,6 +342,7 @@
 			unset($k['id']);
 			unset($k['user_id']);
 			unset($k['apikey']);
+			$k['maskedkey'] = $key->getKey(true);
 
 			$this->getContextKey('response')->data($k);
 
@@ -375,6 +377,7 @@
 				unset($k['id']);
 				unset($k['user_id']);
 				unset($k['apikey']);
+				$k['maskedkey'] = $key->getKey(true);
 				$k['updated'] = $key->save();
 				if (!$k['updated']) {
 					if ($isCreate) {

@@ -8,7 +8,7 @@ Hi {{ user.getRealName() }},
 
 A new API Key has been added to your account on {{ sitename }}.
 
-    Key: {{ apikey.getKey() }}
+    Key: {{ apikey.getKey(true) }}
     Description: {{ apikey.getDescription() }}
     Permissions:
         Domain Read: {{ apikey.getDomainRead() | yesno }}
