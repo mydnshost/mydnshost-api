@@ -14,6 +14,7 @@ class TwoFactorKey extends DBObject {
 	                             'lastused' => 0,
 	                             'expires' => 0,
 	                             'active' => false,
+	                             'code' => true,
 	                             'push' => false,
 	                             'type' => 'rfc6238',
 	                             'onetime' => false,
@@ -158,6 +159,10 @@ class TwoFactorKey extends DBObject {
 		return $this->setData('type', strtolower($value));
 	}
 
+	public function setCode($value) {
+		return $this->setData('code', parseBool($value) ? 'true' : 'false');
+	}
+
 	public function setPush($value) {
 		return $this->setData('push', parseBool($value) ? 'true' : 'false');
 	}
@@ -208,6 +213,10 @@ class TwoFactorKey extends DBObject {
 
 	public function getType() {
 		return $this->getData('type');
+	}
+
+	public function isCode() {
+		return parseBool($this->getData('code'));
 	}
 
 	public function isPush() {
@@ -304,8 +313,8 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function verify($code, $discrepancy = 1) {
-		// Push-Based tokens don't verify with a code.
-		if ($this->isPush()) { return FALSE; }
+		// Only allow code-based tokens.
+		if (!$this->isCode()) { return FALSE; }
 
 		$type = $this->getType();
 		switch ($type) {
@@ -317,6 +326,9 @@ class TwoFactorKey extends DBObject {
 
 			case "yubikeyotp":
 				return $this->verify_yubikey($code);
+
+			case "authy":
+				return $this->verify_authycode($code);
 
 			default:
 				throw new Exception('Unknown key type: ' . $type);
@@ -419,8 +431,21 @@ class TwoFactorKey extends DBObject {
 		return FALSE;
 	}
 
-	public function postDelete() {
+	private function verify_authycode($code) {
 		global $config;
+		if (!self::canUseAuthy()) { return FALSE; }
+
+		$authy_api = new Authy\AuthyApi($config['twofactor']['authy']['apikey']);
+
+		$verification = $authy_api->verifyToken($this->getKey(), $code);
+
+		return $verification->ok();
+	}
+
+	public function postDelete($result) {
+		global $config;
+
+		if (!$result) { return; }
 
 		if ($this->getType() == 'authy' && self::canUseAuthy()) {
 			$authy_api = new Authy\AuthyApi($config['twofactor']['authy']['apikey']);

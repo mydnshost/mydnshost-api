@@ -433,6 +433,14 @@ ALTER TABLE `twofactorkeys` ADD COLUMN `push` ENUM('false', 'true') NOT NULL DEF
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// 2FA Key "code-based" keys.
+			// ------------------------------------------------------------------------
+			$dataChanges[27] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys` ADD COLUMN `code` ENUM('false', 'true') NOT NULL DEFAULT 'true' AFTER `active`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

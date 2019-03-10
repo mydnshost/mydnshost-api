@@ -186,7 +186,7 @@
 
 				if ($testCode !== NULL) {
 					foreach ($keys as $key) {
-						if (!$key->isPush() && $key->verify($testCode, 1)) {
+						if ($key->isCode() && $key->verify($testCode, 1)) {
 							$valid = true;
 							$key->setLastUsed(time())->save();
 
