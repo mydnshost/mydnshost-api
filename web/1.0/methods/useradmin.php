@@ -153,6 +153,8 @@
 
 				$sendWelcome = false;
 				if ($isCreate) {
+					$user->setAcceptTerms(-1);
+
 					// Set default permissions.
 					foreach (getSystemRegisterPermissions() as $permission) {
 						$permission = trim($permission);
