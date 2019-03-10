@@ -35,31 +35,31 @@
 		public function run($domainName, $domainKey, $rrname, $rrtype) {
 			$domain = Domain::loadFromDomain($this->getContextKey('db'), $domainName);
 
-			if (isset($_REQUEST['dynamicvalue'])) {
-				if (in_array($_REQUEST['dynamicvalue'], ['myip', 'myip4', 'myip6'])) {
+			if (isset($_REQUEST['dynamiccontent'])) {
+				if (in_array($_REQUEST['dynamiccontent'], ['myip', 'myip4', 'myip6'])) {
 					if (isset($_SERVER['HTTP_X_REAL_IP'])) { $remoteHost = $_SERVER['HTTP_X_REAL_IP']; }
 					else if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) { $remoteHost = $_SERVER['HTTP_X_FORWARDED_FOR']; }
 					else if (isset($_SERVER['HTTP_CLIENT_IP'])) { $remoteHost = $_SERVER['HTTP_CLIENT_IP']; }
 					else { $remoteHost = $_SERVER['REMOTE_ADDR']; }
 
-					if ($_REQUEST['dynamicvalue'] == 'myip4' && !filter_var($remoteHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+					if ($_REQUEST['dynamiccontent'] == 'myip4' && !filter_var($remoteHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
 						$remoteHost = '';
-					} else if ($_REQUEST['dynamicvalue'] == 'myip6' && !filter_var($remoteHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+					} else if ($_REQUEST['dynamiccontent'] == 'myip6' && !filter_var($remoteHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
 						$remoteHost = '';
 					}
 
 					if (!empty($remoteHost)) {
-						$_REQUEST['value'] = $remoteHost;
+						$_REQUEST['content'] = $remoteHost;
 					}
-				} else if (in_array($_REQUEST['dynamicvalue'], ['time'])) {
-					$_REQUEST['value'] = time();
+				} else if (in_array($_REQUEST['dynamiccontent'], ['time'])) {
+					$_REQUEST['content'] = time();
 				}
 			}
 
-			if (!isset($_REQUEST['value'])) {
-				$this->getContextKey('response')->sendError('You must specify a value.');
+			if (!isset($_REQUEST['content'])) {
+				$this->getContextKey('response')->sendError('You must specify a content.');
 			}
-			$value = $_REQUEST['value'];
+			$value = $_REQUEST['content'];
 			$this->getContextKey('db')->beginTransaction();
 
 			$ttl = 86400;
