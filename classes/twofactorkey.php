@@ -14,6 +14,7 @@ class TwoFactorKey extends DBObject {
 	                             'lastused' => 0,
 	                             'expires' => 0,
 	                             'active' => false,
+	                             'push' => false,
 	                             'type' => 'rfc6238',
 	                             'onetime' => false,
 	                             'internal' => false,
@@ -41,6 +42,7 @@ class TwoFactorKey extends DBObject {
 					break;
 
 				case "yubikeyotp":
+				case "authy":
 					throw new TwoFactorKeyAutoValueException($type . ' does not use auto-generated keys.');
 					break;
 
@@ -99,7 +101,21 @@ class TwoFactorKey extends DBObject {
 		// Clear key when changing type.
 		$this->setData('key', NULL);
 
+		switch (strtolower($value)) {
+			case "authy":
+				$this->setPush(true);
+				break;
+
+			default:
+				$this->setPush(false);
+				break;
+		}
+
 		return $this->setData('type', strtolower($value));
+	}
+
+	public function setPush($value) {
+		return $this->setData('push', parseBool($value) ? 'true' : 'false');
 	}
 
 	public function setOneTime($value) {
@@ -150,6 +166,10 @@ class TwoFactorKey extends DBObject {
 		return $this->getData('type');
 	}
 
+	public function isPush() {
+		return parseBool($this->getData('push'));
+	}
+
 	public function isOneTime() {
 		return parseBool($this->getData('onetime'));
 	}
@@ -167,6 +187,10 @@ class TwoFactorKey extends DBObject {
 
 		if (self::canUseYubikey()) {
 			$result[] = "yubikeyotp";
+		}
+
+		if (self::canUseAuthy()) {
+			$result[] = "authy";
 		}
 
 		return $result;
@@ -193,6 +217,10 @@ class TwoFactorKey extends DBObject {
 
 		// Can we validate the key?
 		if ($this->getType() == 'yubikeyotp' && !self::canUseYubikey()) {
+			$usable = false;
+		}
+
+		if ($this->getType() == 'authy' && !self::canUseAuthy()) {
 			$usable = false;
 		}
 
@@ -232,6 +260,9 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function verify($code, $discrepancy = 1) {
+		// Push-Based tokens don't verify with a code.
+		if ($this->isPush()) { return FALSE; }
+
 		$type = $this->getType();
 		switch ($type) {
 			case "rfc6238":
@@ -248,10 +279,30 @@ class TwoFactorKey extends DBObject {
 		}
 	}
 
+	public function pushVerify($message) {
+		// Non-Push-Based tokens verify with a code.
+		if (!$this->isPush()) { return FALSE; }
+
+		$type = $this->getType();
+		switch ($type) {
+			case "authy":
+				return $this->verify_authypush($message);
+
+			default:
+				throw new Exception('Unknown key type: ' . $type);
+		}
+	}
+
 	private static function canUseYubikey() {
 		global $config;
 
 		return isset($config['twofactor']['yubikey']['enabled']) && $config['twofactor']['yubikey']['enabled'];
+	}
+
+	private static function canUseAuthy() {
+		global $config;
+
+		return isset($config['twofactor']['authy']['enabled']) && $config['twofactor']['authy']['enabled'];
 	}
 
 	private function yubikey_getData($code, $check = true) {
@@ -298,5 +349,29 @@ class TwoFactorKey extends DBObject {
 		}
 
 		return false;
+	}
+
+	private function verify_authypush($message) {
+		global $config;
+		if (!self::canUseAuthy()) { return FALSE; }
+
+		$authy_api = new Authy\AuthyApi($config['twofactor']['authy']['apikey']);
+
+		$response = $authy_api->createApprovalRequest($this->getKey(), $message);
+		$uuid = $response->bodyvar('approval_request')->uuid;
+
+		// 20 second time out.
+		for ($i = 0; $i < 20; $i++) {
+			$response = $authy_api->getApprovalRequest($uuid);
+			$status = $response->bodyvar('approval_request')->status;
+
+			if ($status == 'approved') { return TRUE; }
+			if ($status == 'denied') { return FALSE; }
+
+			// Sleep a bit.
+			sleep(1);
+		}
+
+		return FALSE;
 	}
 }

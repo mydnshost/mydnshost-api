@@ -59,6 +59,8 @@
 
 	HookManager::get()->addHookType('send_mail');
 
+	HookManager::get()->addHookType('verify_2fa_push');
+
 	HookManager::get()->addHookType('call_domain_hooks');
 
 	if ($config['jobserver']['type'] == 'gearman') {
@@ -76,9 +78,23 @@
 		HookManager::get()->addHook('send_mail', function($to, $subject, $message, $htmlmessage = NULL) use ($gmc) {
 			@$gmc->doBackground('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
 		});
+
+		HookManager::get()->addHook('verify_2fa_push', function($key, $message) use ($gmc) {
+			@$gmc->doBackground('verify_2fa_push', json_encode(['keyid' => $key->getID(), 'userid' => $key->getUserID(), 'message' => $message]));
+		});
 	} else {
 		HookManager::get()->addHookBackground('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
 			Mailer::get()->send($to, $subject, $message, $htmlmessage);
+		});
+
+		HookManager::get()->addHookBackground('verify_2fa_push', function($key, $message) use ($config) {
+			if ($key->isPush()) {
+				if ($key->pushVerify($message)) {
+					$key->setActive(true);
+					if (!$key->isOneTime()) { $key->setLastUsed(time()); }
+					$key->save();
+				}
+			}
 		});
 	}
 

@@ -20,6 +20,11 @@
 	$config['twofactor']['yubikey']['secret'] = 'FOOBAR=';
 	$config['twofactor']['yubikey']['enabled'] = false;
 
+	// Configuration for AUTHY Authentication
+	$config['twofactor']['authy']['clientid'] = '12345';
+	$config['twofactor']['authy']['secret'] = 'FOOBAR=';
+	$config['twofactor']['authy']['enabled'] = false;
+
 	// Minimum terms time required to be considered "accepted".
 	//
 	// If this is not met, /userdata responses will show `"acceptterms": false`

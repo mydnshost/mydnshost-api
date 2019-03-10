@@ -425,6 +425,14 @@ MYSQLQUERY
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// 2FA Key "push-based" keys.
+			// ------------------------------------------------------------------------
+			$dataChanges[26] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `twofactorkeys` ADD COLUMN `push` ENUM('false', 'true') NOT NULL DEFAULT 'false' AFTER `active`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

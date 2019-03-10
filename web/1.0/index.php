@@ -182,10 +182,11 @@
 			if (count($keys) > 0) {
 				$valid = false;
 				$testCode = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
+				$tryPush = isset($_SERVER['HTTP_X_2FA_PUSH']) && parseBool($_SERVER['HTTP_X_2FA_PUSH']);
 
 				if ($testCode !== NULL) {
 					foreach ($keys as $key) {
-						if ($key->verify($testCode, 1)) {
+						if (!$key->isPush() && $key->verify($testCode, 1)) {
 							$valid = true;
 							$key->setLastUsed(time())->save();
 
@@ -221,9 +222,32 @@
 					}
 					$errorExtraData = '2FA key invalid.';
 					$resp->setHeader('login_error', '2fa_invalid');
+				} else if ($tryPush) {
+					foreach ($keys as $key) {
+						if ($key->isPush() && $key->pushVerify('Login to ' . $config['sitename'])) {
+							// Valid push.
+
+							// Create a new short-term key.
+							$tempKey = (new TwoFactorKey($context['db']))->setUserID($user->getID())->setCreated(time());
+							$tempKey->setDescription('Push Login Token');
+							$tempKey->setType('plain')->setKey(true)->setOneTime(true)->setInternal(true)->setActive(true)->setExpires(time() + 30);
+							$tempKey->save();
+
+							// Let the user know the key code.
+							$errorExtraData = '2FA key required.';
+							$resp->setHeader('login_error', '2fa_required');
+							$resp->setHeader('pushcode', $tempKey->getKey());
+						}
+					}
 				} else {
 					$errorExtraData = '2FA key required.';
 					$resp->setHeader('login_error', '2fa_required');
+					foreach ($keys as $key) {
+						if ($key->isPush()) {
+							$resp->setHeader('2fa_push', '2fa push supported');
+							break;
+						}
+					}
 				}
 			} else if (empty($keys) && isset($_SERVER['HTTP_X_2FA_KEY'])) {
 				$errorExtraData = '2FA key provided but not required.';

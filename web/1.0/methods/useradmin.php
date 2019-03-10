@@ -598,12 +598,21 @@
 		}
 
 		protected function verify2FAKey($user, $key) {
+			global $config;
+
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data']) || !isset($data['data']['code'])) {
 				$this->getContextKey('response')->sendError('No code provided for verification.');
 			}
 
-			if (!$key->verify($data['data']['code'], 1)) {
+			if ($key->isPush()) {
+				$this->getContextKey('response')->setHeader('info', 'Key will be verified in the background.');
+
+				// Fire off a key-validation hook.
+				HookManager::get()->handle('verify_2fa_push', [$key, 'Key verification on ' . $config['sitename']]);
+
+				return TRUE;
+			} else if (!$key->isPush() && !$key->verify($data['data']['code'], 1)) {
 				$this->getContextKey('response')->sendError('Invalid code provided for verification.');
 			}
 
