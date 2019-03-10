@@ -68,7 +68,7 @@
 			$gmc->setTimeout(5000);
 		} catch (Exception $e) {
 			$config['jobserver']['type'] == 'none';
-			$gmc == null;
+			$gmc = null;
 		}
 	}
 
