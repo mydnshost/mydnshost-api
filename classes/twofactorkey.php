@@ -28,6 +28,8 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function setKey($value) {
+		global $config;
+
 		$type = $this->getType();
 
 		if ($value === TRUE) {
@@ -53,13 +55,55 @@ class TwoFactorKey extends DBObject {
 
 		switch ($type) {
 			case "yubikeyotp":
-				if (self::canUseYubikey()) {
+				if (self::canUseYubikey() && $value) {
+					if (is_array($value)) {
+						if (!isset($value['secret'])) { throw new Exception('Missing "secret" in value array.'); }
+						$value = $value['secret'];
+					}
 					$response = $this->yubikey_getData($value);
 					if ($response['response']->success()) {
 						$value = $response['request']->getYubikeyId();
 					} else {
 						throw new Exception('Error with key: ' . $response->current()->status);
 					}
+				} else {
+					throw new Exception('Unknown key type: ' . $type);
+				}
+
+				break;
+
+			case "authy":
+				if (self::canUseAuthy() && $value) {
+					if (is_array($value)) {
+						if (isset($value['authyid'])) {
+							$value = $value['authyid'];
+						} else {
+							if (!isset($value['email'])) { throw new Exception('Missing "email" in value array.'); }
+							if (!isset($value['countrycode'])) { throw new Exception('Missing "countrycode" in value array.'); }
+							if (!isset($value['phone'])) { throw new Exception('Missing "phone" in value array.'); }
+
+							// Create user.
+							$authy_api = new Authy\AuthyApi($config['twofactor']['authy']['apikey']);
+							$authy_user = $authy_api->registerUser($value['email'], $value['phone'], $value['countrycode']);
+
+							if ($authy_user->ok()) {
+								$value = $authy_user->id();
+
+							} else {
+								$errorData = [];
+								foreach ($authy_user->errors() as $field => $message) {
+									$errorData[] = $field . ': ' . $message;
+								}
+
+								throw new Exception('Error creating authy user. ' . implode('/', $errorData));
+							}
+						}
+
+					} else {
+						throw new Exception('Value must be an array to create data from.');
+					}
+
+
 				} else {
 					throw new Exception('Unknown key type: ' . $type);
 				}
@@ -373,5 +417,14 @@ class TwoFactorKey extends DBObject {
 		}
 
 		return FALSE;
+	}
+
+	public function postDelete() {
+		global $config;
+
+		if ($this->getType() == 'authy' && self::canUseAuthy()) {
+			$authy_api = new Authy\AuthyApi($config['twofactor']['authy']['apikey']);
+			$authy_api->deleteUser($this->getKey());
+		}
 	}
 }

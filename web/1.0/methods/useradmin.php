@@ -514,10 +514,11 @@
 			try {
 				$key->setKey(TRUE);
 			} catch (TwoFactorKeyAutoValueException $e) {
-				if (isset($data['data']['secret'])) {
-					$key->setKey($data['data']['secret']);
-				} else {
-					$this->getContextKey('response')->sendError('Missing "secret" for create.');
+				try {
+					$data['data']['email'] = $user->getEmail();
+					$key->setKey($data['data']);
+				} catch (Exception $e) {
+					$this->getContextKey('response')->sendError($e->getMessage());
 				}
 			}
 
@@ -537,7 +538,7 @@
 					$key->validate();
 				} catch (ValidationFailed $ex) {
 					if ($isCreate) {
-						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error creating key: ', $ex->getMessage());
 					} else {
 						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
@@ -558,9 +559,14 @@
 
 				if (!$k['updated']) {
 					if ($isCreate) {
-						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
+						$reason = $user->getLastError()[2];
+						if (preg_match('#.*Duplicate entry.*twofactorkeys_apikey_user.*#', $reason)) {
+							$this->getContextKey('response')->sendError('Error creating key', 'Identical key already exists...');
+						} else {
+							$this->getContextKey('response')->sendError('Error creating key.');
+						}
 					} else {
-						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
+						$this->getContextKey('response')->sendError('Error updating key.');
 					}
 				} else {
 					$this->getContextKey('response')->data($k);
