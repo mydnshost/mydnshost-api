@@ -67,7 +67,7 @@
 			$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
 			$gmc->setTimeout(5000);
 		} catch (Exception $e) {
-			$config['jobserver']['type'] == 'none';
+			$config['jobserver']['type'] = 'none';
 			$gmc = null;
 		}
 	}
