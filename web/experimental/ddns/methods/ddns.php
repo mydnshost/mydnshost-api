@@ -73,6 +73,13 @@
 
 			$existing = $domain->getRecords($rrname, $rrtype);
 			foreach ($existing as $record) {
+				// If value is the same as what we are setting then we don't
+				// delete this record, and then don't create a new one.
+				if ($record->getContent() == $value) {
+					$value = '';
+					continue;
+				}
+
 				$ttl = min($record->getTTL(), $ttl);
 				$disabled |= $record->isDisabled();
 
