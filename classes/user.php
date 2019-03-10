@@ -26,6 +26,7 @@ class User extends DBObject {
 	                                       'manage_permissions',
 	                                       'impersonate_users',
 	                                       'system_service_mgmt',
+	                                       'manage_articles',
 	                                      ];
 
 	// Permissions levels for unknown objects.
