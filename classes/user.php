@@ -292,6 +292,10 @@ class User extends DBObject {
 			throw new ValidationFailed('Email address is invalid.');
 		}
 
+		if (!in_array($this->getAvatar(), ['gravatar', 'none'])) {
+			throw new ValidationFailed('Avatar is invalid.');
+		}
+
 		return TRUE;
 	}
 
