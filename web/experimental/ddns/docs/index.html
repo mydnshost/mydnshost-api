@@ -1,0 +1,37 @@
+<html>
+	<head>
+		<title>[EXPERIMENTAL] DDNS-Friendly API Docs</title>
+	</head>
+	<body>
+		<div>
+			<h1>[EXPERIMENTAL] Support for DDNS-Friendly based record updates.</h1>
+			<br><br>
+			This API is available under <a href="https://api.mydnshost.co.uk/experimental/ddns/">https://api.mydnshost.co.uk/experimental/ddns/</a>.
+
+			<h2>Methods Available</h2>
+			<ul>
+				<li> GET /ping </li>
+				<li> POST|GET /setrecord/&lt;domain&gt;/&lt;domain-key&gt;/&lt;rrname&gt;/&lt;rrtype&gt; </li>
+			</ul>
+
+			<h3><pre style="display: inline">/ping</pre> method</h3>
+			The <pre style="display: inline">/ping</pre> endpoint behaves the same as the version 1.0 API <pre style="display: inline">/ping</pre> method.
+
+			<h3><pre style="display: inline">/setrecord</pre> method</h3>
+
+			The <pre style="display: inline">/setrecord</pre> method is supported as either a <pre style="display: inline">GET</pre> or <pre style="display: inline">POST</pre> for maximum compatibility.
+
+			You must pass a single parameter of <pre style="display: inline">"content"</pre> as either formdata for <pre style="display: inline">POST</pre> or within the query-string for <pre style="display: inline">GET</pre>.
+
+			Alternatively, you can pass a parameter of <pre style="display: inline">"dynamiccontent"</pre> instead of <pre style="display: inline">"content"</pre>. The value of this can be one of: myip (Caller IP), myip4 (Caller IP, only if it is IPv4), myip6 (Caller IP, only if it is IPv6), time (Current time as unixepoch). Using this will dynamically set the value of <pre style="display: inline">"content"</pre>. If the value generated is not compatible with the rrtype given, it will result in an error.
+
+			<br>
+			Calling this endpoint will delete all records with the given rrname and rrtype. And then create a new record with value given (or do nothing if an empty value is given.)
+			<br><br>
+			The response provided is similar to that from providing records to delete and create via the version 1.0 API <pre style="display: inline">/domain/example1.org/records</pre> method.
+
+			<h2>Authentication</h2>
+			Authentication is handled by the domain and domain-key in the URL.
+		</div>
+	</body>
+</html>
