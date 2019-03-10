@@ -417,6 +417,14 @@ INSERT INTO articles (title, content, created, visiblefrom, visibleuntil) VALUES
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Avatar options
+			// ------------------------------------------------------------------------
+			$dataChanges[25] = new DBChange(<<<MYSQLQUERY
+	ALTER TABLE `users` ADD COLUMN `avatar` varchar(255) NOT NULL DEFAULT 'gravatar' AFTER `acceptterms`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

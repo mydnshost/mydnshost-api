@@ -502,7 +502,15 @@
 		 */
 		protected function getDomainAccess($domain) {
 			$r = $domain->toArray();
-			$r['access'] = $domain->getAccessUsers();
+			$access = $domain->getAccessUsers();
+			$r['access'] = [];
+			$r['userinfo'] = [];
+			foreach ($access as $e => $ui) {
+				$r['access'][$e] = $ui['access'];
+				$r['userinfo'][$e] = $ui;
+				unset($r['userinfo'][$e]['access']);
+			}
+
 			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
@@ -537,7 +545,14 @@
 			$domain->save();
 
 			$r = $domain->toArray();
-			$r['access'] = $domain->getAccessUsers();
+			$access = $domain->getAccessUsers();
+			$r['access'] = [];
+			$r['userinfo'] = [];
+			foreach ($access as $e => $ui) {
+				$r['access'][$e] = $ui['access'];
+				$r['userinfo'][$e] = $ui;
+				unset($r['userinfo'][$e]['access']);
+			}
 			$r['domain'] = idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
@@ -639,6 +654,7 @@
 			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
 			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
 			$s->select('users', 'email', 'user');
+			$s->select('users', 'avatar', 'avatar');
 			$s->select('domain_access', 'level', 'level');
 			$s->order('domain');
 			$rows = $s->getRows();
@@ -647,10 +663,11 @@
 			foreach ($rows as $row) {
 				$row['domain'] = idn_to_utf8($row['domain']);
 				if (!array_key_exists($row['domain'], $domains)) {
-					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => []];
+					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => [], 'userinfo' => []];
 				}
 
 				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
+				$domains[$row['domain']]['userinfo'][$row['user']] = ['avatar' => $row['avatar']];
 			}
 
 			$this->getContextKey('response')->data($domains);

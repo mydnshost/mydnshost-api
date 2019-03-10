@@ -12,6 +12,7 @@ class User extends DBObject {
 	                             'verifycode' => NULL,
 	                             'disabledreason' => NULL,
 	                             'acceptterms' => NULL,
+	                             'avatar' => 'gravatar',
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'users';
@@ -69,6 +70,10 @@ class User extends DBObject {
 		return $this->setData('acceptterms', $value);
 	}
 
+	public function setAvatar($value) {
+		return $this->setData('avatar', $value);
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -105,6 +110,10 @@ class User extends DBObject {
 
 	public function getAcceptTerms() {
 		return $this->getData('acceptterms');
+	}
+
+	public function getAvatar() {
+		return $this->getData('avatar');
 	}
 
 	public function isPendingPasswordReset() {

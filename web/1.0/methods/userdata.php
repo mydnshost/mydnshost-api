@@ -22,6 +22,7 @@
 				$userinfo = ['id' => $user->getId(),
 				             'email' => $user->getEmail(),
 				             'realname' => $user->getRealName(),
+				             'avatar' => $user->getAvatar(),
 				            ];
 
 				if (getSystemRegisterRequireTerms()) {

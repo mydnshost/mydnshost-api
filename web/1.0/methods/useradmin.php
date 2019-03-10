@@ -238,6 +238,7 @@
 			$keys = array('email' => 'setEmail',
 			              'realname' => 'setRealName',
 			              'password' => 'setPassword',
+			              'avatar' => 'setAvatar',
 			             );
 
 			// Can this user disable/enable user accounts?

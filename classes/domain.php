@@ -91,7 +91,7 @@ class Domain extends DBObject {
 		$result = [];
 		foreach ($this->_access as $k => $v) {
 			if (isset($users[$k]) && $v != 'none') {
-				$result[$users[$k]->getEmail()] = $v;
+				$result[$users[$k]->getEmail()] = ['access' => $v, 'avatar' => $users[$k]->getAvatar()];
 			}
 		}
 
