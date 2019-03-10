@@ -36,6 +36,8 @@
 			$key = TwoFactorKey::loadFromUserKey($this->getContextKey('db'), $userid, $secretid);
 			if ($key === FALSE) {
 				$this->getContextKey('response')->sendError('Unknown 2fakey: ' . $secretid);
+			} else if ($key->isInternal()) {
+				$this->getContextKey('response')->sendError('Unknown 2fakey: ' . $secretid);
 			}
 
 			return $key;
