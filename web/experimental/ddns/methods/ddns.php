@@ -63,6 +63,7 @@
 			$this->getContextKey('db')->beginTransaction();
 
 			$ttl = 86400;
+			$disabled = FALSE;
 
 			$error = FALSE;
 			$errorData = [];
@@ -73,6 +74,7 @@
 			$existing = $domain->getRecords($rrname, $rrtype);
 			foreach ($existing as $record) {
 				$ttl = min($record->getTTL(), $ttl);
+				$disabled |= $record->isDisabled();
 
 				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
 				$result[] = $r;
@@ -101,6 +103,7 @@
 				$record->setType($rrtype);
 				$record->setTTL($ttl);
 				$record->setContent($value);
+				$record->setDisabled($disabled);
 				$record->setChangedAt(time());
 				$record->setChangedBy($this->getContextKey('user')->getID());
 
