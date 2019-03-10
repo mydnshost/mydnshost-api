@@ -1161,6 +1161,7 @@
 				unset($result[$k]['id']);
 				unset($result[$k]['domain_id']);
 				unset($result[$k]['domainkey']);
+				$result[$k]['maskedkey'] = $v->getKey(true);
 			}
 
 			$this->getContextKey('response')->data($result);
@@ -1173,6 +1174,7 @@
 			unset($k['id']);
 			unset($k['domain_id']);
 			unset($k['domainkey']);
+			$k['maskedkey'] = $key->getKey(true);
 
 			$this->getContextKey('response')->data($k);
 
@@ -1207,6 +1209,7 @@
 				unset($k['id']);
 				unset($k['domain_id']);
 				unset($k['domainkey']);
+				$k['maskedkey'] = $key->getKey(true);
 				$k['updated'] = $key->save();
 				if (!$k['updated']) {
 					if ($isCreate) {

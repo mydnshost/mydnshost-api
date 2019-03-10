@@ -78,8 +78,20 @@ class DomainKey extends DBObject {
 		return $this->getData('id');
 	}
 
-	public function getKey() {
-		return $this->getData('domainkey');
+	public function getKey($masked = false) {
+		$key = $this->getData('domainkey');
+		if ($masked) {
+			$bits = explode('-', $key);
+			$key = [];
+			foreach ($bits as $i => $bit) {
+				if ($i === 0) { $key[] = $bit; }
+				else if ($i === 4) { $key[] = preg_replace('#.#', '*', substr($bit, 0, 7)) . substr($bit, 7); }
+				else { $key[] = preg_replace('#.#', '*', $bit); }
+			}
+
+			$key = implode('-', $key);
+		}
+		return $key;
 	}
 
 	public function getDomainID() {
