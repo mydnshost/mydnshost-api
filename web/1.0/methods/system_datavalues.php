@@ -60,7 +60,25 @@
 
 	$router->get('/system/datavalue/2faKeyTypes', new class extends RouterMethod {
 		function run() {
-			$this->getContextKey('response')->set('2faKeyTypes', TwoFactorKey::getKeyTypes());
+			$types = [];
+
+			$user = $this->getContextKey('user');
+
+			foreach (TwoFactorKey::getKeyTypes() as $type => $permissions) {
+				$valid = false;
+				if (empty($permissions)) {
+					$valid = true;
+				} else if ($user != NULL) {
+					$valid = true;
+					foreach ($permissions as $perm) {
+						$valid &= $user->getPermission($perm);
+					}
+				}
+
+				if ($valid) { $types[] = $type; }
+			}
+
+			$this->getContextKey('response')->set('2faKeyTypes', $types);
 
 			return TRUE;
 		}

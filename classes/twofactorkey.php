@@ -143,12 +143,9 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public function getRequiredPermissionsForType() {
-		switch ($this->getType()) {
-			case "authy":
-				return ['2fa_push'];
-
-			default:
-				return [];
+		$keyTypes = TwoFactorKey::getKeyTypes();
+		if (isset($keyTypes[$this->getType])) {
+			return $keyTypes[$this->getType];
 		}
 	}
 
@@ -246,14 +243,14 @@ class TwoFactorKey extends DBObject {
 	}
 
 	public static function getKeyTypes() {
-		$result = ["rfc6238", "plain"];
+		$result = ['rfc6238' => [], 'plain' => []];
 
 		if (self::canUseYubikey()) {
-			$result[] = "yubikeyotp";
+			$result['yubikeyotp'] = [];
 		}
 
 		if (self::canUseAuthy()) {
-			$result[] = "authy";
+			$result['authy'] = ['2fa_push'];
 		}
 
 		return $result;
