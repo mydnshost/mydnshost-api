@@ -176,13 +176,13 @@
 			}
 
 			$keys = [];
-			foreach ($possibleKeys as $key) { if ($key->isUsableKey()) { $keys[] = $key; } }
+			foreach ($possibleKeys as $key) { if ($key->isUsableKey($user)) { $keys[] = $key; } }
 
 			$valid = true;
 			if (count($keys) > 0) {
 				$valid = false;
 				$testCode = isset($_SERVER['HTTP_X_2FA_KEY']) ? $_SERVER['HTTP_X_2FA_KEY'] : NULL;
-				$tryPush = isset($_SERVER['HTTP_X_2FA_PUSH']) && parseBool($_SERVER['HTTP_X_2FA_PUSH']);
+				$tryPush = isset($_SERVER['HTTP_X_2FA_PUSH']) && parseBool($_SERVER['HTTP_X_2FA_PUSH']) && $user->getPermission('2fa_push');
 
 				if ($testCode !== NULL) {
 					foreach ($keys as $key) {
@@ -242,10 +242,13 @@
 				} else {
 					$errorExtraData = '2FA key required.';
 					$resp->setHeader('login_error', '2fa_required');
-					foreach ($keys as $key) {
-						if ($key->isPush()) {
-							$resp->setHeader('2fa_push', '2fa push supported');
-							break;
+
+					if ($user->getPermission('2fa_push')) {
+						foreach ($keys as $key) {
+							if ($key->isPush()) {
+								$resp->setHeader('2fa_push', '2fa push supported');
+								break;
+							}
 						}
 					}
 				}

@@ -453,7 +453,7 @@
 				if ($v->isActive()) {
 					unset($result[$k]['key']);
 				}
-				$result[$k]['usable'] = parseBool($v->isUsableKey());
+				$result[$k]['usable'] = parseBool($v->isUsableKey($user));
 				$result[$k]['active'] = parseBool($result[$k]['active']);
 				$result[$k]['onetime'] = parseBool($result[$k]['onetime']);
 			}
@@ -492,7 +492,7 @@
 			if ($key->isActive()) {
 				unset($k['key']);
 			}
-			$k['usable'] = $key->isUsableKey();
+			$k['usable'] = $key->isUsableKey($user);
 			$k['active'] = parseBool($k['active']);
 			$k['onetime'] = parseBool($k['onetime']);
 
@@ -511,6 +511,12 @@
 
 			if (isset($data['data']['onetime'])) {
 				$key->setOneTime($data['data']['onetime']);
+			}
+
+			foreach ($key->getRequiredPermissionsForType() as $perm) {
+				if (!$user->getPermission($perm)) {
+					$this->getContextKey('response')->sendError('Error creating key: Missing permission "' . $perm . '"');
+				}
 			}
 
 			try {
@@ -611,6 +617,12 @@
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data']) || !isset($data['data']['code'])) {
 				$this->getContextKey('response')->sendError('No code provided for verification.');
+			}
+
+			foreach ($key->getRequiredPermissionsForType() as $perm) {
+				if (!$user->getPermission($perm)) {
+					$this->getContextKey('response')->sendError('Error verifying key: Missing permission "' . $perm . '"');
+				}
 			}
 
 			if ($key->isPush()) {

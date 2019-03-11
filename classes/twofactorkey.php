@@ -142,6 +142,16 @@ class TwoFactorKey extends DBObject {
 		return $this->setData('active', parseBool($value) ? 'true' : 'false');
 	}
 
+	public function getRequiredPermissionsForType() {
+		switch ($this->getType()) {
+			case "authy":
+				return ['2fa_push'];
+
+			default:
+				return [];
+		}
+	}
+
 	public function setType($value) {
 		// Clear key when changing type.
 		$this->setData('key', NULL);
@@ -255,10 +265,11 @@ class TwoFactorKey extends DBObject {
 	 *   - They are not one time, or they have not been used
 	 *   - expiry date is "0" or in the future
 	 *   - We have the required ability to validate
+	 *   - If a user is passed, also check that they have the appropriate permissions.
 	 *
 	 * @return True if key is usable.
 	 */
-	public function isUsableKey() {
+	public function isUsableKey($user = FALSE) {
 		// Key is usable.
 		$usable = $this->isActive();
 
@@ -275,6 +286,17 @@ class TwoFactorKey extends DBObject {
 
 		if ($this->getType() == 'authy' && !self::canUseAuthy()) {
 			$usable = false;
+		}
+
+		if ($usable && $user !== FALSE) {
+			// Can we use this type of key.
+			$usable &= (($this->isPush() && $user->getPermission('2fa_push')) || $this->isCode());
+
+			// Check that the user still has the right permissions for this
+			// key.
+			foreach ($this->getRequiredPermissionsForType() as $perm) {
+				$usable &= $user->getPermission($perm);
+			}
 		}
 
 		return $usable;

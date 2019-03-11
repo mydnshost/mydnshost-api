@@ -27,6 +27,7 @@ class User extends DBObject {
 	                                       'impersonate_users',
 	                                       'system_service_mgmt',
 	                                       'manage_articles',
+	                                       '2fa_push',
 	                                      ];
 
 	// Permissions levels for unknown objects.
