@@ -178,7 +178,7 @@ class Domain extends DBObject {
 		$search = Domain::getSearch($this->getDB());
 
 		$search = $search->order('domain');
-		$result = $search->search($searchParams, $searchFilters);
+		$result = $search->search($searchParams);
 		return ($result) ? $result : [];
 	}
 

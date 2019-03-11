@@ -101,6 +101,21 @@
 		}
 
 		/**
+		 * Check if the given domain is an alias of another, and throw an error
+		 * if it is.
+		 *
+		 * This is used to restrict access from certain endpoints on aliases.
+		 *
+		 * @param $domain to check
+		 * @return true if we are allowed, or returns an error to the caller.
+		 */
+		protected function checkAliasOf($domain) {
+			if ($domain->getAliasOf() != null) {
+				$this->getContextKey('response')->sendError('This endpoint is unavailable for aliased domains.');
+			}
+		}
+
+		/**
 		 * Get information about a record.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
@@ -164,6 +179,15 @@
 		protected function getDomainInfo($domain) {
 			$r = $domain->toArray();
 			$r['domain'] = idn_to_utf8($r['domain']);
+			$r['aliases'] = [];
+
+			foreach ($domain->getAliases() as $alias) {
+				$r['aliases'][] = $alias->getDomain();
+			}
+
+			if ($domain->getAliasOf() != null) {
+				$r['aliasname'] = $domain->getAliasDomain()->getDomain();
+			}
 
 			$soa = $domain->getSOARecord();
 			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
@@ -1397,6 +1421,7 @@
 			$this->checkPermissions(['domains_read']);
 
 			$domain = $this->getDomainFromParam($domain);
+
 			return $this->getDomainAccess($domain);
 		}
 
@@ -1423,6 +1448,7 @@
 			$this->checkPermissions(['domains_read']);
 
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain); // TODO: Remove this when we "do the right thing"
 			return $this->getDomainExport($domain);
 		}
 	});
@@ -1431,6 +1457,7 @@
 		function run($domain) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			return $this->doDomainImport($domain);
@@ -1475,12 +1502,16 @@
 			$this->checkPermissions(['domains_read']);
 
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
+
 			return $this->getRecords($domain);
 		}
 
 		function post($domain) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			return $this->updateRecords($domain);
@@ -1490,6 +1521,8 @@
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
 
+			$this->checkAliasOf($domain);
+
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			return $this->deleteRecords($domain);
 		}
@@ -1498,8 +1531,10 @@
 	$router->addRoute('(GET|POST|DELETE)', '/domains/([^/]+)/records/([0-9]+)', new class extends Domains {
 		function get($domain, $recordid) {
 			$this->checkPermissions(['domains_read']);
-
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
+
 			$record = $this->getRecordFromParam($domain, $recordid);
 
 			return $this->getRecordID($domain, $record);
@@ -1508,6 +1543,8 @@
 		function post($domain, $recordid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$record = $this->getRecordFromParam($domain, $recordid);
@@ -1518,6 +1555,8 @@
 		function delete($domain, $recordid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$record = $domain !== FALSE ? $domain->getRecord($recordid) : FALSE;
@@ -1535,6 +1574,8 @@
 
 			$domain = $this->getDomainFromParam($domain);
 
+			$this->checkAliasOf($domain);
+
 			$filter = [];
 			$filter['name'] = $rrname;
 			return $this->getRecords($domain, $filter);
@@ -1543,6 +1584,8 @@
 		function delete($domain, $rrname) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$filter = [];
@@ -1558,6 +1601,8 @@
 
 			$domain = $this->getDomainFromParam($domain);
 
+			$this->checkAliasOf($domain);
+
 			$filter = [];
 			$filter['name'] = $rrname;
 			$filter['type'] = $rrtype;
@@ -1568,6 +1613,8 @@
 		function delete($domain, $rrname, $rrtype) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+
+			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$filter = [];
@@ -1590,6 +1637,7 @@
 		function get($domain) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			return $this->getDomainKeys($domain);
@@ -1598,6 +1646,7 @@
 		function post($domain) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			return $this->createDomainKey($domain);
@@ -1616,6 +1665,7 @@
 		function get($domain, $keyid) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getKeyFromParam($domain, $keyid);
 
@@ -1625,6 +1675,7 @@
 		function post($domain, $keyid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getKeyFromParam($domain, $keyid);
 
@@ -1634,6 +1685,7 @@
 		function delete($domain, $keyid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getKeyFromParam($domain, $keyid);
 
@@ -1645,6 +1697,7 @@
 		function get($domain) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			return $this->getDomainHooks($domain);
@@ -1653,6 +1706,7 @@
 		function post($domain) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			return $this->createDomainHook($domain);
@@ -1663,6 +1717,7 @@
 		function get($domain, $hookid) {
 			$this->checkPermissions(['domains_read']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getHookFromParam($domain, $hookid);
 
@@ -1672,6 +1727,7 @@
 		function post($domain, $hookid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getHookFromParam($domain, $hookid);
 
@@ -1681,6 +1737,7 @@
 		function delete($domain, $hookid) {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
+			$this->checkAliasOf($domain);
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 			$key = $this->getHookFromParam($domain, $hookid);
 
