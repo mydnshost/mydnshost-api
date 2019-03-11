@@ -12,6 +12,7 @@ class Domain extends DBObject {
 	                             'disabled' => false,
 	                             'defaultttl' => 86400,
 	                             'nsec3params' => NULL,
+	                             'aliasof' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'domains';
@@ -39,6 +40,10 @@ class Domain extends DBObject {
 
 	public function setNSEC3Params($value) {
 		return $this->setData('nsec3params', $value);
+	}
+
+	public function setAliasOf($value) {
+		return $this->setData('aliasof', $value);
 	}
 
 	/**
@@ -156,6 +161,38 @@ class Domain extends DBObject {
 
 	public function getNSEC3Params() {
 		return $this->getData('nsec3params');
+	}
+
+	public function getAliasOf() {
+		return $this->getData('aliasof');
+	}
+
+	/**
+	 * Get all the domains that are an alias of this one.
+	 *
+	 * @return List of record objects for this domain
+	 */
+	public function getAliases() {
+		$searchParams = ['aliasof' => $this->getID()];
+
+		$search = Domain::getSearch($this->getDB());
+
+		$search = $search->order('domain');
+		$result = $search->search($searchParams, $searchFilters);
+		return ($result) ? $result : [];
+	}
+
+	/**
+	 * Get the Domain we are an alias of.
+	 *
+	 * @return Domain we are an alias of.
+	 */
+	public function getAliasDomain() {
+		if ($this->getAliasOf() != null) {
+			return Domain::load($this->getDB(), $this->getAliasOf());
+		}
+
+		return FALSE;
 	}
 
 	/**

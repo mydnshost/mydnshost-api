@@ -441,6 +441,17 @@ ALTER TABLE `twofactorkeys` ADD COLUMN `code` ENUM('false', 'true') NOT NULL DEF
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Domain Aliases
+			// ------------------------------------------------------------------------
+			$dataChanges[28] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `domains`
+  ADD COLUMN `aliasof` int(11) DEFAULT NULL AFTER `nsec3params`,
+  ADD CONSTRAINT `domains_aliasof_domain_id` FOREIGN KEY (`aliasof`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+MYSQLQUERY
+);
+
+
 			return $dataChanges;
 		}
 	}
