@@ -185,14 +185,18 @@ class Domain extends DBObject {
 	/**
 	 * Get the Domain we are an alias of.
 	 *
+	 * @param $recursive (Default: false) Keep going until we find the ultimate parent alias.
 	 * @return Domain we are an alias of.
 	 */
-	public function getAliasDomain() {
-		if ($this->getAliasOf() != null) {
-			return Domain::load($this->getDB(), $this->getAliasOf());
-		}
+	public function getAliasDomain($recursive = false) {
+		$dom = $this;
+		if ($dom->getAliasOf() == null) { return FALSE; }
 
-		return FALSE;
+		do {
+			$dom = Domain::load($dom->getDB(), $dom->getAliasOf());
+		} while ($recursive && $dom->getAliasOf() != null);
+
+		return $dom;
 	}
 
 	/**

@@ -86,14 +86,16 @@
 		 *
 		 * @param $domain Domain object to check. (if FALSE, return true)
 		 * @param $required Array of valid access levels.
+		 * @param $silent (Default: false) If true, don't throw an error just return false.
 		 * @return True
 		 */
-		protected function checkAccess($domain, $required) {
+		protected function checkAccess($domain, $required, $silent = false) {
 			if ($this->isAdminMethod()) {
 				return true;
 			}
 
 			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')), $required)) {
+				if ($silent) { return false; }
 				$this->getContextKey('response')->sendError('You do not have the required access to the domain: ' . $domain->getDomain());
 			}
 
@@ -179,14 +181,30 @@
 		protected function getDomainInfo($domain) {
 			$r = $domain->toArray();
 			$r['domain'] = idn_to_utf8($r['domain']);
-			$r['aliases'] = [];
 
+			$r['aliases'] = [];
+			$r['aliases']['direct'] = [];
+			$r['aliases']['indirect'] = [];
+
+			$checkDomains = [];
 			foreach ($domain->getAliases() as $alias) {
-				$r['aliases'][] = $alias->getDomain();
+				$r['aliases']['direct'][] = $alias->getDomain();
+				$checkDomains = array_merge($checkDomains, $alias->getAliases());
 			}
+			if (empty($r['aliases']['direct'])) { unset($r['aliases']['direct']); } else { sort($r['aliases']['direct']); }
+
+			while ($alias = array_shift($checkDomains)) {
+				$r['aliases']['indirect'][] = $alias->getDomain();
+				$checkDomains = array_merge($checkDomains, $alias->getAliases());
+			}
+			if (empty($r['aliases']['indirect'])) { unset($r['aliases']['indirect']); } else { sort($r['aliases']['indirect']); }
 
 			if ($domain->getAliasOf() != null) {
-				$r['aliasname'] = $domain->getAliasDomain()->getDomain();
+				$ad = $domain->getAliasDomain();
+				$r['aliasof'] = $ad->getDomain();
+				if ($ad->getAliasOf() != null) {
+					$r['superalias'] = $ad->getAliasDomain(true)->getDomain();
+				}
 			}
 
 			$soa = $domain->getSOARecord();
@@ -898,6 +916,40 @@
 					$domain->$f($data[$k]);
 				}
 			}
+
+			$currentAlias = ($domain->getAliasOf() != null) ? strtolower($domain->getAliasDomain()->getDomainRaw()) : '';
+			$wantedAlias = array_key_exists('aliasof', $data) ? strtolower(idn_to_ascii($data['aliasof'])) : '';
+
+			// Handle AliasOf specially.
+			if (array_key_exists('aliasof', $data) && $this->checkAccess($domain, ['owner'], true) && $wantedAlias != $currentAlias) {
+				// Trying to change aliasof.
+
+				if (empty($data['aliasof'])) {
+					// Unalias Domain.
+					$domain->setAliasOf(null);
+				} else {
+					// Find target domain.
+					$target = Domain::loadFromDomain($this->getContextKey('db'), $data['aliasof']);
+					if ($target != FALSE) {
+						if ($target->getID() == $domain->getID()) {
+							$this->getContextKey('response')->sendError('Domain can\'t be alias of self.');
+						}
+
+						$testTarget = $target;
+						while ($testTarget->getAliasOf() != null) {
+							$testTarget = Domain::load($testTarget->getDB(), $testTarget->getAliasOf());
+							if ($testTarget != FALSE && $testTarget->getID() == $domain->getID()) {
+								$this->getContextKey('response')->sendError('Domain can\'t have an alias chain back to self.');
+							}
+						}
+
+						if ($this->checkAccess($target, ['owner'], true)) {
+							$domain->setAliasOf($target->getID());
+						}
+					}
+				}
+			}
+
 
 			if (isset($data['SOA'])) {
 				$soa = $domain->getSOARecord();
