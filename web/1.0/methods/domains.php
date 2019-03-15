@@ -205,10 +205,10 @@
 				if ($ad->getAliasOf() != null) {
 					$r['superalias'] = $ad->getAliasDomain(true)->getDomain();
 				}
+			} else {
+				$soa = $domain->getSOARecord();
+				$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 			}
-
-			$soa = $domain->getSOARecord();
-			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
 
 			$keys = $domain->getDSKeys();
 			if (!empty($keys)) {
@@ -965,7 +965,7 @@
 			}
 
 
-			if (isset($data['SOA'])) {
+			if ($domain->getAliasOf() == null && isset($data['SOA'])) {
 				$soa = $domain->getSOARecord();
 				$soa->updateSOAContent(array_merge($soa->parseSOA(), $data['SOA']));
 			}
