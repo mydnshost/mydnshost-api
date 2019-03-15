@@ -326,7 +326,9 @@
 			$bind = new Bind($domain->getDomain(), '');
 			$bind->clearRecords();
 
-			$soa = $domain->getSOARecord()->parseSOA();
+			$recordDomain = ($domain->getAliasOf() != null) ? $domain->getAliasDomain(true) : $domain;
+
+			$soa = $recordDomain->getSOARecord()->parseSOA();
 			$bindSOA = array('Nameserver' => $soa['primaryNS'],
 			                 'Email' => $soa['adminAddress'],
 			                 'Serial' => $soa['serial'],
@@ -337,22 +339,30 @@
 
 			$bind->setSOA($bindSOA);
 
-			foreach ($domain->getRecords() as $record) {
+			foreach ($recordDomain->getRecords() as $record) {
+				if ($record->isDisabled()) { continue; }
+
 				$name = $record->getName() . '.';
+				if ($recordDomain != $domain) { $name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $name); }
+
 				$content = $record->getContent();
 				if ($record->getType() == "TXT") {
 					$content = '"' . $record->getContent() . '"';
 				} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
 					$content = $record->getContent() . '.';
+					if ($recordDomain != $domain) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $content); }
+
 				} else if ($record->getType() == 'SRV') {
 					if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
 						if ($m[1] != ".") {
 							$content = $record->getContent() . '.';
+							if ($recordDomain != $domain) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $content); }
+
 						}
 					}
 				}
 
-				if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+				if ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain()) {
 					$hasNS = true;
 				}
 
@@ -1500,7 +1510,7 @@
 			$this->checkPermissions(['domains_read']);
 
 			$domain = $this->getDomainFromParam($domain);
-			$this->checkAliasOf($domain); // TODO: Remove this when we "do the right thing"
+			// $this->checkAliasOf($domain);
 			return $this->getDomainExport($domain);
 		}
 	});

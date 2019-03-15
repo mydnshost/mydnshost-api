@@ -26,19 +26,32 @@
 		$updateMasterServer = function($domain) use ($pdnsConfig) {
 			if (count($pdnsConfig['masters']) < 1) { return; }
 
+			$recordDomain = ($domain->getAliasOf() != null) ? $domain->getAliasDomain(true) : $domain;
+
 			$records = array();
-			$records[] = $domain->getSOARecord()->toArray();
+			$soa = $recordDomain->getSOARecord()->toArray();
+			if ($recordDomain != $domain) { $soa['name'] = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $soa['name']); }
+
+			$records[] = $soa;
 
 			$hasNS = false;
 
 			if (!$domain->isDisabled()) {
-				foreach ($domain->getRecords() as $record) {
+				foreach ($recordDomain->getRecords() as $record) {
 					if ($record->isDisabled()) { continue; }
-					if ($record->getType() == "NS" && $record->getName() == $domain->getDomain()) {
+					if ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain()) {
 						$hasNS = true;
 					}
 
-					$records[] = $record->toArray();
+					$r = $record->toArray();
+					if ($recordDomain != $domain) {
+						$r['name'] = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $r['name']);
+
+						if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR', 'SRV'])) {
+							$r['content'] = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $r['name']);
+						}
+					}
+					$records[] = $r;
 				}
 			}
 
