@@ -945,11 +945,15 @@
 							$this->getContextKey('response')->sendError('Domain can\'t be alias of self.');
 						}
 
+						$chainLength = 0;
 						$testTarget = $target;
 						while ($testTarget->getAliasOf() != null) {
 							$testTarget = Domain::load($testTarget->getDB(), $testTarget->getAliasOf());
 							if ($testTarget != FALSE && $testTarget->getID() == $domain->getID()) {
 								$this->getContextKey('response')->sendError('Domain can\'t have an alias chain back to self.');
+							}
+							if ($chainLength++ > 5) {
+								$this->getContextKey('response')->sendError('Alias chain too long.');
 							}
 						}
 
