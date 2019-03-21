@@ -71,7 +71,21 @@
 		};
 
 		HookManager::get()->addHook('add_domain', $updateMasterServer);
-		HookManager::get()->addHook('records_changed', $updateMasterServer);
+		HookManager::get()->addHook('records_changed', function($domain) {
+			$domains = [];
+			$domains[] = $domain;
+
+			$checkDomains = $domain->getAliases();
+
+			while ($alias = array_shift($checkDomains)) {
+				$domains[] = $alias;
+				$checkDomains = array_merge($checkDomains, $alias->getAliases());
+			}
+
+			foreach ($domains as $d) {
+				call_user_func_array($updateMasterServer, [$d]);
+			}
+		);
 
 		HookManager::get()->addHook('rename_domain', function($oldName, $domain) {
 			foreach (array_merge($pdnsConfig['masters'], $pdnsConfig['slaves']) as $server) {

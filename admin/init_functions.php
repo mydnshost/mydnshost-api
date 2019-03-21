@@ -451,6 +451,16 @@ ALTER TABLE `domains`
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Domain Aliases - Fix Constraint.
+			// ------------------------------------------------------------------------
+			$dataChanges[29] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `domains` DROP FOREIGN KEY `domains_aliasof_domain_id`;
+ALTER TABLE `domains` DROP INDEX `domains_aliasof_domain_id`;
+ALTER TABLE `domains` ADD CONSTRAINT `domains_aliasof_domain_id` FOREIGN KEY (`aliasof`) REFERENCES `domains` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+MYSQLQUERY
+);
+
 
 			return $dataChanges;
 		}

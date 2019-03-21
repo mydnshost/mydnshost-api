@@ -33,7 +33,19 @@
 			});
 
 			HookManager::get()->addHook('records_changed', function($domain) use ($gmc) {
-				@$gmc->doBackground('bind_records_changed', json_encode(['domain' => $domain->getDomainRaw()]));
+				$domains = [];
+				$domains[] = $domain;
+
+				$checkDomains = $domain->getAliases();
+
+				while ($alias = array_shift($checkDomains)) {
+					$domains[] = $alias;
+					$checkDomains = array_merge($checkDomains, $alias->getAliases());
+				}
+
+				foreach ($domains as $d) {
+					@$gmc->doBackground('bind_records_changed', json_encode(['domain' => $d->getDomainRaw()]));
+				}
 			});
 
 			HookManager::get()->addHook('sync_domain', function($domain) use ($gmc) {
