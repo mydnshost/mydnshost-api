@@ -361,14 +361,16 @@ class Domain extends DBObject {
 	/**
 	 * Update the domain serial.
 	 *
-	 * @param $serial Serial to set. Use null to auto-generate.
+	 * @param $serial Minimum serial to set. Use null to auto-generate, otherwise
+	 *                we will set a serial at least 1 larger than this.
 	 * @return Record object if found else FALSE.
 	 */
 	public function updateSerial($serial = null) {
 		$soa = $this->getSOARecord();
 		$parsed = $soa->parseSOA();
+		if ($serial == null) { $serial = 0; }
 
-		$serial = $this->getNextSerial($parsed['serial']);
+		$serial = $this->getNextSerial(max($serial, $parsed['serial']));
 
 		$parsed['serial'] = $serial;
 		$soa->updateSOAContent($parsed);

@@ -172,13 +172,7 @@
 			return true;
 		}
 
-		/**
-		 * Get information about this domain.
-		 *
-		 * @param $domain Domain object based on the 'domain' parameter.
-		 * @return TRUE if we handled this method.
-		 */
-		protected function getDomainInfo($domain) {
+		protected function getDomainInfoArray($domain) {
 			$r = $domain->toArray();
 			$r['domain'] = idn_to_utf8($r['domain']);
 
@@ -281,7 +275,17 @@
 				if (empty($r['DNSSEC']['parsed'])) { unset($r['DNSSEC']['parsed']); }
 			}
 
-			$this->getContextKey('response')->data($r);
+			return $r;
+		}
+
+		/**
+		 * Get information about this domain.
+		 *
+		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @return TRUE if we handled this method.
+		 */
+		protected function getDomainInfo($domain) {
+			$this->getContextKey('response')->data($this->getDomainInfoArray($domain));
 
 			return true;
 		}
@@ -795,9 +799,12 @@
 			}
 
 			$oldName = $domain->getDomain();
+			$oldSuperAlias = $domain->getAliasDomain(true);
 			$this->doUpdateDomain($domain, $data['data'], $this->checkPermissions(['rename_domains'], true));
 			$newName = $domain->getDomain();
+			$newSuperAlias = $domain->getAliasDomain(true);
 			$isRename = ($oldName != $newName);
+			$aliasChanged = ($oldSuperAlias != $newSuperAlias);
 
 			$this->getContextKey('db')->beginTransaction();
 
@@ -832,6 +839,40 @@
 				$this->getContextKey('response')->sendError('Error updating domain.', $ex->getMessage());
 			}
 
+			$triggerSuperAlias = false;
+
+			if ($aliasChanged && $newSuperAlias !== FALSE) {
+				// We have been aliased against a domain.
+				// We need to find out which SOA is larger and bump up.
+
+				// Get SOAs
+				$mySOA = $domain->getSOARecord()->parseSOA();
+				$parentSOA = $newSuperAlias->getSOARecord()->parseSOA();
+
+				// If our serial is higher, we need to bump the superalias one
+				// above us to ensure that when we write out a zone file based
+				// on it, our SOA is higher so that we get updated by slave servers
+				//
+				// If it's already above us then we don't need to worry as
+				// things will behave anyway.
+				if ($mySOA['serial'] >= $parentSOA['serial']) {
+					$newSerial = $newSuperAlias->updateSerial($mySOA['serial']);
+					$mySOA['serial'] = $newSerial;
+
+					$triggerSuperAlias = true;
+				}
+			} else if ($aliasChanged && $newSuperAlias === FALSE) {
+				// If we are removing an alias, we need to bump our SOA above
+				// our old parent to force an update of slaves.
+				$mySOA = $domain->getSOARecord()->parseSOA();
+				$parentSOA = $oldSuperAlias->getSOARecord()->parseSOA();
+
+				$mySOA['serial'] = $domain->getNextSerial($parentSOA['serial']);
+
+				$domain->getSOARecord()->updateSOAContent($mySOA);
+				$domain->getSOARecord()->save();
+			}
+
 			// Add default records.
 			if ($isCreate) {
 				$this->addDefaultRecords($domain);
@@ -852,16 +893,23 @@
 				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
 			}
 
-			HookManager::get()->handle('records_changed', [$domain]);
+			// If we are triggering the superalias, no need to trigger us, we will
+			// get indirectly triggered.
+			if (!$triggerSuperAlias) {
+				HookManager::get()->handle('records_changed', [$domain]);
+			}
 
-			$r = $domain->toArray();
-			$r['domain'] = idn_to_utf8($r['domain']);
+			$r = $this->getDomainInfoArray($domain);
 
-			$soa = $domain->getSOARecord();
-			$r['SOA'] = ($soa === FALSE) ? FALSE : $soa->parseSOA();
+			$serial = isset($r['SOA']) ? $r['SOA']['serial'] : $newSuperAlias->getSOARecord()->parseSOA()['serial'];
 
-			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $r['SOA']['serial'], 'time' => time()]]);
+			HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
 
+			if ($triggerSuperAlias) {
+				// If we are here, $serial will be the serial of the super alias which is what we want...
+				HookManager::get()->handle('records_changed', [$newSuperAlias]);
+				HookManager::get()->handle('call_domain_hooks', [$newSuperAlias, ['domain' => $newSuperAlias->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
+			}
 
 			$this->getContextKey('response')->data($r);
 			return true;
