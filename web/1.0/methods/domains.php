@@ -1298,11 +1298,23 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function deleteDomain($domain) {
+			$aliases = $domain->getAliases();
+			$oldSOA = $domain->getSOARecord()->parseSOA();
+
 			$deleted = $domain->delete();
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
 				HookManager::get()->handle('delete_domain', [$domain]);
 				// HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
+
+				// We need to serial bump and rebuild all the direct children...
+				foreach ($aliases as $alias) {
+					$serial = $alias->updateSerial($oldSOA['serial']);
+
+					HookManager::get()->handle('records_changed', [$alias]);
+					HookManager::get()->handle('call_domain_hooks', [$alias, ['domain' => $alias->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'parent_deleted', 'serial' => $serial, 'time' => time()]]);
+				}
+
 			}
 			return true;
 		}
