@@ -144,8 +144,8 @@ class TwoFactorKey extends DBObject {
 
 	public function getRequiredPermissionsForType() {
 		$keyTypes = TwoFactorKey::getKeyTypes();
-		if (isset($keyTypes[$this->getType])) {
-			return $keyTypes[$this->getType];
+		if (isset($keyTypes[$this->getType()])) {
+			return $keyTypes[$this->getType()];
 		}
 	}
 
@@ -324,7 +324,7 @@ class TwoFactorKey extends DBObject {
 			}
 		}
 
-		if (!in_array($this->getType(), self::getKeyTypes())) {
+		if (!in_array($this->getType(), array_keys(self::getKeyTypes()))) {
 			throw new ValidationFailed('Unknown key type: ' . $this->getType());
 		}
 
