@@ -14,6 +14,7 @@
 
 			if (isset($payload['jobs'])) {
 				foreach ($payload['jobs'] as $newJob) {
+					if (isset($newJob['wait'])) { @time_sleep_until(time() + $newJob['wait']); }
 					if (!isset($newJob['job']) || !isset($newJob['args'])) { continue; }
 
 					$newjob = new JobInfo('', $newJob['job'], $newJob['args']);

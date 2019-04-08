@@ -49,8 +49,9 @@
 			});
 
 			HookManager::get()->addHook('sync_domain', function($domain) use ($gmc) {
-				@$gmc->doBackground('job_sequence', json_encode(['jobs' => [['job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
-				                                                            ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'readd']],
+				@$gmc->doBackground('job_sequence', json_encode(['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']
+				                                                            ['wait' => '1', 'job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
+				                                                            ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'add']],
 				                                                           ]
 				                                                 ]));
 			});
