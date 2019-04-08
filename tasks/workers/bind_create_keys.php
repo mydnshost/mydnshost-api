@@ -14,13 +14,17 @@
 				$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
 
 				if ($domain !== FALSE) {
+					echo 'Generating KSK.', "\n";
 					$ksk = ZoneKey::generateKey(DB::get(), $domain, 257, 'RSASHA256', 2048);
 					$ksk->validate();
 					$ksk->save();
+					echo 'Generated KSK: ', $ksk->getKeyID(), ' (', $ksk->getID(), ')', "\n";
 
+					echo 'Generating ZSK.', "\n";
 					$zsk = ZoneKey::generateKey(DB::get(), $domain, 256, 'RSASHA256', 1024);
 					$zsk->validate();
 					$zsk->save();
+					echo 'Generated ZSK: ', $zsk->getKeyID(), ' (', $zsk->getID(), ')', "\n";
 
 					$this->writeZoneKeys($domain);
 

@@ -28,6 +28,7 @@
 		}
 
 		public function writeZoneFile($domain) {
+			echo 'Writing zone file for: ', $domain->getDomainRaw(), "\n";
 			$bind = new Bind($domain->getDomainRaw(), $this->bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
 			$new = !file_exists($filename);
@@ -129,6 +130,7 @@
 
 		public function writeZoneKeys($domain) {
 			// Lock the zone file while we are making changes.
+			echo 'Writing zone keys for: ', $domain->getDomainRaw(), "\n";
 			$bind = new Bind($domain->getDomainRaw(), $this->bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
 
@@ -138,6 +140,7 @@
 				$keys = $domain->getZoneKeys();
 
 				if (empty($keys)) {
+					echo 'No keys found, generating new keys.', "\n";
 					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_create_keys', ['domain' => $domain->getDomainRaw()]));
 				} else {
 					$validFiles = [];

@@ -17,6 +17,7 @@
 					$hooks = DomainHook::loadFromDomainID(DB::get(), $domain->getID());
 
 					foreach ($hooks as $hook) {
+						echo 'Calling Hook: ', $hook->getID(), ' => ', $hook->getUrl(), "\n";
 						$hook->call($payload['data']);
 					}
 				} else {

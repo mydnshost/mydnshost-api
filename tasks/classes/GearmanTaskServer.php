@@ -18,10 +18,12 @@
 		}
 
 		public function runBackgroundJob($jobinfo) {
+			echo 'Scheduling background job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
 			return $this->server->doBackground($jobinfo->getFunction(), json_encode($jobinfo->getPayload()));
 		}
 
 		public function runJob($jobinfo) {
+			echo 'Running foreground job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
 			return $this->server->doNormal($jobinfo->getFunction(), json_encode($jobinfo->getPayload()));
 		}
 
