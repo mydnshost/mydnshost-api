@@ -14,6 +14,16 @@
 				$domain = Domain::loadFromDomain(DB::get(), $payload['domain']);
 
 				if ($domain !== FALSE) {
+					if (isset($payload['ifmissing']) && parseBool($payload['ifmissing'])) {
+						// Check if we already have keys, and abort if we do.
+						$keys = $domain->getZoneKeys();
+						if (!empty($keys)) {
+							echo 'Existing keys found, not generating new keys.', "\n";
+							$job->setResult('OK');
+							return;
+						}
+					}
+
 					echo 'Generating KSK.', "\n";
 					$ksk = ZoneKey::generateKey(DB::get(), $domain, 257, 'RSASHA256', 2048);
 					$ksk->validate();

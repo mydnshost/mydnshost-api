@@ -141,7 +141,7 @@
 
 				if (empty($keys)) {
 					echo 'No keys found, generating new keys.', "\n";
-					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_create_keys', ['domain' => $domain->getDomainRaw()]));
+					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_create_keys', ['domain' => $domain->getDomainRaw(), 'ifmissing' => true]));
 				} else {
 					$validFiles = [];
 					foreach ($keys as $key) {
