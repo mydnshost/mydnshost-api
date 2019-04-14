@@ -14,7 +14,10 @@
 				$bind = new Bind($payload['domain'], $this->bindConfig['zonedir']);
 				list($filename, $filename2) = $bind->getFileNames();
 				foreach ([$filename, $filename . '.jbk', $filename . '.signed', $filename . '.signed.jnl'] as $f) {
-					if (file_exists($f)) { @unlink($f); }
+					if (file_exists($f)) {
+						echo 'Unlinking: ', $f, "\n";
+						unlink($f);
+					}
 				}
 
 				// Remove DNSSEC Keys
@@ -22,7 +25,7 @@
 				foreach ($keys as $key) {
 					if (!in_array($key, $validFiles)) {
 						echo 'Removing keyfile: ', $key, "\n";
-						@unlink($key);
+						unlink($key);
 					}
 				}
 
