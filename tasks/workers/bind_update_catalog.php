@@ -44,7 +44,7 @@
 			}
 		}
 
-		protected function updateCatalogZone($domainraw, $mode = 'remove') {
+		protected function updateCatalogZone($domainraw, $mode = 'remove', $refresh = true) {
 			if (empty($this->bindConfig['catalogZoneName']) || empty($this->bindConfig['catalogZoneFile'])) {
 				return;
 			}
@@ -88,17 +88,19 @@
 					}
 				}
 
-				// If the zone changed, schedule a refresh.
+				// If the zone changed, save it and schedule a refresh.
 				if ($zoneHash != $bind->getZoneHash()) {
 					$bindSOA = $bind->getSOA();
 					$bindSOA['Serial']++;
 					$bind->setSOA($bindSOA);
 
-					$this->bind_sleepForCatalog();
+					if ($refresh) { $this->bind_sleepForCatalog(); }
 					$bind->saveZoneFile($this->bindConfig['catalogZoneFile']);
 
-					$jobArgs = ['domain' => $this->bindConfig['catalogZoneName'], 'change' => 'change', 'noCatalog' => true, 'filename' => $this->bindConfig['catalogZoneFile']];
-					$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
+					if ($refresh) {
+						$jobArgs = ['domain' => $this->bindConfig['catalogZoneName'], 'change' => 'change', 'noCatalog' => true, 'filename' => $this->bindConfig['catalogZoneFile']];
+						$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
+					}
 				}
 
 				flock($fp, LOCK_UN);
