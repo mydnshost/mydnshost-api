@@ -461,6 +461,23 @@ ALTER TABLE `domains` ADD CONSTRAINT `domains_aliasof_domain_id` FOREIGN KEY (`a
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// User Domain Custom Data
+			// ------------------------------------------------------------------------
+			$dataChanges[30] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `userdomaincustomdata` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `domain_id` int(11) NOT NULL,
+  `key` VARCHAR(250) NOT NULL,
+  `value` TEXT,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `userdomaincustomdata_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `userdomaincustomdata_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE INDEX `userdomaincustomdata_key_user_domain` (`key` ASC, `user_id` ASC, `domain_id` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
 
 			return $dataChanges;
 		}

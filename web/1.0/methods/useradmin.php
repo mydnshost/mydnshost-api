@@ -79,7 +79,17 @@
 					unset($u['acceptterms']);
 				}
 
-				$list[] = $u;
+				if (!($user instanceof DomainKeyUser)) {
+					$u['customdata'] = [];
+
+					$ui = UserCustomData::loadFromUserKey($this->getContextKey('db'), $user->getID());
+					if ($ui !== false) {
+						foreach ($ui as $d) {
+							$u['customdata'][$d->getKey()] = $d->getValue();
+						}
+					}
+				}
+
 				$this->getContextKey('response')->data($u);
 				return true;
 			}
@@ -185,6 +195,18 @@
 				}
 
 				$u = $user->toArray();
+
+				if (!($user instanceof DomainKeyUser)) {
+					$u['customdata'] = [];
+
+					$ui = UserCustomData::loadFromUserKey($this->getContextKey('db'), $user->getID());
+					if ($ui !== false) {
+						foreach ($ui as $d) {
+							$u['customdata'][$d->getKey()] = $d->getValue();
+						}
+					}
+				}
+
 				unset($u['password']);
 				unset($u['verifycode']);
 				if (!$user->isDisabled()) { unset($u['disabledreason']); }
@@ -273,6 +295,24 @@
 						if ($oldPermissions[$p] === true) {
 							$user->setPermission($p, true);
 						}
+					}
+				}
+			}
+
+			// Handle userdata if appropriate.
+			if (array_key_exists('userdata', $data) && !($user instanceof DomainKeyUser)) {
+				$uid = $user->getID();
+				foreach ($data['userdata'] as $key => $value) {
+					$ucd = UserCustomData::loadFromUserKey($this->getContextKey('db'), $uid, $key);
+					if ($ucd == false) {
+						if (empty($value)) { continue; } // No point continuing
+
+						$ucd = (new UserCustomData($this->getContextKey('db')))->setUserID($uid)->setKey($key);
+					}
+					if (empty($value)) {
+						$ucd->delete();
+					} else {
+						$ucd->setValue($value)->save();
 					}
 				}
 			}

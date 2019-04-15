@@ -275,6 +275,17 @@
 				if (empty($r['DNSSEC']['parsed'])) { unset($r['DNSSEC']['parsed']); }
 			}
 
+			if (!$this->isAdminMethod() && !($this->getContextKey('user') instanceof DomainKeyUser)) {
+				$r['userdata'] = [];
+
+				$ui = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), $domain->getID());
+				if ($ui !== false) {
+					foreach ($ui as $d) {
+						$r['userdata'][$d->getKey()] = $d->getValue();
+					}
+				}
+			}
+
 			return $r;
 		}
 
@@ -974,6 +985,26 @@
 					$domain->$f($data[$k]);
 				}
 			}
+
+			// Handle userdata if appropriate.
+			if (array_key_exists('userdata', $data) && !$this->isAdminMethod() && !($this->getContextKey('user') instanceof DomainKeyUser)) {
+				$uid = $this->getContextKey('user')->getID();
+				$did = $domain->getID();
+				foreach ($data['userdata'] as $key => $value) {
+					$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $uid, $did, $key);
+					if ($udcd == false) {
+						if (empty($value)) { continue; } // No point continuing
+
+						$udcd = (new UserDomainCustomData($this->getContextKey('db')))->setUserID($uid)->setDomainID($did)->setKey($key);
+					}
+					if (empty($value)) {
+						$udcd->delete();
+					} else {
+						$udcd->setValue($value)->save();
+					}
+				}
+			}
+
 
 			$currentAlias = ($domain->getAliasOf() != null) ? strtolower($domain->getAliasDomain()->getDomainRaw()) : '';
 			$wantedAlias = array_key_exists('aliasof', $data) ? strtolower(idn_to_ascii($data['aliasof'])) : '';
