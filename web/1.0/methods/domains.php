@@ -1580,7 +1580,23 @@
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
 
-			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			$hasWriteAccess = $this->checkAccess($domain, ['write', 'admin', 'owner'], true);
+
+			$context = $this->getContext();
+
+			if (!$hasWriteAccess) {
+				// Check for read access if we don't have write access.
+				$this->checkAccess($domain, ['read']);
+
+				// Allow the user to change only their own user data.
+				if (isset($context['data']['data']['userdata'])) {
+					$context['data'] = ['data' => ['userdata' => $context['data']['data']['userdata']]];
+					$this->setContext($context);
+				} else {
+					// Otherwise error out.
+					$this->checkAccess($domain, ['write', 'admin', 'owner']);
+				}
+			}
 			return $this->updateDomain($domain);
 		}
 
