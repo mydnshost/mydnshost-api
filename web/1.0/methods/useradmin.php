@@ -300,9 +300,9 @@
 			}
 
 			// Handle userdata if appropriate.
-			if (array_key_exists('userdata', $data) && !($user instanceof DomainKeyUser)) {
+			if (array_key_exists('customdata', $data) && !($user instanceof DomainKeyUser)) {
 				$uid = $user->getID();
-				foreach ($data['userdata'] as $key => $value) {
+				foreach ($data['customdata'] as $key => $value) {
 					$ucd = UserCustomData::loadFromUserKey($this->getContextKey('db'), $uid, $key);
 					if ($ucd == false) {
 						if (empty($value)) { continue; } // No point continuing
@@ -997,6 +997,7 @@
 			$this->checkPermissions(['user_read']);
 			$user = $this->getUserFromParam($userid);
 
+			$this->getContextKey('response')->setHeader('deprecated', true);
 			return $this->getCustomDataList($user);
 		}
 	});
@@ -1007,6 +1008,7 @@
 			$user = $this->getUserFromParam($userid);
 			$customdata = $this->getCustomDataFromParam($userid, $key);
 
+			$this->getContextKey('response')->setHeader('deprecated', true);
 			return $this->getCustomData($user, $customdata);
 		}
 
@@ -1015,6 +1017,7 @@
 			$user = $this->getUserFromParam($userid);
 			$customdata = $this->getCustomDataFromParam($userid, $key, true);
 
+			$this->getContextKey('response')->setHeader('deprecated', true);
 			return ($customdata === FALSE) ? $this->createCustomData($user, $key) : $this->updateCustomData($user, $customdata);
 		}
 
@@ -1023,6 +1026,7 @@
 			$user = $this->getUserFromParam($userid);
 			$customdata = $this->getCustomDataFromParam($userid, $key);
 
+			$this->getContextKey('response')->setHeader('deprecated', true);
 			return $this->deleteCustomData($user, $customdata);
 		}
 	});

@@ -949,14 +949,15 @@ Returns the list of known 2FA Devices and information about them.
                 ]
             }
 
-## User custom data [/users/{userid}/customdata]
+## User custom data {DEPRECATED} [/users/{userid}/customdata]
 This allows applications to store user-specific data within the api.
+**This is deprecated in favour of userdata within the user information endpoints**
 
 + Parameters
 
     + userid: `2` (required) - The user ID. This can also be "self" for the current user.
 
-### Get known custom data [GET]
+### Get known custom data {DEPRECATED} [GET]
 Returns the list of known Custom-Data Key/Value pairs.
 
 + Response 200 (application/json)
@@ -972,13 +973,13 @@ Returns the list of known Custom-Data Key/Value pairs.
                 }
             }
 
-## Manipulate specific custom data key/value [/users/{userid}/customdata/{key}]
+## Manipulate specific custom data key/value {DEPRECATED} [/users/{userid}/customdata/{key}]
 + Parameters
 
     + userid: `self` (required) - The user ID. This can also be "self" for the current user.
     + key: `test.ing` (required) - The custom data key.
 
-### Get key valie [GET]
+### Get key value {DEPRECATED} [GET]
 + Response 200 (application/json)
     + Body
 
@@ -991,7 +992,7 @@ Returns the list of known Custom-Data Key/Value pairs.
                 }
             }
 
-### Create/Update custom data for key [POST]
+### Create/Update custom data for key {DEPRECATED} [POST]
 
 + Request (application/json)
     + Body
@@ -1016,7 +1017,7 @@ Returns the list of known Custom-Data Key/Value pairs.
                 }
             }
 
-### Delete key [DELETE]
+### Delete key {DEPRECATED} [DELETE]
 
 + Response 200 (application/json)
     + Body
