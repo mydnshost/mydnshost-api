@@ -630,7 +630,7 @@
 
 		/**
 		 * Check if this is a valid access-change.
-		 *  - Don't allow changing own access
+		 *  - Don't allow changing own access except to none.
 		 *  - Don't allow setting access higher or equal than own access level.
 		 *  - Don't allow changing the access of someone higher or equal than self
 		 *
@@ -649,7 +649,7 @@
 			$targetAccess = $domain->getAccess($targetUser);
 			$levels = ['none', 'read', 'write', 'admin', 'owner'];
 
-			if ($targetUser->getID() == $self->getID()) {
+			if ($targetUser->getID() == $self->getID() && $access != 'none') {
 				$this->getContextKey('response')->sendError('You can\'t change your own access level');
 			}
 			if (array_search($access, $levels) >= array_search($selfAccess, $levels)) {
