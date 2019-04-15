@@ -286,6 +286,8 @@
 				}
 			}
 
+			$r['access'] = $domain->getAccess($this->getContextKey('user'));
+
 			return $r;
 		}
 
