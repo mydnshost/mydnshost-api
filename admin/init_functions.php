@@ -479,6 +479,15 @@ CREATE TABLE `userdomaincustomdata` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// User Domain Custom Data Indexes
+			// ------------------------------------------------------------------------
+			$dataChanges[31] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `userdomaincustomdata` ADD INDEX `userdomaincustomdata_key_user` (`key` ASC, `user_id` ASC);
+ALTER TABLE `userdomaincustomdata` ADD INDEX `userdomaincustomdata_user` (`user_id` ASC);
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

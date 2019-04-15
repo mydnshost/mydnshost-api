@@ -668,9 +668,9 @@
 				return $this->getDomainListAdmin();
 			}
 
-			if (isset($_REQUEST['contains'])) {
-				$domains = [];
+			$domains = [];
 
+			if (isset($_REQUEST['contains'])) {
 				// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
 				$bits = explode('.', $_REQUEST['contains']);
 
@@ -701,9 +701,27 @@
 				$domains = $this->getContextKey('user')->getDomains();
 			}
 
+			$wantedType = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
+
+			$valData = [];
+			$useValData = false;
+			if ($wantedType == 'userdata' && isset($_REQUEST['key'])) {
+				$useValData = true;
+				$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), null, $_REQUEST['key']);
+				foreach ($udcd as $d) {
+					$valData[$d->getDomainID()] = $d->getValue();
+				}
+			}
+
 			$list = [];
 			foreach ($domains as $domain) {
-				$list[$domain->getDomain()] = $domain->getAccess($this->getContextKey('user'));
+				if ($useValData) {
+					$value = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
+				} else {
+					$value = $domain->getAccess($this->getContextKey('user'));
+				}
+
+				$list[$domain->getDomain()] = $value;
 			}
 
 			$this->getContextKey('response')->data($list);

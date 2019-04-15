@@ -63,12 +63,13 @@ class UserDomainCustomData extends DBObject {
 	 * @param $key key name to look for
 	 * @return FALSE if no object exists, else the object.
 	 */
-	public static function loadFromUserDomainKey($db, $user, $domain, $key = null) {
-		$find = ['user_id' => $user, 'domain_id' => $domain];
+	public static function loadFromUserDomainKey($db, $user, $domain = null, $key = null) {
+		$find = ['user_id' => $user];
+		if ($domain !== null) { $find['domain_id'] = $domain; }
 		if ($key !== null) { $find['key'] = strtolower($key); }
 		$result = static::find($db, $find);
 		if ($result) {
-			return ($key === null) ? $result : $result[0];
+			return ($key === null || $domain == null) ? $result : $result[0];
 		} else {
 			return FALSE;
 		}
