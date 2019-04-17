@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "authy/php",
-            "version": "3.0.4",
+            "version": "3.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twilio/authy-php.git",
-                "reference": "3fa3b3664f838f94331be5749a4d198b2053cc94"
+                "reference": "7bb63790e2cc32a9113bdef236017f8284e0381e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/twilio/authy-php/zipball/3fa3b3664f838f94331be5749a4d198b2053cc94",
-                "reference": "3fa3b3664f838f94331be5749a4d198b2053cc94",
+                "url": "https://api.github.com/repos/twilio/authy-php/zipball/7bb63790e2cc32a9113bdef236017f8284e0381e",
+                "reference": "7bb63790e2cc32a9113bdef236017f8284e0381e",
                 "shasum": ""
             },
             "require": {
@@ -50,7 +50,7 @@
                 "api",
                 "two-factor"
             ],
-            "time": "2018-09-06T20:10:54+00:00"
+            "time": "2019-04-09T01:57:04+00:00"
         },
         {
             "name": "cocur/background-process",
@@ -509,12 +509,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPGangsta/GoogleAuthenticator.git",
-                "reference": "3baa997f399d4afd5d6a81d42244ec9cc3eeb080"
+                "reference": "505c2af8337b559b33557f37cda38e5f843f3768"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPGangsta/GoogleAuthenticator/zipball/3baa997f399d4afd5d6a81d42244ec9cc3eeb080",
-                "reference": "3baa997f399d4afd5d6a81d42244ec9cc3eeb080",
+                "url": "https://api.github.com/repos/PHPGangsta/GoogleAuthenticator/zipball/505c2af8337b559b33557f37cda38e5f843f3768",
+                "reference": "505c2af8337b559b33557f37cda38e5f843f3768",
                 "shasum": ""
             },
             "require": {
@@ -544,7 +544,7 @@
                 "rfc6238",
                 "totp"
             ],
-            "time": "2016-10-08T16:35:34+00:00"
+            "time": "2019-03-20T00:55:58+00:00"
         },
         {
             "name": "phpmailer/phpmailer",
