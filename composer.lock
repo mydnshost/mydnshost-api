@@ -427,16 +427,16 @@
         },
         {
             "name": "jeremykendall/php-domain-parser",
-            "version": "5.4.0",
+            "version": "5.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jeremykendall/php-domain-parser.git",
-                "reference": "6e326c57e31f21adec8ab2c445927ac2203bc91b"
+                "reference": "93efea6362ee769d41754336abfb29aead38cfe2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jeremykendall/php-domain-parser/zipball/6e326c57e31f21adec8ab2c445927ac2203bc91b",
-                "reference": "6e326c57e31f21adec8ab2c445927ac2203bc91b",
+                "url": "https://api.github.com/repos/jeremykendall/php-domain-parser/zipball/93efea6362ee769d41754336abfb29aead38cfe2",
+                "reference": "93efea6362ee769d41754336abfb29aead38cfe2",
                 "shasum": ""
             },
             "require": {
@@ -501,7 +501,7 @@
                 "icann",
                 "idn"
             ],
-            "time": "2018-11-22T18:48:51+00:00"
+            "time": "2019-04-14T07:14:35+00:00"
         },
         {
             "name": "phpgangsta/googleauthenticator",
@@ -964,7 +964,7 @@
                 },
                 {
                     "name": "Gert de Pagter",
-                    "email": "backendtea@gmail.com"
+                    "email": "BackEndTea@gmail.com"
                 }
             ],
             "description": "Symfony polyfill for ctype functions",
