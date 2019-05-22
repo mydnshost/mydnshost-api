@@ -477,6 +477,10 @@
 						if ($type == 'MX' || $type == 'SRV') { $priority = $name['Priority']; } else { $priority = ''; }
 						$address = $name['Address'];
 
+						if ($type == 'TXT' && strlen($address) > 250) {
+							$address = implode('" "', str_split($address, 250));
+						}
+
 						if ($bit !== 0 && empty($bit)) { $bit = $this->domain.'.'; }
 
 						$lines[] = sprintf('%-30s %7s    IN %7s   %-6s %s', $bit, $ttl, $type, $priority, $address);
