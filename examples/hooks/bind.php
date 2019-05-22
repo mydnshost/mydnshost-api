@@ -66,9 +66,7 @@
 					if ($recordDomain != $domain) { $name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $name); }
 
 					$content = $record->getContent();
-					if ($record->getType() == "TXT") {
-						$content = '"' . $record->getContent() . '"';
-					} else if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
+					if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
 						$content = $record->getContent() . '.';
 						if ($recordDomain != $domain) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $content); }
 

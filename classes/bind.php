@@ -248,6 +248,9 @@
 
 					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $thisttl; }
 
+					// If a TXT record is given, parse it to a single string rather than multiple.
+					if ($type == 'TXT') { $info['Address'] = Bind::parseTXTRecord($info['Address']); }
+
 					// And finally actually add to the domainInfo array:
 					$domainInfo[$type][$name][] = $info;
 				}
@@ -261,6 +264,51 @@
 					$this->debug('parseZoneFile', $line);
 				}
 			}
+		}
+
+		/**
+		 * Parse a TXT Record into an unquoted string.
+		 *
+		 * @param $input Input string to use as txt record.
+		 * @return Single-String version of input, surrounded by quotes.
+		 */
+		public static function parseTXTRecord($input) {
+			$last = '';
+			$output = '';
+			$inQuote = false;
+			for ($i = 0; $i < strlen($input); $i++) {
+				$c = $input[$i];
+				if ($c == '"' && $last != '\\') { $inQuote = !$inQuote; }
+				else if ($inQuote) {
+					if ($c == '"' && $last == '\\') { $output = substr($output, 0, -1); }
+					$output .= $c;
+				}
+				$last = $c;
+			}
+
+			return $output;
+		}
+
+		/**
+		 * Convert a string to a TXT record, splitting it if needed and escaping
+		 * any instances of " within the string.
+		 *
+		 * @param $input Input string to use as txt record.
+		 * @return Multi-String version of input, surrounded by quotes.
+		 */
+		public static function stringToTXTRecord($input) {
+			$bits = [];
+			$current = '';
+			for ($i = 0; $i < strlen($input); $i++) {
+				$c = $input[$i];
+				if ($c == '"') { $current .= '\\'; }
+				$current .= $c;
+
+				if (strlen($current) >= 250) { $bits[] = $current; $current = ''; }
+			}
+			$bits[] = $current;
+
+			return '"' . implode('" "', $bits) . '"';
 		}
 
 		/**
@@ -360,6 +408,8 @@
 
 			if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 				$info['Address'] = idn_to_ascii($info['Address']);
+			} else if ($type == 'TXT') {
+				$info['Address'] = Bind::stringToTXTRecord($info['Address']);
 			}
 
 			if (!isset($domainInfo[$type][$name])) { $domainInfo[$type][$name] = array(); };
@@ -476,10 +526,6 @@
 						if (isset($domainInfo[' META ']['TTL']) != $name['TTL']) { $ttl = $name['TTL']; } else { $ttl = ''; }
 						if ($type == 'MX' || $type == 'SRV') { $priority = $name['Priority']; } else { $priority = ''; }
 						$address = $name['Address'];
-
-						if ($type == 'TXT' && strlen($address) > 250) {
-							$address = implode('" "', str_split($address, 250));
-						}
 
 						if ($bit !== 0 && empty($bit)) { $bit = $this->domain.'.'; }
 
