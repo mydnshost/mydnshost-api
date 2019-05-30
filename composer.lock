@@ -367,16 +367,16 @@
         },
         {
             "name": "influxdb/influxdb-php",
-            "version": "1.14.7",
+            "version": "1.15.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/influxdata/influxdb-php.git",
-                "reference": "570bd5cdedb9b1c1628dceea5785bc40e08f7e48"
+                "reference": "bf3415f81962e1ab8c939bc1a08a85f500bead35"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/influxdata/influxdb-php/zipball/570bd5cdedb9b1c1628dceea5785bc40e08f7e48",
-                "reference": "570bd5cdedb9b1c1628dceea5785bc40e08f7e48",
+                "url": "https://api.github.com/repos/influxdata/influxdb-php/zipball/bf3415f81962e1ab8c939bc1a08a85f500bead35",
+                "reference": "bf3415f81962e1ab8c939bc1a08a85f500bead35",
                 "shasum": ""
             },
             "require": {
@@ -387,6 +387,7 @@
                 "phpunit/phpunit": "^5.7"
             },
             "suggest": {
+                "ext-curl": "Curl extension, needed for Curl driver",
                 "stefanotorresi/influxdb-php-async": "An asyncronous client for InfluxDB, implemented via ReactPHP."
             },
             "type": "library",
@@ -423,7 +424,7 @@
                 "influxdb library",
                 "time series"
             ],
-            "time": "2018-07-06T10:13:39+00:00"
+            "time": "2019-05-30T00:15:14+00:00"
         },
         {
             "name": "jeremykendall/php-domain-parser",
@@ -964,7 +965,7 @@
                 },
                 {
                     "name": "Gert de Pagter",
-                    "email": "backendtea@gmail.com"
+                    "email": "BackEndTea@gmail.com"
                 }
             ],
             "description": "Symfony polyfill for ctype functions",
