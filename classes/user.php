@@ -176,6 +176,10 @@ class User extends DBObject {
 		return !empty($this->getVerifyCode()) && $this->getRawPassword() == '-' && $this->isDisabled();
 	}
 
+	public function getPasswordNonce() {
+		return crc32($this->getID() . '-' . $this->getRawPassword() . '-' . json_encode($this->getPermissions()));
+	}
+
 	/**
 	 * Get valid permission names.
 	 *

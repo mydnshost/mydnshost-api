@@ -65,6 +65,16 @@ X-SESSION-ID: 9pbobqkbiqvhll2ngia8bg0ijd
 
 Session tokens will expire approximately 15 minutes after they were last used.
 
+## JWT Authentication
+
+You can obtain a jwt token from the `/session/jwt` end point, and then use it for future requests by passing the it as a bearer token within the 'Authorization' HTTP Header instead of any other authentication headers.
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8
+```
+
+JWT tokens will expire approximately 1 hour after they were issued, or if the user password is changed.
+
 ## Request-ID
 For any of the requests, you can pass a X-Request-ID header:
 
@@ -177,6 +187,19 @@ This will close the current session to prevent any future requests.
                 }
             }
 
+## Get a JWT token [/session/jwt]
+### Get a JWT Token [GET]
+This will obtain a new JWT token for use in future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5d0ffabae9bc6",
+                "method": "session/jwt",
+                "response":{
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8"
+                }
+            }
 
 ## Forgot Password [/forgotpassword]
 ### Initiate a Forgot Password request [POST]

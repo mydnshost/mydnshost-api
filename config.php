@@ -6,6 +6,11 @@
 	$database['password'] = getEnvOrDefault('DB_SERVER_PASSWORD', 'dnsapi');
 	$database['database'] = getEnvOrDefault('DB_SERVER_DATABASE', 'dnsapi');
 
+	// Secret for JWT Tokens
+	// Must be 12 characters in length, contain upper and lower case letters,
+	// a number, and a special character `*&!@%^#$``
+	$config['jwtsecret'] = getEnvOrDefault('JWT_SECRET', 'S0M3SEcr3t!#');
+
 	// Config for session data
 	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
 

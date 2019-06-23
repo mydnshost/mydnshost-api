@@ -95,19 +95,36 @@
 
 	$errorExtraData = [];
 
-	if (isset($_SERVER['HTTP_X_SESSION_ID'])) {
-		session_id($_SERVER['HTTP_X_SESSION_ID']);
-		session_start(['use_cookies' => '0', 'cache_limiter' => '']);
+	$bearerToken = getBearerToken();
+	$hasBearer = $bearerToken != NULL;
+	$hasSessionID = isset($_SERVER['HTTP_X_SESSION_ID']);
 
-		if (isset($_SESSION['userid']) && isset($_SESSION['access'])) {
-			$user = User::load($context['db'], $_SESSION['userid']);
+	if ($hasBearer || $hasSessionID) {
+		$authPayload = [];
+
+		if ($hasBearer && ReallySimpleJWT\Token::validate($bearerToken, getJWTSecret())) {
+			$authPayload = ReallySimpleJWT\Token::getPayload($bearerToken, getJWTSecret());
+		} else if ($hasSessionID) {
+			session_id($_SERVER['HTTP_X_SESSION_ID']);
+			session_start(['use_cookies' => '0', 'cache_limiter' => '']);
+
+			$authPayload = $_SESSION;
+		}
+
+		if (isset($authPayload['userid']) && isset($authPayload['access'])) {
+			$user = User::load($context['db'], $authPayload['userid']);
 			$key = FALSE;
-			if (isset($_SESSION['keyid'])) {
-				$key = APIKey::load($context['db'], $_SESSION['keyid']);
+			if (isset($authPayload['keyid'])) {
+				$key = APIKey::load($context['db'], $authPayload['keyid']);
 				if ($key == FALSE) {
 					$key->setLastUsed(time())->save();
 				} else {
 					// Key no longer exists, so session is no longer valid.
+					$user = FALSE;
+				}
+			} else if (isset($authPayload['nonce'])) {
+				if ($authPayload['nonce'] != $user->getPasswordNonce()) {
+					// Password changed, so session is no longer valid.
 					$user = FALSE;
 				}
 			}
@@ -115,17 +132,25 @@
 			if ($user !== FALSE) {
 				getKnownDevice($user, $context);
 
-				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				if ($hasBearer) {
+					$context['jwttoken'] = $bearerToken;
+				} else if ($hasSessionID) {
+					$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				}
 				$context['user'] = $user;
 				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key), false);
 			}
-		} else if (isset($_SESSION['domainkey']) && isset($_SESSION['access'])) {
-			$key = DomainKey::load($context['db'], $_SESSION['domainkey']);
+		} else if (isset($authPayload['domainkey']) && isset($authPayload['access'])) {
+			$key = DomainKey::load($context['db'], $authPayload['domainkey']);
 
 			if ($key != FALSE) {
 				$user = $key->getDomainKeyUser();
 
-				$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				if ($hasBearer) {
+					$context['jwttoken'] = $bearerToken;
+				} else if ($hasSessionID) {
+					$context['sessionid'] = $_SERVER['HTTP_X_SESSION_ID'];
+				}
 				$context['user'] = $user;
 				$context['access'] = ['domains_read' => true, 'domains_write' => (true && $key->getDomainWrite())];
 				$context['domainkey'] = $key;
@@ -133,7 +158,7 @@
 			}
 		}
 
-		session_commit();
+		if ($hasSessionID) { session_commit(); }
 	} else if (isset($_SERVER['HTTP_X_API_USER']) && isset($_SERVER['HTTP_X_API_KEY'])) {
 		$user = User::loadFromEmail($context['db'], $_SERVER['HTTP_X_API_USER']);
 		if ($user != FALSE) {

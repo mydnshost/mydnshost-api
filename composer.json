@@ -21,7 +21,8 @@
         "influxdb/influxdb-php": "^1.14",
         "react/child-process": "^0.6.0",
         "enygma/yubikey": "^3.3",
-        "authy/php": "^3.0"
+        "authy/php": "^3.0",
+        "rbdwllr/reallysimplejwt": "^2.0"
     },
     "autoload": {
         "classmap": [
