@@ -1,0 +1,209 @@
+# Group Articles
+Endpoints for dealing with articles.
+
+These are used to display information to users after logging in.
+
+## Articles [/articles]
+### Get articles [GET]
+This lets you get the current articles for display.
+
+All articles will have "title", "content" and "created" parameters. Some articles may include "contentfull" for additional content that can be displayed when viewing that specific article.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid":"5be8f02eaa91d",
+                "method":"articles",
+                "response":{
+                    "4":{
+                        "title":"2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.",
+                        "content":"Support has now been added for Domain Hooks which get called whenever records on a domain are changed. There has also been some minor changes to the 2FA login flow (2FA Code is now requested on a separate page, and devices can be saved to bypass the 2FA requirement in future), and CNAME-and-other-records validation has been added.",
+                        "created":"1511721570"
+                    },
+                    "3":{
+                        "title":"2017-09-24 - Domain display default page.",
+                        "content":"A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the \"Records\" or \"Zone Details\" page.",
+                        "created":"1506219150"
+                    },
+                    "2":{
+                        "title":"2017-09-13 - DNSSEC Support is now live.",
+                        "content":"Zones are automatically signed, with DS records available in the zone details section.",
+                        "created":"1505259296"
+                    },
+                    "1":{
+                        "title":"2017-09-10 - Domain Statistics.",
+                        "content":"Domain query statistics are now available from the API and from the zone details section.",
+                        "created":"1505077534"
+                    }
+                }
+            }
+
+## Articles Admin [/admin/articles]
+### Get all articles [GET]
+This is similar to `/articles` but will allow a user with the `manage_articles` permission to show all the articles not just those that are visible.
+
+All articles will have "title", "content" and "created" parameters. Some articles may include "contentfull" for additional content that can be displayed when viewing that specific article.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid":"5be8f02eaa91d",
+                "method":"/admin/articles",
+                "response":{
+                    "1":{
+                        "id": "1",
+                        "title": "2017-09-10 - Domain Statistics.",
+                        "content": "Domain query statistics are now available from the API and from the zone details section.",
+                        "contentfull": null,
+                        "created": "1505077534",
+                        "visiblefrom": "1505077534",
+                        "visibleuntil": "-1"
+                    },
+                    "2":{
+                        "id": "2",
+                        "title": "2017-09-13 - DNSSEC Support is now live.",
+                        "content": "Zones are automatically signed, with DS records available in the zone details section.",
+                        "contentfull": null,
+                        "created": "1505259296",
+                        "visiblefrom": "1505259296",
+                        "visibleuntil": "-1"
+                    },
+                    "3":{
+                        "id": "3",
+                        "title": "2017-09-24 - Domain display default page.",
+                        "content": "A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the \"Records\" or \"Zone Details\" page.",
+                        "contentfull": null,
+                        "created": "1506219150",
+                        "visiblefrom": "1506219150",
+                        "visibleuntil": "-1"
+                    },
+                    "4":{
+                        "id": "4",
+                        "title": "2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.",
+                        "content": "Support has now been added for Domain Hooks which get called whenever records on a domain are changed. There has also been some minor changes to the 2FA login flow (2FA Code is now requested on a separate page, and devices can be saved to bypass the 2FA requirement in future), and CNAME-and-other-records validation has been added.",
+                        "contentfull": null,
+                        "created": "1511721570",
+                        "visiblefrom": "1511721570",
+                        "visibleuntil": "-1"
+                    }
+                }
+            }
+
+### Create an article [POST]
+This allows a user with the `manage_articles` permission to create new articles.
+
+This behaves similarly to updating an article, except that "title", "content", "visiblefrom" and "visibleuntil" are all required.
+
++ Request Create article (application/json)
+    + Body
+
+            {
+                "data": {
+                    "title": "Test Article",
+                    "content": "Some content",
+                    "visiblefrom": 0,
+                    "visibleuntil": -1
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "admin/articles",
+                "response":{
+                    "id": "5",
+                    "title": "Test Article",
+                    "content": "Some content",
+                    "contentfull": null,
+                    "created": 1552237749,
+                    "visiblefrom": 0,
+                    "visibleuntil": -1,
+                    "updated": true
+                }
+            }
+
+## Manipulate Articles [/admin/articles/{articleid}]
++ Parameters
+
+    + articleid: `3` (required) - The article ID.
+
+
+### Get information about a specific article [GET]
+Returns complete information about the requested article.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "admin/articles/3",
+                "response": {
+                    "id": "3",
+                    "title": "2017-09-24 - Domain display default page.",
+                    "content": "A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the \"Records\" or \"Zone Details\" page.",
+                    "contentfull": null,
+                    "created": "1506219150",
+                    "visiblefrom": "1506219150",
+                    "visibleuntil": "-1"
+                }
+            }
+
+### Update information about a specific article [POST]
+Allows updating a specific article. Any fields that are passed in will be updated, fields not passed will be unchanged.
+
++ Request Change realname and Password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "contentfull": "Additional content here."
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bcbc34234e3",
+                "method": "admin/articles/3",
+                "response":{
+                    "id": "3",
+                    "title": "2017-09-24 - Domain display default page.",
+                    "content": "A new setting has been added to the user-profile to change the default page displayed when viewing a domain to be either the \"Records\" or \"Zone Details\" page.",
+                    "contentfull": "Additional content here.",
+                    "created": "1506219150",
+                    "visiblefrom": "1506219150",
+                    "visibleuntil": "-1",
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error you will get an `error` key rather than a `response` key in the output
+    + Body
+
+            {
+                "respid": "58bcbcc7dc8d1",
+                "method": "admin/articles/3",
+                "error": "Error updating artcile: 3"
+            }
+
+### Delete a specific Article [DELETE]
+This will allow a user with the `manage_articles` permission to delete the article specified.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "admin/articles/3",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+

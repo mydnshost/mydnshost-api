@@ -1,0 +1,759 @@
+# Group Users
+Endpoints for dealing with user accounts
+
+## User list [/users]
+### Get the list of known users [GET]
+For a user with the `manage_users` permission, this will return all the known users. Users without this permission will just see themselves.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "users",
+                "response":[
+                    {
+                        "id": "2",
+                        "email": "user@example.org",
+                        "realname": "Some User"
+                    }
+                ],
+            }
+
+## Manipulate Users [/users/{userid}]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+
+### Get information about a specific user [GET]
+Returns complete information about the requested user if the user has permission to see the requested user.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "users",
+                "response": {
+                    "id": "2",
+                    "email": "user@example.org",
+                    "realname": "Some User"
+                    "disabled": "false",
+                    "permissions": []
+                }
+            }
+
+### Update information about a specific user [POST]
+Allows updating user information on a user account that you have permission to modify. Any fields that are passed in will be updated, fields not passed will be unchanged.
+
+If you have `manage_permissions` you can also pass a map of permissions where the key is the permission, and the value is `true` or `false` to grant/revoke the permission. Permissions not given will be left unchanged. The meta-permission of `all` can be used to set the value of all permissions.
+
++ Request Change realname and Password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "realname": "Some Real User",
+                    "password": "NewPassword"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bcbc34234e3",
+                "method": "users/2",
+                "response":{
+                    "id": "2",
+                    "email": "user@example.org",
+                    "realname": "Some Real Name",
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error you will get an `error` key rather than a `response` key in the output
+    + Body
+
+            {
+                "respid": "58bcbcc7dc8d1",
+                "method": "users/2",
+                "error": "Error updating user: 2"
+            }
+
+### Delete a specific user [DELETE]
+This will allow a user with the `manage_users` permission to delete the user specified, or allow a user to delete themselves. If self-deleting is enabled and you try to delete the current user, the API will give you a confirm code that you need to use to perform a confirmed delete.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/2",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## Confirm delete the current user [/users/{userid}/confirm/{confirmcode}]
+
+This endpoint is used to perform a confirmed delete of a given user.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + confirmcode: `c00696d9` (required) - The confirm code provided by the initial delete attempt.
+
+### Confirm delete the current user [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/2/confirm/c00696d9",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## Confirm delete the current user with 2FA [/users/{userid}/confirm/{confirmcode}/{twofactorcode}]
+
+This endpoint is used to perform a confirmed delete of a given user who has 2fa enabled.
+
+Deleting a user will disassociate them with any domains, but will not remove the domains.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + confirmcode: `c00696d9` (required) - The confirm code provided by the initial delete attempt.
+    + twofactorcode: `123456` (required) - A valid 2FA code for this user.
+
+### Confirm delete the current user with 2FA [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "users/2/confirm/c00696d9/123456",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## Create a user [/users/create]
+### Create a user [POST]
+This allows a user with the `manage_users` permission to create new users.
+
+This behaves similarly to update user except that you must pass in the `email` and `realname` fields.
+
+You can also either pass in a `password` field to set the password, or to simulate a user registration you can pass in `sendWelcome` with a value of `true`
+
++ Request Change realname and Password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "newuser@example.org",
+                    "realname": "Some new User",
+                    "password": "NewPassword"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after creation.
+    + Body
+
+            {
+                "respid": "58bcbe6b76cee",
+                "method": "users/create",
+                "response":{
+                    "id": "6",
+                    "email": "newuser@example.org",
+                    "realname": "Some new User",
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    On error, you will get an `error` rather than a `response`
+    + Body
+
+            {
+                "respid": "58bcbe8c7ac06",
+                "method": "users/create",
+                "error": "Error creating user."
+            }
+
+## Resend Welcome Message [/users/{userid}/resendwelcome]
++ Parameters
+
+    + userid: `1` (required) - The user ID.
+
+### Request a welcome email be resent to a user. [POST]
+If a user is still pending verification, we can re-send the welcome email to them. (This requires the `manage_users` permission)
+
++ Request request a welcome email be resent (application/json)
+    The body of this request is empty
+    + Body
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934c0a6e5bf3",
+                "method": "users/56/resendwelcome",
+                "response":{
+                    "success": "Registration email resent."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934c05e6b420",
+                "method": "users/56/resendwelcome",
+                "error": "User has already completed registration."
+            }
+
+## Accept terms of service [/users/{userid}/acceptterms]
++ Parameters
+
+    + userid: `self` (required) - The user ID (must be own user account or "self").
+
+### Accept terms of service. [POST]
+If a user has not accepted the terms of service this allows them to do so. (This requires the `user_write` permission)
+
++ Request Accept terms of service (application/json)
+    + Body
+
+            {
+                "data":{
+                    "acceptterms": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5b1df1e976654",
+                "method": "users/self/acceptterms",
+                "response":{
+                    "acceptterms": "Terms accepted."
+                },
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5b1df1e976654",
+                "method": "users/self/resendwelcome",
+                "error": "There was an error accepting the terms of service."
+            }
+
+## API Keys [/users/{userid}/keys]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known API Keys [GET]
+Returns the list of known API Keys and their description/permissions.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf2439319ea",
+                "method": "users/self/keys",
+                "response":{
+                    "F4C108DA-4070-45A4-8223-8C5DDFB96A51":{
+                        "description": "Test Key",
+                        "domains_read": "true",
+                        "domains_write": "true",
+                        "user_read": "true",
+                        "user_write": "true"
+                    },
+                    "60B56841-508D-4037-9A16-B234B9E849A0":{
+                        "description": "Domains Read-Only Key",
+                        "domains_read": "true",
+                        "domains_write": "false",
+                        "user_read": "false",
+                        "user_write": "false"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new API Key. The key itself will be randomly generated and returned.
+
++ Request Create a key that has read-only access to just /domains (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Domains Read-Only Key",
+                    "domains_read": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "58bf24e7d5638",
+                "method": "users/self/keys",
+                "response":{
+                    "60B56841-508D-4037-9A16-B234B9E849A0":{
+                        "description": "Domains Read-Only Key",
+                        "domains_read": "true",
+                        "domains_write": false,
+                        "user_read": false,
+                        "user_write": false,
+                        "updated": true
+                    }
+                }
+            }
+
+
+## Manipulate specific API Key [/users/{userid}/keys/{keyid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `00413A9B-E086-4AD7-AC82-FF061B28D176` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf257073446",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":{
+                    "description": "Domains Read-Only Key",
+                    "domains_read": "true",
+                    "domains_write": "false",
+                    "user_read": "false",
+                    "user_write": "false"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Full-Access Key",
+                    "domains_read": "true",
+                    "domains_write": "true",
+                    "user_read": "true",
+                    "user_write": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bf24e7d5638",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":{
+                    "description": "Full-Access Key",
+                    "domains_read": "true",
+                    "domains_write": "true",
+                    "user_read": "true",
+                    "user_write": "true",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bf2602687cc",
+                "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
+                "response":[
+                   "deleted": "true"
+                ]
+            }
+
+## 2FA Keys [/users/{userid}/2fa]
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known 2FA Keys [GET]
+Returns the list of known 2FA Key-IDs and information about them.
+
+Keys that have not yet been verified will also include the secret to allow a QR Code to be displayed if appropriate.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e43446c4b7",
+                "method": "users/self/2fa",
+                "response":{
+                    "1":{
+                        "description": "Test Key",
+                        "created": "1495151997",
+                        "lastused": "1495153158",
+                        "active": "true"
+                    },
+                    "2":{
+                        "key": "MCOERRKFPJ7Z2Q2U",
+                        "description": "Second Key",
+                        "created": "1495151997",
+                        "lastused": "0",
+                        "active": "false"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new 2FA Key.
+
+We support multiple types of code, 'rfc6238' (Default), 'plain' and 'yubikeyotp'.
+
+If no 'type' data parameter is provided, then 'rfc6238' is assumed.
+
+For 'rfc6238' and 'plain', the secret will be randomly generated.
+
+For 'yubikeyotp' an OTP must be provided that validates against yubico cloud.
+
+If no 'onetime' data parameter is provided, then 'false' is assumed, otherwise the key will only be valid for a single use.
+
++ Request Create a key (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Third Key",
+                    "type": "rfc6238",
+                    "onetime": false,
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "591e43b1d0df7",
+                "method": "users/self/2fa",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Key",
+                    "created": 1495155633,
+                    "lastused": 0,
+                    "active": false,
+                    "type": "rfc6238",
+                    "onetime": false,
+                    "updated": true
+                }
+            }
+
+
+## Manipulate specific 2FA Key [/users/{userid}/2fa/{keyid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `6` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    The "key" parameter will only be returned if the key is not yet active.
+    + Body
+
+            {
+                "respid": "591e43f5ce743",
+                "method": "users/self/2fa/6",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Key",
+                    "created": "1495155633",
+                    "lastused": "0",
+                    "active": "false"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Third Device"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    The "key" parameter will only be returned if the key is not yet active.
+    + Body
+
+            {
+                "respid": "591e444c2868c",
+                "method": "users/self/2fa/6",
+                "response":{
+                    "id": "6",
+                    "key": "7QEAT6ARPO4TKVUC",
+                    "description": "Third Device",
+                    "created": "1495155633",
+                    "lastused": "0",
+                    "active": "false",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e456fdb62f",
+                "method": "users/self/2fa/6",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## Verify 2FA Key [/users/{userid}/2fa/{keyid}/verify]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + keyid: `6` (required) - The key ID.
+
+
+### Verify 2FA Key [POST]
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "123456"
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591e453d08ac9",
+                "method": "users/self/2fa/6/verify",
+                "response":{
+                   "success": "Valid code provided."
+                }
+            }
+
+
++ Response 40 01(application/json)
+    + Body
+
+            {
+                "respid": "591e455409613",
+                "method": "users/self/2fa/6/verify",
+                "error": "Invalid code provided for verification."
+            }
+
+## 2FA Devices [/users/{userid}/2fadevices]
+2FA Devices are devices that have passed the 2FA check in the past and the user has chosen to allow them to login without 2fa.
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known 2FA Devices [GET]
+Returns the list of known 2FA Devices and information about them.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1af9caaffc6",
+                "method": "users/self/2fadevices",
+                "response":{
+                    "1":{
+                        "description": "Some Device",
+                        "created": "1511715554",
+                        "lastused": "1511715554",
+                    },
+                    "2":{
+                        "description": "Some Other Device",
+                        "current": true,
+                        "created": "1511717965",
+                        "lastused": "1511717965",
+                    }
+                }
+            }
+
+## Manipulate specific 2FA Device [/users/{userid}/2fadevices/{deviceid}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + deviceid: `6` (required) - The Device ID.
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1afd4852d97",
+                "method": "users/self/2fadevices/6",
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## User custom data {DEPRECATED} [/users/{userid}/customdata]
+This allows applications to store user-specific data within the api.
+**This is deprecated in favour of userdata within the user information endpoints**
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+
+### Get known custom data {DEPRECATED} [GET]
+Returns the list of known Custom-Data Key/Value pairs.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7bac0c46e5",
+                "method": "users/self/customdata",
+                "response":{
+                    "test.ing": "testValue 2",
+                    "test.ing3": "testValue 3",
+                    "uk.co.mydnshost.www/domain/defaultpage": "records"
+                }
+            }
+
+## Manipulate specific custom data key/value {DEPRECATED} [/users/{userid}/customdata/{key}]
++ Parameters
+
+    + userid: `self` (required) - The user ID. This can also be "self" for the current user.
+    + key: `test.ing` (required) - The custom data key.
+
+### Get key value {DEPRECATED} [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7baf524aac",
+                "method": "users/self/customdata/test.ing",
+                "response":{
+                    "key": "test.ing",
+                    "value": "testValue 2"
+                }
+            }
+
+### Create/Update custom data for key {DEPRECATED} [POST]
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "value": "Some Value"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the data as it exists after the change.
+    + Body
+
+            {
+                "respid": "59c7bb169ac68",
+                "method": "users/self/customdata/test.ing",
+                "response":{
+                    "key": "test.ing",
+                    "value": "Some Value",
+                    "updated": true
+                }
+            }
+
+### Delete key {DEPRECATED} [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7bb2d0cfd5",
+                "method": "users/self/customdata/test.ing"
+                "response":[
+                    "deleted": "true"
+                ]
+            }
+
+## User Domain Statistics [/users/{userid}/stats/{stattype}{?type}]
+
++ Parameters
+
+    + userid: `2` (required) - The user ID. This can also be "self" for the current user.
+    + type: `raw` (optional, string) - Type of stats (raw or derivative)
+
+### Get statistics for all our domains [GET]
++ Parameters
+    + stattype: `domains`
+    + type: `raw`
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59c7c79a96fd3",
+                "method": "/users/self/stats/domains",
+                "response":{
+                    "stats": {
+                        "example.org": [{"time": 1505074560, "value": 249101},
+                                        {"time": 1505074620, "value": 249122},
+                                        {"time": 1505074680, "value": 249132},
+                                        // More data
+                                        {"time": 1505078040, "value": 250476},
+                                        {"time": 1505078100, "value": 250497}],
+                        "example.com": [{"time": 1505074560, "value": 97971},
+                                        {"time": 1505074620, "value": 97975},
+                                        {"time": 1505074680, "value": 97975},
+                                        // More data
+                                        {"time": 1505078040, "value": 98409},
+                                        {"time": 1505078100, "value": 98409}],
+                        // More Domain Names
+                        "example.net": [{"time": 1505074560, "value": 176},
+                                        {"time": 1505074620, "value": 176},
+                                        {"time": 1505074680, "value": 176},
+                                        // More data
+                                        {"time": 1505078040, "value": 176},
+                                        {"time": 1505078100, "value": 176}]
+                    }
+                }
+            }
+

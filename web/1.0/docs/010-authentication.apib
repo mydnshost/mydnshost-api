@@ -1,0 +1,94 @@
+## User Authentication
+Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
+
+Authentication via Basic Auth gives you full access to the account (Same as an API Key with all permissions set to true).
+
+If a 2FA Key is required for the account, this must be passed as a HTTP Header:
+
+```http
+X-2FA-Key: 123456
+```
+
+Devices can be saved as Trusted Devices to allow them to bypass the need to enter the 2FA key every time.
+
+This can be done by passing a `X-2FA-SAVE-DEVICE` header when logging in with a valid 2FA Key:
+
+```http
+X-2FA-SAVE-DEVICE: Some Device Name
+```
+
+The API Response will then include a device_id item that can be stored and used for future logins in place of the 2FA Key:
+
+```http
+X-2FA-DEVICE-ID: 84FDBE2B-0FB2-461C-9E7B-31A2AF5E52F6
+```
+
+If a `X-2FA-DEVICE-ID` is passed alongside the `X-2FA-SAVE-DEVICE` header then that device ID will be used to remember the device, otherwise the API will generate a new one for you.
+
+## API Key Authentication
+If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.
+
+API Keys can be limited as to what they can see/do.
+
+ - **domains_read**: Has access to `GET` on `/domains` end-points
+ - **domains_write**: Has access to `POST` or `DELETE` on `/domains` end-points
+ - **user_read**: Has access to `GET` on `/users` end-points
+ - **user_write**: Has access to `POST` or `DELETE` on `/users` end-points
+
+You can log in using an API Key by adding the following headers:
+
+```http
+X-API-User: SomeUser@example.org
+X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
+```
+
+You can also use a domain-key, which behaves like an API key that has no `user_read` or `user_write` permissions, and can only interact with a single domain. Domain keys are linked to domains not users.
+
+```http
+X-Domain: example.org
+X-Domain-Key: 9426F536-2559-4FA0-BA50-644C90B5FAE4
+```
+
+## Session Authentication
+
+You can obtain a session token from the `/session` end point, and then use it for future requests by passing the X-SESSION-ID header instead of any other authentication headers.
+
+```http
+X-SESSION-ID: 9pbobqkbiqvhll2ngia8bg0ijd
+```
+
+Session tokens will expire approximately 15 minutes after they were last used.
+
+## JWT Authentication
+
+You can obtain a jwt token from the `/session/jwt` end point, and then use it for future requests by passing the it as a bearer token within the 'Authorization' HTTP Header instead of any other authentication headers.
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8
+```
+
+JWT tokens will expire approximately 1 hour after they were issued, or if the user password is changed.
+
+## Request-ID
+For any of the requests, you can pass a X-Request-ID header:
+
+```http
+X-Request-ID: SomeUniqueID
+```
+
+Which will be returned in the body of any reponse as a `reqid` field.
+
+## Rate Limiting
+Requests to the API may be subject to rate limiting. The API uses standard rate-limiting headers to denote the rate limit information, for examples:
+
+```http
+X-RateLimit-Limit: 1024
+X-RateLimit-Remaining: 512
+X-RateLimit-Reset: 1508738400
+```
+
+These will show your total request limit amount for this window, how many requests you have remaining in the window, and the time that the limit resets.
+
+If you have exceeded your limit you will recieve a HTTP Error 429 message instead of the usual API response.
+
+Different keys/users may have different limits. If you need a greater limit, please get in touch.

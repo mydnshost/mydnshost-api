@@ -9,7 +9,7 @@
 <pre><code class="language-http"><span class="hljs-attribute">X-2FA-SAVE-DEVICE</span>: <span class="hljs-string">Some Device Name</span></code></pre>
 <p>The API Response will then include a device_id item that can be stored and used for future logins in place of the 2FA Key:</p>
 <pre><code class="language-http"><span class="hljs-attribute">X-2FA-DEVICE-ID</span>: <span class="hljs-string">84FDBE2B-0FB2-461C-9E7B-31A2AF5E52F6</span></code></pre>
-<p>If a <code>X-2FA-DEVICE-ID</code> is passed alongside the <code>X-2FA-SAVE-DEVICE</code> header then that device ID will be used to rememebr the device, otherwise the API will generate a new one for you.</p>
+<p>If a <code>X-2FA-DEVICE-ID</code> is passed alongside the <code>X-2FA-SAVE-DEVICE</code> header then that device ID will be used to remember the device, otherwise the API will generate a new one for you.</p>
 <h2 id="header-api-key-authentication">API Key Authentication <a class="permalink" href="#header-api-key-authentication" aria-hidden="true">¶</a></h2>
 <p>If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.</p>
 <p>API Keys can be limited as to what they can see/do.</p>
@@ -1535,19 +1535,19 @@ shown, regardless of the type)</p>
 <p>Some datavalues require authentication, some do not.</p>
 <h4>Example URI</h4><div class="definition"><span class="method get">GET</span>&nbsp;<span class="uri"><span class="hostname">https://api.mydnshost.co.uk/1.0</span>/system/datavalue/<span class="hljs-attribute" title="datavalue">validPermissions</span></span></div><div class="title"><strong>URI Parameters</strong><div class="collapse-button show"><span class="close">Hide</span><span class="open">Show</span></div></div><div class="collapse-content"><dl class="inner"><dt>datavalue</dt><dd><code>string</code>&nbsp;<span class="required">(required)</span>&nbsp;<span class="text-muted example"><strong>Example:&nbsp;</strong><span>validPermissions</span></span><p>The datavalue to get.</p>
 </dd></dl></div><div class="title"><strong>Response&nbsp;&nbsp;<code>200</code></strong><div class="collapse-button"><span class="close">Hide</span><span class="open">Show</span></div></div><div class="collapse-content"><div class="inner"><h5>Headers</h5><pre><code><span class="hljs-attribute">Content-Type</span>: <span class="hljs-string">application/json</span></code></pre><div style="height: 1px;"></div><h5>Body</h5><pre><code>{
-    "<span class="hljs-attribute">respid</span>": <span class="hljs-value"><span class="hljs-string">"59b5f1440fca4"</span></span>,
-    "<span class="hljs-attribute">method</span>": <span class="hljs-value"><span class="hljs-string">"system/datavalue/validPermissions"</span></span>,
-    "<span class="hljs-attribute">response</span>":<span class="hljs-value">{
-    "<span class="hljs-attribute">validPermissions</span>":<span class="hljs-value">[
-        <span class="hljs-string">"domains_stats"</span>,
-        <span class="hljs-string">"manage_domains"</span>,
-        <span class="hljs-string">"domains_create"</span>,
-        <span class="hljs-string">"manage_users"</span>,
-        <span class="hljs-string">"manage_permissions"</span>,
-        <span class="hljs-string">"impersonate_users"</span>
+  "<span class="hljs-attribute">respid</span>": <span class="hljs-value"><span class="hljs-string">"59b5f1440fca4"</span></span>,
+  "<span class="hljs-attribute">method</span>": <span class="hljs-value"><span class="hljs-string">"system/datavalue/validPermissions"</span></span>,
+  "<span class="hljs-attribute">response</span>": <span class="hljs-value">{
+    "<span class="hljs-attribute">validPermissions</span>": <span class="hljs-value">[
+      <span class="hljs-string">"domains_stats"</span>,
+      <span class="hljs-string">"manage_domains"</span>,
+      <span class="hljs-string">"domains_create"</span>,
+      <span class="hljs-string">"manage_users"</span>,
+      <span class="hljs-string">"manage_permissions"</span>,
+      <span class="hljs-string">"impersonate_users"</span>
     ]
-</span>}
-</span></code></pre><div style="height: 1px;"></div></div></div></div></div><div id="system-system-statistics" class="resource"><h3 class="resource-heading">System Statistics <a href="#system-system-statistics" class="permalink">&nbsp;&para;</a></h3><div id="system-system-statistics-get" class="action get"><h4 class="action-heading"><div class="name">Get system statistics from the API</div><a href="#system-system-statistics-get" class="method get">GET</a><code class="uri">/system/stats/{stat}{?type}</code></h4><p>This lets you get system-level statistics from the api.</p>
+  </span>}
+</span>}</code></pre><div style="height: 1px;"></div></div></div></div></div><div id="system-system-statistics" class="resource"><h3 class="resource-heading">System Statistics <a href="#system-system-statistics" class="permalink">&nbsp;&para;</a></h3><div id="system-system-statistics-get" class="action get"><h4 class="action-heading"><div class="name">Get system statistics from the API</div><a href="#system-system-statistics-get" class="method get">GET</a><code class="uri">/system/stats/{stat}{?type}</code></h4><p>This lets you get system-level statistics from the api.</p>
 <h4>Example URI</h4><div class="definition"><span class="method get">GET</span>&nbsp;<span class="uri"><span class="hostname">https://api.mydnshost.co.uk/1.0</span>/system/stats/<span class="hljs-attribute" title="stat">queries-per-server</span>?<span class="hljs-attribute">type=</span><span class="hljs-literal">raw</span></span></div><div class="title"><strong>URI Parameters</strong><div class="collapse-button show"><span class="close">Hide</span><span class="open">Show</span></div></div><div class="collapse-content"><dl class="inner"><dt>stat</dt><dd><code>string</code>&nbsp;<span class="required">(required)</span>&nbsp;<span class="text-muted example"><strong>Example:&nbsp;</strong><span>queries-per-server</span></span><p>The statistic to get (queries-per-server, queries-per-rrtype, queries-per-zone).</p>
 </dd><dt>type</dt><dd><code>string</code>&nbsp;<span>(optional)</span>&nbsp;<span class="text-muted example"><strong>Example:&nbsp;</strong><span>raw</span></span><p>Type of stats (raw or derivative)</p>
 </dd></dl></div><div class="title"><strong>Response&nbsp;&nbsp;<code>200</code></strong><div class="collapse-button"><span class="close">Hide</span><span class="open">Show</span></div></div><div class="collapse-content"><div class="inner"><h5>Headers</h5><pre><code><span class="hljs-attribute">Content-Type</span>: <span class="hljs-string">application/json</span></code></pre><div style="height: 1px;"></div><h5>Body</h5><pre><code>{
@@ -1573,7 +1573,7 @@ shown, regardless of the type)</p>
                 {<span class="hljs-string">"time"</span>: <span class="hljs-number">1505098440</span>, <span class="hljs-string">"value"</span>: <span class="hljs-number">6</span>}
             ]
 }</code></pre><div style="height: 1px;"></div></div></div></div></div></section><section id="experimental" class="resource-group"><h2 class="group-heading">Experimental <a href="#experimental" class="permalink">&para;</a></h2><p>There may be some experimental endpoints available under /experimental from time to time, these are undocumented and should not be relied on.</p>
-</section></div></div></div><p style="text-align: center;" class="text-muted">Generated by&nbsp;<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>&nbsp;on 23 Jun 2019</p><script>/* eslint-env browser */
+</section></div></div></div><p style="text-align: center;" class="text-muted">Generated by&nbsp;<a href="https://github.com/danielgtaylor/aglio" class="aglio">aglio</a>&nbsp;on 29 Jul 2019</p><script>/* eslint-env browser */
 /* eslint quotes: [2, "single"] */
 'use strict';
 

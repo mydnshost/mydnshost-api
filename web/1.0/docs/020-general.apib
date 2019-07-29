@@ -1,0 +1,237 @@
+# Group General
+General API Endpoints.
+
+## API Ping [/ping/{time}]
+### Ping the API [GET]
+This tests that the API is up and running. The API will respond with a non-error and include the time if provided, this does not require authentication.
+
++ Parameters
+
+    + time: `123456` (optional, number) - The current time, will be echoed back.
+
++ Response 200 (application/json)
+    If the time is not provided, then the response field is ommited entirely.
+    + Body
+
+            {
+                "respid": "58bcb5e953b5d",
+                "method": "ping/123456",
+                "response":{
+                    "time": "123456"
+                }
+            }
+
+## Get the current user information [/userdata]
+### Get User information [GET]
+This lets you see what user you are authenticated as and your current access level based on your authentication.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb98d67ba3",
+                "method": "userdata",
+                "response":{
+                    "user":{
+                        "id": "2",
+                        "email": "user@example.org",
+                        "realname": "Some User"
+                    },
+                    "access":{
+                        "domains_read": true,
+                        "domains_write": false,
+                        "user_read": false,
+                        "user_write": false
+                    }
+                }
+            }
+
+## Get the current api version [/version]
+### Get version information [GET]
+This is used to see what version of the API you are accessing, this does not require authentication.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcb9e378fd6",
+                "method": "version",
+                "response":{
+                    "version": "1.0"
+                }
+            }
+
+## Session tokens [/session]
+### Open a new session and get a session token [GET]
+This will obtain a new session token for use in future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58c33b3ec880c",
+                "method": "session",
+                "response":{
+                    "session": "rgmc55ghpbhjmv1qg7ub6q3879"
+                }
+            }
+
+### Close the current session [DELETE]
+This will close the current session to prevent any future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58c33b714169b",
+                "method": "session",
+                "response":{
+                    "session": ""
+                }
+            }
+
+## Get a JWT token [/session/jwt]
+### Get a JWT Token [GET]
+This will obtain a new JWT token for use in future requests.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5d0ffabae9bc6",
+                "method": "session/jwt",
+                "response":{
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8"
+                }
+            }
+
+## Forgot Password [/forgotpassword]
+### Initiate a Forgot Password request [POST]
+This will cause an email to be sent to the user with a link to click on to reset their password.
+
++ Request Request password reset (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "admin@example.org"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bda4bb50c",
+                "method": "forgotpassword",
+                "response":{
+                    "success": "Password reset was submitted, please check your email for further instructions."
+                }
+            }
+
+## Forgot Password Confirm [/forgotpassword/confirm/{userid}]
++ Parameters
+
+    + userid: `1` (required) - The user ID.
+
+
+### Confirm a Forgot Password request [POST]
+This will confirm a forgot-password request for the given user, a successful confirmation will send the user an email to confirm the password was chagned.
+
++ Request Confirm password reset (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "BcEBEQAxCAMwSQPaKyCH8fNv4RNnS1EiD7rNfIiMHuHmfZvPv8VWTdgJ0egBzx8",
+                    "password": "n3w_p@55w0rd"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934be2091a0a",
+                "method": "forgotpassword/confirm/1",
+                "response":{
+                    "success": "Password was changed, you can now login."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934be3c48047",
+                "method": "forgotpassword/confirm/1",
+                "error": "User does not require password reset."
+            }
+
+## Register new account [/register]
+### Initiate a registration request [POST]
+This will cause an email to be sent to the user with a link to click on to confirm their registration.
+
++ Request Registration (application/json)
+    + Body
+
+            {
+                "data": {
+                    "email": "user10@example.org",
+                    "realname": "User Ten"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bea6b4a1c",
+                "method": "register",
+                "response":{
+                    "id": "56",
+                    "email": "user10@example.org",
+                    "realname": "User Ten"
+                }
+            }
+
+## Registration Confirmation [/register/confirm/{userid}]
++ Parameters
+
+    + userid: `56` (required) - The new user ID.
+
+
+### Confirm a Forgot Password request [POST]
+This will confirm a registration request for the given user.
+
++ Request Confirm registration (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "C28E68B6-17A9-4F43-8F03-3CFF519FC3DA",
+                    "password": "n3w_p@55w0rd"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show a message of success.
+    + Body
+
+            {
+                "respid": "5934bf2bc9a5d",
+                "method": "register/confirm/56",
+                "response":{
+                   "success": "Registration was successful, you can now log in."
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error with the request you will get an error reply
+    + Body
+
+            {
+                "respid": "5934bf4001861",
+                "method": "register/confirm/56",
+                "error": "User does not require verification."
+            }
+

@@ -1,0 +1,980 @@
+# Group Domains
+Endpoints for dealing with domains.
+
+## Get domains [/domains{?contains}]
+
+### Get list of known domains [GET]
+See what domains you have access to, and what level of access to each.
+
++ Parameters
+
+    + contains: `foo.bar.baz.example.com` (optional, string) - Only return the domain that would contain this record
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc0357e7eb",
+                "method": "domains",
+                "response":{
+                    "example.org": "owner",
+                    "test2.com": "owner",
+                    "example1.org": "write",
+                    "example2.org": "read"
+                }
+            }
+
+### Create a new domain [POST]
+If the user has the `domains_create` permission, they can use this to create a new domain owned by themselves.
+
++ Request Create a domain (application/json)
+    + Body
+
+            {
+                "data": {
+                    "domain": "example.net",
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-created domain.
+    + Body
+
+            {
+                "respid": "58bcc0c377913",
+                "method": "domains",
+                "response":{
+                    "id": "9",
+                    "domain": "example.net",
+                    "defaultttl": 86400,
+                    "disabled": false,
+                    "SOA":{
+                        "primaryNS": "ns1.example.net.",
+                        "adminAddress": "dnsadmin.example.net.",
+                        "serial": "0",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "58bcc115b3601",
+                "method": "domains",
+                "error": "Error updating domain.",
+                "errorData": "Domain already exists."
+            }
+
+## Specific domain infomation [/domains/{domain}]
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get information about a domain [GET]
+
++ Response 200 (application/json)
+    A successful response will display information about the domain.
+    + Body
+
+            {
+                "respid": "58bcc18455fac",
+                "method": "domains/example.org",
+                "response":{
+                    "id": "3",
+                    "domain": "example.org",
+                    "defaultttl": 86400,
+                    "disabled": "false",
+                    "SOA":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "2017030500",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    An error will include an `error` rather than the `response`
+    + Body
+
+            {
+                "respid": "58bcc1a902ddd",
+                "method": "domains/example.example",
+                "error": "Unknown domain: example.example"
+            }
+
+### Update information about a domain [POST]
+This allows changing the domain enabled/disabled status or updating the SOA fields.
+
+As with other update methods, only fields that are provided will be changed, you do not need to provide a complete object.
+
+Changes made with this end point do not automatically increment the domain serial.
+
++ Request Disable domain and update the serial (application/json)
+    + Body
+
+            {
+                "data": {
+                    "disabled": "true",
+                    "SOA":{
+                        "serial": "999"
+                    }
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-updated domain.
+    + Body
+
+            {
+                "respid": "58bcc2a9b4b77",
+                "method": "domains/example.org",
+                "response":{
+                    "id": "3",
+                    "domain": "example.org",
+                    "defaultttl": 86400,
+                    "disabled": "true",
+                    "SOA":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "999",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
+### Delete a domain [DELETE]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc2d6e7515",
+                "method": "domains/example.org",
+                "response":[
+                   "deleted": "true"
+                ]
+            }
+
+## Domain access levels [/domains/{domain}/access]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get all users with access to the domain [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bdf7472d255",
+                "method": "domains/example2.org/access",
+                "response":{
+                    "id": "7",
+                    "domain": "example2.org",
+                    "defaultttl": 86400,
+                    "disabled": "false",
+                    "access":{
+                       "admin@example.org": "write",
+                        "user2@example.org": "owner"
+                    }
+                }
+            }
+
+### Update domain access  [POST]
+This allows changing user access levels on the domain.
+
+As a general rule of thumb, you can not edit your own access level, and you can not set people to have an access level equal or above your own (Thus only users with the `manage_domains` permission can set domain owners.)
+
+There are 5 levels of access (each level has all the access of those below it):
+ - owner - Owner has full control over the domain, there can only be 1. Only the owner can delete the domain.
+ - admin - Domain admins can grant other users write access to the domain.
+ - write - Write allows changing domain records
+ - read - Read allows reading domain records but not changing
+ - none - No access to the domain (Default)
+
++ Request Give user1 write access (application/json)
+    + Body
+
+            {
+                "data":{
+                    "access":{
+                        "user1@example.org": "write"
+                    }
+                }
+            }
+
+
++ Response 200 (application/json)
+    A successful response will display the newly-updated access list.
+    + Body
+
+            {
+                "respid": "58bdf89ebc587",
+                "method": "domains/example2.org/access",
+                "response":{
+                    "id": "7",
+                    "domain": "example2.org",
+                    "defaultttl": 86400,
+                    "disabled": "false",
+                    "access":{
+                        "admin@example.org": "write",
+                        "user2@example.org": "owner",
+                        "user1@example.org": "write"
+                    }
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error changing any of the requested access, the whole change will be aborted with an error message explaining why.
+    + Body
+
+            {
+                "respid": "58bdf83ed6cd5",
+                "method": "domains/example2.org/access",
+                "error": "You do not have the required access to the domain: example2.org"
+            }
+
+## Domain Keys [/domains/{domain}/keys]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+
+
+### Get known Domain Keys [GET]
+Returns the list of known Domain Keys and their description/permissions.
+
+Domain keys behave like user API Keys, except they are limited to a single domain and can only be given read or write access (not owner or admin).
+
+You will need `write` level access on a domain to view or make changes to domain keys and will need to be authenticated as a real user and not using another domain key.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f821198f95",
+                "method": "domains/example.org/keys",
+                "response":{
+                    "9426F536-2559-4FA0-BA50-644C90B5FAE4":{
+                        "description": "Write Key",
+                        "domains_write": "true",
+                        "created": "1496284877",
+                        "lastused": "1496284879"
+                    },
+                    "586DAB85-9DCE-4FA2-AA9D-877AA7011190":{
+                        "description": "Read Key",
+                        "domains_write": "false",
+                        "created": "1496284877",
+                        "lastused": "1496285565"
+                    }
+                }
+            }
+
+### Create a new Key [POST]
+Create a new Domain Key. The key itself will be randomly generated and returned.
+
++ Request Create a key that has read-only access (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Read-Only Key"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created key
+    + Body
+
+            {
+                "respid": "592f825565d61",
+                "method": "domains/example.org/keys",
+                "response":{
+                    "7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E":{
+                        "description": "Read-Only Key",
+                        "domains_write": false,
+                        "created": 1496285781,
+                        "lastused": 0,
+                        "updated": true
+                    }
+                }
+            }
+
+
+## Manipulate specific Domain Key [/domains/{domain}/keys/{keyid}]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+    + keyid: `7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E` (required) - The key ID.
+
+### Get key description/permissions [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f828d6ddbd",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":{
+                    "description": "Read-Only Key",
+                    "domains_write": "false",
+                    "created": "1496285781",
+                    "lastused": "0"
+                }
+            }
+
+### Update key [POST]
+This takes the same parameters as create, but will update an existing key.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "description": "Full-Access Key",
+                    "domains_write": "true"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the key as it exists after the change.
+    + Body
+
+            {
+                "respid": "592f82ac75e21",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":{
+                    "description": "Full-Access Key",
+                    "domains_write": "true",
+                    "created": "1496285781",
+                    "lastused": "0",
+                    "updated": true
+                }
+            }
+
+### Delete key [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f82c0d3006",
+                "method": "domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E",
+                "response":[
+                   "deleted": "true"
+                ]
+            }
+
+## Domain Hooks [/domains/{domain}/hooks]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+
+
+### Get known Domain Hooks [GET]
+Returns the list of known Domain Hooks and any password associated with them
+
+Domain Hooks are web pages that recieve specially-crafted POST requests when certain events happen related to a domain.
+
+If a password is specified, the POST request will include an X-HMAC-SIGNATURE header signing the data that was sent.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5a1afee40bc4c",
+                "method": "domains/example.org/hooks",
+                "response":{
+                    "3":{
+                        "url": "http://hooks.example.org/hook1.php",
+                        "password": "password",
+                        "disabled": "false",
+                        "created": "1511718537",
+                        "lastused": "0"
+                    },
+                    "4":{
+                        "url": "http://hooks.example.org/hook2.php",
+                        "password": "",
+                        "disabled": "false",
+                        "created": "1511718542",
+                        "lastused": "0"
+                    }
+                }
+            }
+
+### Create a new Hook [POST]
+Create a new Domain Hook.
+
++ Request Create a Hook without a password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "url": "http://hooks.example.org/hook3.php",
+                    "password": ""
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the newly created hook
+    + Body
+
+            {
+                "respid": "5a1b003293d16",
+                "method": "domains/example.org/hooks",
+                "response":{
+                    "5":{
+                        "url": "http://hooks.example.org/hook3.php",
+                        "password": "",
+                        "disabled": false,
+                        "created": 1511718962,
+                        "lastused": 0,
+                        "updated": true
+                        }
+                    }
+                }
+            }
+
+
+## Manipulate specific Domain Hook [/domains/{domain}/hooks/{hookid}]
++ Parameters
+
+    + domain: `example.org` (required, string) - The domain name
+    + hookid: `5` (required) - The Hook ID.
+
+### Get Hook details [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f828d6ddbd",
+                "method": "domains/example.org/hooks/5",
+                "response":{
+                        "url": "http://hooks.example.org/hook3.php",
+                        "password": "",
+                        "disabled": false,
+                        "created": 1511718962,
+                        "lastused": 0
+                }
+            }
+
+### Update Hook [POST]
+This takes the same parameters as create, but will update an existing hook.
+
++ Request (application/json)
+    + Body
+
+            {
+                "data": {
+                    "password": "foo"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the hook as it exists after the change.
+    + Body
+
+            {
+                "respid": "5a1b00d645f22",
+                "method": "domains/example.org/hooks/5",
+                "response":{
+                    "url": "http://hooks.example.org/hook3.php",
+                    "password": "foo",
+                    "disabled": "false",
+                    "created": "1511718900",
+                    "lastused": "0",
+                    "updated": true
+                }
+            }
+
+### Delete Hook [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "592f82c0d3006",
+                "method": "domains/example.org/hooks/5",
+                "response":[
+                   "deleted": "true"
+                ]
+            }
+
+## Domain records [/domains/{domain}/records]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get all domain records [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc3059365b",
+                "method": "domains/example.org/records",
+                "response":{
+                    "records":[
+                        {
+                            "id": "18",
+                            "name": "",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "19",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "20",
+                            "name": "",
+                            "type": "AAAA",
+                            "content": "::1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "21",
+                            "name": "www",
+                            "type": "AAAA",
+                            "content": "::1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "22",
+                            "name": "txt",
+                            "type": "TXT",
+                            "content": "Some Text Record",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "23",
+                            "name": "",
+                            "type": "MX",
+                            "content": "",
+                            "ttl": "86400",
+                            "priority": "10",
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        },
+                        {
+                            "id": "24",
+                            "name": "",
+                            "type": "MX",
+                            "content": "test",
+                            "ttl": "86400",
+                            "priority": "50",
+                            "changed_at": "1488755309",
+                            "changed_by": null,
+                            "disabled": "false"
+                        }
+                    ],
+                    "hasNS": true,
+                    "soa":{
+                        "primaryNS": "ns1.mydnshost.co.uk.",
+                        "adminAddress": "dnsadmin.dataforce.org.uk.",
+                        "serial": "999",
+                        "refresh": "86400",
+                        "retry": "7200",
+                        "expire": "2419200",
+                        "minttl": "60"
+                    }
+                }
+            }
+
+### Update domain records [POST]
+This can update/delete specifically named records, or add new records all in one go.
+
+You can not edit the SOA from here, and the serial will be incremented automatically.
+
+As with other update methods, only fields that are provided will be changed, you do not need to provide a complete object.
+
++ Request update content for ID 18/19, delete 20 and add a new A record. (application/json)
+    + Body
+
+            {
+                "data": {
+                    "records":[
+                        {
+                            "id": "18",
+                            "content": "127.0.0.18"
+                        },
+                        {
+                            "id": "19",
+                            "content": "127.0.0.18"
+                        },
+                        {
+                            "id": "20",
+                            "delete": true
+                        },
+                        {
+                            "name": "localhost",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400"
+                        }
+                    ]
+                }
+            }
+
++ Response 200 (application/json)
+    A success response will show the records that were changed, and any new records that were added, along with the new domain serial.
+    + Body
+
+            {
+                "respid": "58bcc593acecc",
+                "method": "domains/example.org/records",
+                "response":{
+                    "serial": "2017030600",
+                    "changed":[
+                        {
+                            "id": "18",
+                            "name": "",
+                            "type": "A",
+                            "content": "127.0.0.18",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": "false",
+                            "updated": true
+                        },
+                        {
+                            "id": "19",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.18",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": "false",
+                            "updated": true
+                        },
+                        {
+                            "id": "35",
+                            "name": "localhost",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": 1488766355,
+                            "changed_by": "2",
+                            "disabled": false,
+                            "updated": true
+                        },
+                        {
+                            "id": "20",
+                            "deleted": true
+                        }
+                    ]
+                }
+            }
+
++ Response 400 (application/json)
+    A response will contain errorData to show errors related to specific records passed in. If there are any errors, no changes are made.
+    + Body
+
+            {
+                "respid": "58bcc54aca077",
+                "method": "domains/example.org/records",
+                "error": "There was errors with the records provided.",
+                "errorData":{
+                    "1": "Unable to validate record: Content must be a valid IPv4 Address."
+                }
+            }
+
+
+
+### Delete all domain records [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc5e696495",
+                "method": "domains/example.org/records",
+                "response":{
+                    "deleted": 7,
+                    "serial": 2017030601
+                }
+            }
+
+## Domain Statistics [/domains/{domain}/stats{?type}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + type: `raw` (optional, string) - Type of stats (raw or derivative)
+
+### Get raw statistics for this domain [GET]
++ Parameters
+    + type: `raw`
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "59b5900b12a2e",
+                "method": "domains/example.org/stats",
+                "response":{
+                    "stats": {
+                        "A": [{"time": 1505074560, "value": 249101},
+                              {"time": 1505074620, "value": 249122},
+                              {"time": 1505074680, "value": 249132},
+                              // More data
+                              {"time": 1505078040, "value": 250476},
+                              {"time": 1505078100, "value": 250497}],
+                        "AAAA": [{"time": 1505074560, "value": 97971},
+                                 {"time": 1505074620, "value": 97975},
+                                 {"time": 1505074680, "value": 97975},
+                                 // More data
+                                 {"time": 1505078040, "value": 98409},
+                                 {"time": 1505078100, "value": 98409}],
+                        // More RR Types
+                        "TXT": [{"time": 1505074560, "value": 176},
+                                {"time": 1505074620, "value": 176},
+                                {"time": 1505074680, "value": 176},
+                                // More data
+                                {"time": 1505078040, "value": 176},
+                                {"time": 1505078100, "value": 176}]
+                    }
+                }
+            }
+
+## Domain export [/domains/{domain}/export]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Export zone as bind zone file [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58cef4d2a5104",
+                "method": "domains/example.org/export",
+                "response":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS dev.mydnshost.co.uk.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\nexample.org. 86400 IN AAAA ::1\nwww.example.org. 86400 IN AAAA ::1\ntest.example.org. 86400 IN CNAME www.example.org.\ntxt.example.org. 86400 IN TXT \"Some Text Record\"\nexample.org. 86400 IN MX 10 example.org.\nexample.org. 86400 IN MX 50 www.example.org.\n"
+                }
+            }
+
+## Domain import [/domains/{domain}/import]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Export zone as bind zone file [POST]
++ Request import from zone file(application/json)
+    + Body
+
+            {
+                "data":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS dev.mydnshost.co.uk.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\nexample.org. 86400 IN AAAA ::1\nwww.example.org. 86400 IN AAAA ::1\ntest.example.org. 86400 IN CNAME www.example.org.\ntxt.example.org. 86400 IN TXT \"Some Text Record\"\nexample.org. 86400 IN MX 10 example.org.\nexample.org. 86400 IN MX 50 www.example.org.\n"
+                }
+            }
+
+
++ Response 200 (application/json)
+If the import is successful, the zone serial will be returned.
+    + Body
+
+            {
+                "respid": "58cef5a9d7216",
+                "method": "domains/example.org/import",
+                "response":{
+                    "serial": "2017031900"
+                }
+            }
+
+## Specific domain record information [/domains/{domain}/records/{recordid}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + recordid: `21` (required, number) - The record id
+
+### Get specific record information [GET]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc673f3c17",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "id": "21",
+                    "name": "www",
+                    "type": "A",
+                    "content": "127.0.0.1",
+                    "ttl": "86400",
+                    "priority": null,
+                    "changed_at": "1488766474",
+                    "changed_by": null,
+                    "disabled": "false"
+                }
+            }
+
+### Update a specific record [POST]
++ Request Update content(application/json)
+    + Body
+
+            {
+                "data": {
+                    "content": "127.0.0.18"
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc6cb79998",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "id": "21",
+                    "name": "www",
+                    "type": "A",
+                    "content": "127.0.0.18",
+                    "ttl": "86400",
+                    "priority": null,
+                    "changed_at": 1488766667,
+                    "changed_by": "2",
+                    "disabled": "false"
+                }
+            }
+
++ Response 400 (application/json)
+    If there is a validation error, you will get `error` and `errorData` rather than `response`
+    + Body
+
+            {
+                "respid": "58bcc6df9bd2d",
+                "method": "domains/example.org/records/21",
+                "error": "Error updating record.",
+                "errorData": "Content must be a valid IPv4 Address."
+            }
+
+
+### Delete a specific record [DELETE]
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc701e70d7",
+                "method": "domains/example.org/records/21",
+                "response":{
+                    "deleted": "true",
+                    "serial": 2017030601
+                }
+            }
+
++ Response 400 (application/json)
+    + Body
+
+            {
+                "respid": "58bcc75e10e3a",
+                "method": "domains/example.org/records/21",
+                "error": "Unknown record id for domain example.org : 21"
+            }
+
+## Specific records by name [/domains/{domain}/record/{rrname}/{rrtype}]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+    + rrname: `www` (required, string) - The record name
+    + rrtype: `A` (optional, string) - The record type
+
+### Get all `www` records with a type of A [GET]
+
+This allows looking at specific records by name and/or type.
+
+(If rrtype is not specified, then all records of the requested name will be
+shown, regardless of the type)
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591b5190e3f66",
+                "method": "domains/example1.org/record/www/A",
+                "response":{
+                    "records":[
+                        {
+                            "id": "69",
+                            "name": "www",
+                            "type": "A",
+                            "content": "127.0.0.1",
+                            "ttl": "86400",
+                            "priority": null,
+                            "changed_at": "1490399322",
+                            "changed_by": null,
+                            "disabled": "false"
+                        }
+                    ]
+                }
+            }
+
+### Delete all domain records with a type of A [DELETE]
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "591b51c5a5ca8",
+                "method": "domains/example1.org/record/www/A",
+                "response":{
+                    "deleted": 1,
+                    "serial": "2017051600"
+                }
+            }
+
+## Force backend sync [/domains/{domain}/sync]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Force backend sync [GET]
+Attempt to resync the domain with the server backends.
+
+This can be used to force the server backend to refresh its copy of the domain without needing to make any changes.
+
++ Response 200 (application/json)
+    This will always show a successful response, it only fires the sync hook.
+    + Body
+
+            {
+                "respid": "58cef6194ca63",
+                "method": "domains/example.org/sync"
+            }
+
