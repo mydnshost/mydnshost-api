@@ -88,6 +88,11 @@
 		 * @param $workerConfig Worker config.
 		 */
 		public function addJob($function, $workerConfig) {
+			if (isset($workerConfig['include']) && !$workerConfig['include']) {
+				echo $this->showTime(), ' ', 'Excluding worker type: ', $function, "\n";
+				return;
+			}
+
 			if (isset($this->jobs[$function])) { return; }
 
 			$this->jobs[$function] = ['maxWorkers' => isset($workerConfig['processes']) ? $workerConfig['processes'] : 1,
