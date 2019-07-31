@@ -74,17 +74,31 @@
 	$config['jobserver']['host'] = getEnvOrDefault('JOBSERVER_HOST', '127.0.0.1');
 	$config['jobserver']['port'] = getEnvOrDefault('JOBSERVER_PORT', 4730);
 
+	function getJobWorkerConfig($w) {
+		$result = [];
+		$result['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', getEnvOrDefault('WORKER_PROCESSES', 1));
+		$result['maxJobs'] = getEnvOrDefault('WORKER_' . $w . '_MAXJOBS', getEnvOrDefault('WORKER_MAXJOBS', 250));
+
+		return $result;
+	}
+
 	$config['jobworkers'] = [];
-	foreach (explode(',', getEnvOrDefault('WORKER_WORKERS', '*')) AS $w) {
+	foreach (explode(',', getEnvOrDefault('WORKER_WORKERS', '')) AS $w) {
 		if (empty($w)) { continue; }
 
-		if ($w{0} == '-') {
-			$w = substr($w, 1);
-			$config['jobworkers'][$w]['include'] = false;
+		$includeWorker = true;
+		if ($w{0} == '-') { $w = substr($w, 1); $includeWorker = false; }
+
+		if ($w == '*') {
+			foreach (recursiveFindFiles(__DIR__ . '/tasks/workers') as $file) {
+				$w = pathinfo($file, PATHINFO_FILENAME);
+
+				$config['jobworkers'][$w] = getJobWorkerConfig($w);
+				$config['jobworkers'][$w]['include'] = $includeWorker;
+			}
 		} else {
-			$config['jobworkers'][$w]['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', 1);
-			$config['jobworkers'][$w]['maxJobs'] = getEnvOrDefault('WORKER_' . $w . '_MAXJOBS', 250);
-			$config['jobworkers'][$w]['include'] = true;
+			$config['jobworkers'][$w] = getJobWorkerConfig($w);
+			$config['jobworkers'][$w]['include'] = $includeWorker;
 		}
 	}
 

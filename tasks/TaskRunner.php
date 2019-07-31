@@ -263,15 +263,8 @@
 	$pm = new ProcessManager($config['jobserver']);
 
 	// Add the workers.
-	if (isset($config['jobworkers']['*'])) {
-		foreach (recursiveFindFiles(__DIR__ . '/workers') as $file) {
-			$worker = pathinfo($file, PATHINFO_FILENAME);
-			$pm->addJob($worker, $config['jobworkers']['*']);
-		}
-	} else {
-		foreach ($config['jobworkers'] as $worker => $conf) {
-			$pm->addJob($worker, $conf);
-		}
+	foreach ($config['jobworkers'] as $worker => $conf) {
+		$pm->addJob($worker, $conf);
 	}
 
 	// Deal with shutdown requests
