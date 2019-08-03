@@ -1,4 +1,6 @@
 <?php
+	use shanemcc\phpdb\DB;
+
 	EventQueue::get()->subscribe('call_domain_hooks', function($domainid, $data) {
 		$domain = Domain::load(DB::get(), $domainid);
 

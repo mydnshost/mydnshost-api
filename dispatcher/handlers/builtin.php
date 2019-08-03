@@ -1,4 +1,5 @@
 <?php
+	use shanemcc\phpdb\DB;
 
 	EventQueue::get()->subscribe('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
 		dispatchJob('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
