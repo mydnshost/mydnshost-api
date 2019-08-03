@@ -23,11 +23,6 @@
 		include_once($file);
 	}
 
-	foreach (recursiveFindFiles(__DIR__ . '/handlers/user') as $file) {
-		echo showTime(), ' ', 'Loading from: ', $file, "\n";
-		include_once($file);
-	}
-
 	EventQueue::get()->consumeEvents(function ($event) {
 		echo showTime(), ' ', 'Event: ', $event['event'], '(', json_encode($event['args']), ')', "\n";
 	});
