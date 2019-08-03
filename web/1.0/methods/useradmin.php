@@ -424,6 +424,7 @@
 				unset($k['apikey']);
 				$k['maskedkey'] = $key->getKey(true);
 				$k['updated'] = $key->save();
+				$sendMail = false;
 				if (!$k['updated']) {
 					if ($isCreate) {
 						$this->getContextKey('response')->sendError('Error creating key.', $ex->getMessage());
@@ -432,9 +433,13 @@
 					}
 				} else if ($isCreate) {
 					$this->getContextKey('response')->data([$key->getKey() => $k]);
+					$sendMail = true;
 				} else {
 					$this->getContextKey('response')->data($k);
+					$sendMail = true;
+				}
 
+				if ($sendMail) {
 					$te = TemplateEngine::get();
 					$te->setVar('user', $user);
 					$te->setVar('apikey', $key);
