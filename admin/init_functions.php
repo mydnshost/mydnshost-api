@@ -488,6 +488,14 @@ ALTER TABLE `userdomaincustomdata` ADD INDEX `userdomaincustomdata_user` (`user_
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Drop old hooks table.
+			// ------------------------------------------------------------------------
+			$dataChanges[32] = new DBChange(<<<MYSQLQUERY
+DROP TABLE `hooks`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

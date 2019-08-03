@@ -73,6 +73,12 @@
 	$config['email']['from'] = getEnvOrDefault('EMAIL_FROM', 'dns@example.org');
 	$config['email']['from_name'] = getEnvOrDefault('EMAIL_FROM_NAME', $config['sitename']);
 
+	// Config for RabbitMQ
+	$config['rabbitmq']['host'] = getEnvOrDefault('RABITMQ_HOST', '127.0.0.1');
+	$config['rabbitmq']['port'] = getEnvOrDefault('RABITMQ_PORT', 5672);
+	$config['rabbitmq']['user'] = getEnvOrDefault('RABITMQ_USER', 'guest');
+	$config['rabbitmq']['pass'] = getEnvOrDefault('RABITMQ_PASS', 'guest');
+
 	// Config for jobserver.
 	$config['jobserver']['type'] = getEnvOrDefault('JOBSERVER_TYPE', 'none');
 	$config['jobserver']['host'] = getEnvOrDefault('JOBSERVER_HOST', '127.0.0.1');

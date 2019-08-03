@@ -26,7 +26,7 @@
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
 			[$subject, $message, $htmlmessage] = templateToMail($te, 'forgotpassword.tpl');
-			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 
 			$this->getContextKey('response')->data(['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.']);
@@ -90,7 +90,7 @@
 				$te = TemplateEngine::get();
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
-				HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+				EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 				$this->getContextKey('response')->data(['success' => 'Password was changed, you can now login.']);
 			} else {

@@ -129,17 +129,17 @@
 
 			// Call various hooks.
 			foreach ($deleted as $record) {
-				HookManager::get()->handle('delete_record', [$domain, $record]);
+				EventQueue::get()->publish('delete_record', [$domain, $record]);
 			}
 			foreach ($added as $record) {
-				HookManager::get()->handle('add_record', [$domain, $record]);
+				EventQueue::get()->publish('add_record', [$domain, $record]);
 			}
 
 			if (!empty($result)) {
 				$serial = $domain->updateSerial();
-				HookManager::get()->handle('update_record', [$domain, $domain->getSOARecord()]);
-				HookManager::get()->handle('records_changed', [$domain]);
-				HookManager::get()->handle('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
+				EventQueue::get()->publish('update_record', [$domain, $domain->getSOARecord()]);
+				EventQueue::get()->publish('records_changed', [$domain]);
+				EventQueue::get()->publish('call_domain_hooks', [$domain, ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			} else {
 				$serial = $domain->getSOARecord()->parseSOA()['serial'];
 			}

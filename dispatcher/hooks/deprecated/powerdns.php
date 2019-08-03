@@ -1,4 +1,9 @@
 <?php
+
+	//
+	// THIS WILL NOT WORK, THIS HAS NOT BEEN UPDATED SINCE MOVING TO WORKERS AND RABBITMQ.
+	//
+
 	// --------------------
 	// PowerDNS
 	// --------------------

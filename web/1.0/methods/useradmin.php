@@ -229,23 +229,23 @@
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'emailchanged.tpl');
-							HookManager::get()->handle('send_mail', [$oldEmail, $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('send_mail', [$oldEmail, $subject, $message, $htmlmessage]);
 						}
 
 						if ($newPass != $oldPass && !empty($oldPass)) {
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
-							HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 						}
 					} else if ($isCreate) {
-						HookManager::get()->handle('new_user', [$user]);
+						EventQueue::get()->publish('new_user', [$user]);
 
 						if ($sendWelcome) {
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-							HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 						}
 					}
 
@@ -440,7 +440,7 @@
 					$te->setVar('apikey', $key);
 					$template = $isCreate ? 'apikey/create.tpl' : 'apikey/update.tpl';
 					[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-					HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 				}
 
 				return TRUE;
@@ -473,7 +473,7 @@
 			$te->setVar('apikey', $key);
 			$template = 'apikey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 			return TRUE;
 		}
@@ -626,7 +626,7 @@
 				if ($isCreate) {
 					$template = '2fakey/create.tpl';
 					[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-					HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 				} else {
 					// Doesn't make sense to send this mail, as only the
 					// description can change, we won't show the 2FA Secret in
@@ -669,7 +669,7 @@
 				$this->getContextKey('response')->setHeader('info', 'Key will be verified in the background.');
 
 				// Fire off a key-validation hook.
-				HookManager::get()->handle('verify_2fa_push', [$key, 'Key verification on ' . $config['sitename']]);
+				EventQueue::get()->publish('verify_2fa_push', [$key, 'Key verification on ' . $config['sitename']]);
 
 				return TRUE;
 			} else if (!$key->isPush() && !$key->verify($data['data']['code'], 1)) {
@@ -694,7 +694,7 @@
 			$te->setVar('twofactorkey', $key);
 			$template = '2fakey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 			return TRUE;
 		}
@@ -823,7 +823,7 @@
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
 			[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-			HookManager::get()->handle('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 			$this->getContextKey('response')->data(['success' => 'Registration email resent.']);
 

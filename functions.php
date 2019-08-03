@@ -40,66 +40,9 @@
 	// Mailer
 	Mailer::get()->setConfig($config['email']);
 
-	HookManager::get()->addHookType('new_user');
-	HookManager::get()->addHookType('new_user_pending');
-	HookManager::get()->addHookType('new_user_confirmed');
-	HookManager::get()->addHookType('new_domain');
-	HookManager::get()->addHookType('worker_error');
-
-	HookManager::get()->addHookType('add_domain');
-	HookManager::get()->addHookType('rename_domain');
-	HookManager::get()->addHookType('delete_domain');
-	HookManager::get()->addHookType('sync_domain');
-
-	HookManager::get()->addHookType('add_record');
-	HookManager::get()->addHookType('update_record');
-	HookManager::get()->addHookType('delete_record');
-
-	HookManager::get()->addHookType('records_changed');
-
-	HookManager::get()->addHookType('send_mail');
-
-	HookManager::get()->addHookType('verify_2fa_push');
-
-	HookManager::get()->addHookType('call_domain_hooks');
-
-	if ($config['jobserver']['type'] == 'gearman') {
-		$gmc = new GearmanClient();
-		try {
-			$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
-			$gmc->setTimeout(5000);
-		} catch (Exception $e) {
-			$config['jobserver']['type'] = 'none';
-			$gmc = null;
-		}
-	}
-
-	if ($gmc !== null) {
-		HookManager::get()->addHook('send_mail', function($to, $subject, $message, $htmlmessage = NULL) use ($gmc) {
-			@$gmc->doBackground('sendmail', json_encode(['to' => $to, 'subject' => $subject, 'message' => $message, 'htmlmessage' => $htmlmessage]));
-		});
-
-		HookManager::get()->addHook('verify_2fa_push', function($key, $message) use ($gmc) {
-			@$gmc->doBackground('verify_2fa_push', json_encode(['keyid' => $key->getID(), 'userid' => $key->getUserID(), 'message' => $message]));
-		});
-	} else {
-		HookManager::get()->addHookBackground('send_mail', function($to, $subject, $message, $htmlmessage = NULL) {
-			Mailer::get()->send($to, $subject, $message, $htmlmessage);
-		});
-
-		HookManager::get()->addHookBackground('verify_2fa_push', function($key, $message) use ($config) {
-			if ($key->isPush()) {
-				if ($key->pushVerify($message)) {
-					$key->setActive(true);
-					if (!$key->isOneTime()) { $key->setLastUsed(time()); }
-					$key->save();
-				}
-			}
-		});
-	}
-
-	// Load the hooks
-	foreach (recursiveFindFiles(__DIR__ . '/hooks') as $file) { include_once($file); }
+	// Event Queue
+	EventQueue::get()->setRabbitMQ($config['rabbitmq']);
+	EventQueue::get()->publish('test_event', ['some', 'args']);
 
 	// Functions
 	function recursiveFindFiles($dir) {

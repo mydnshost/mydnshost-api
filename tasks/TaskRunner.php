@@ -251,7 +251,7 @@
 					$this->startWorker($function);
 				}
 			} else if ($cmd == 'EXCEPTION') {
-				HookManager::get()->handle('worker_error', [$function, $args]);
+				EventQueue::get()->publish('worker_error', [$function, $args]);
 			}
 		}
 
