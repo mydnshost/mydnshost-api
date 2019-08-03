@@ -81,7 +81,7 @@
 			$this->channel->exchange_declare('events', 'fanout', false, false, false);
 			$this->channel->queue_bind($this->myqueue, 'events');
 
-			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) {
+			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) use ($function) {
 				$event = json_decode($msg->body, true);
 
 				if ($function != null) { call_user_func_array($function, [$event]); }
