@@ -19,23 +19,23 @@
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
-		EventQueue::get()->subscribe('add_domain', function($domainid) use ($gmc) {
+		EventQueue::get()->subscribe('add_domain', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			$gmc->doBackground('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
+			dispatchJob('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('rename_domain', function($oldName, $domainid) use ($gmc) {
+		EventQueue::get()->subscribe('rename_domain', function($oldName, $domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			$gmc->doBackground('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
+			dispatchJob('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('delete_domain', function($domainid, $domainRaw) use ($gmc) {
-			$gmc->doBackground('bind_delete_domain', json_encode(['domain' => $domainRaw]));
+		EventQueue::get()->subscribe('delete_domain', function($domainid, $domainRaw) {
+			dispatchJob('bind_delete_domain', json_encode(['domain' => $domainRaw]));
 		});
 
-		EventQueue::get()->subscribe('records_changed', function($domainid) use ($gmc) {
+		EventQueue::get()->subscribe('records_changed', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			$domains = [];
@@ -49,18 +49,18 @@
 			}
 
 			foreach ($domains as $d) {
-				@$gmc->doBackground('bind_records_changed', json_encode(['domain' => $d->getDomainRaw()]));
+				dispatchJob('bind_records_changed', json_encode(['domain' => $d->getDomainRaw()]));
 			}
 		});
 
-		EventQueue::get()->subscribe('sync_domain', function($domainid) use ($gmc) {
+		EventQueue::get()->subscribe('sync_domain', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			$gmc->doBackground('job_sequence', json_encode(['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']],
-			                                                           ['wait' => '1', 'job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
-			                                                           ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'add']],
-			                                                          ]
-			                                                ]));
+			dispatchJob('job_sequence', json_encode(['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']],
+			                                                    ['wait' => '1', 'job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
+			                                                    ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'add']],
+			                                                   ]
+			                                        ]));
 		});
 	}
 

@@ -18,6 +18,13 @@
 		die('Unable to connect to gearman.');
 	}
 
+	function dispatchJob($job, $args) {
+		global $gmc;
+
+		echo showTime(), ' ', 'Dispatching: ', $job, '(', json_encode($args), ')', "\n";
+		$gmc->doBackground($job, $args);
+	}
+
 	foreach (recursiveFindFiles(__DIR__ . '/handlers') as $file) {
 		echo showTime(), ' ', 'Loading from: ', $file, "\n";
 		include_once($file);
