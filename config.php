@@ -11,13 +11,9 @@
 	// a number, and a special character `*&!@%^#$``
 	$config['jwtsecret'] = getEnvOrDefault('JWT_SECRET', 'S0M3SEcr3t!#');
 
-	// Config for session data
-	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
-
 	// Config for redis.
 	//
-	// This will be used for sessions instead of memcached if defined, and also
-	// used for locking between distributed job workers.
+	// This will be used for sessions and by job workers for locking.
 	$config['redis'] = getEnvOrDefault('REDIS_HOST', '');
 	$config['redisPort'] = getEnvOrDefault('REDIS_PORT', 6379);
 	$config['redisSessionPrefix'] = getEnvOrDefault('REDIS_SESSION_PREFIX', 'MyDNSHost-API-Session');
