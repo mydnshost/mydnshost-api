@@ -18,7 +18,8 @@
 	//
 	// This will be used for sessions instead of memcached if defined, and also
 	// used for locking between distributed job workers.
-	$config['redis'] = getEnvOrDefault('REDIS', '');
+	$config['redis'] = getEnvOrDefault('REDIS_HOST', '');
+	$config['redisPort'] = getEnvOrDefault('REDIS_PORT', 6379);
 
 	// Config for Site registration
 	$config['register_enabled'] = parseBool(getEnvOrDefault('ALLOW_REGISTER', 'true'));

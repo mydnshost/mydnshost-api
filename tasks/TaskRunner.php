@@ -26,16 +26,17 @@
 		 *
 		 * @param $server Job Server information
 		 */
-		public function __construct($server, $redisHost) {
+		public function __construct($server, $redis) {
 			$this->server = $server;
 			$loop = React\EventLoop\Factory::create();
 			$this->loop = $loop;
 
-			$this->redisHost = $redisHost;
+			$this->redisHost = $redis['host'];
+			$this->redisPort = isset($redis['port']) ? $redis['port'] : '';
 
 			echo $this->showTime(), ' ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
 			echo $this->showTime(), ' ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
-			echo $this->showTime(), ' ', "\t", 'Redis Host: ', $redisHost, "\n";
+			echo $this->showTime(), ' ', "\t", 'Redis Host: ', $this->redisHost, (!empty($this->redisPort) ? ':' . $this->redisPort : ''), "\n";
 		}
 
 		private function showTime() {
@@ -196,7 +197,7 @@
 
 			// Configure the worker.
 			$process = $this->jobs[$function]['workers'][$pid]['process'];
-			$process->stdin->write('setRedisHost ' . $this->redisHost . "\n");
+			$process->stdin->write('setRedisHost ' . $this->redisHost . ' ' . $this->redisPort . "\n");
 			$process->stdin->write('addFunction ' . $function . "\n");
 			$process->stdin->write('setTaskServer ' . $this->server['type'] . ' ' . $this->server['host'] . ' ' . $this->server['port'] . "\n");
 			$process->stdin->write('run' . "\n");
@@ -271,7 +272,7 @@
 	}
 
 	// Create the process manager
-	$pm = new ProcessManager($config['jobserver'], $config['redis']);
+	$pm = new ProcessManager($config['jobserver'], ['host' => $config['redis'], 'port' => $config['redisPort']]);
 
 	// Add the workers.
 	foreach ($config['jobworkers'] as $worker => $conf) {

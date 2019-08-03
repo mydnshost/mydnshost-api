@@ -14,11 +14,13 @@
 		abstract public function run($job);
 
 		private static $redisHost;
+		private static $redisPort;
 		private static $redis;
 		private static $locks;
 
-		public static function setRedisHost($redisHost) {
+		public static function setRedisHost($redisHost, $redisPort) {
 			static::$redisHost = $redisHost;
+			static::$redisPort = $redisPort;
 			static::$redis = new Redis();
 
 			static::$locks = [];
@@ -43,7 +45,11 @@
 				try {
 					// Try and connect if we're not connected.
 					if (!static::$redis->isConnected()) {
-						static::$redis->connect(static::$redisHost);
+						if (empty(static::$redisPort)) {
+							static::$redis->connect(static::$redisHost);
+						} else {
+							static::$redis->connect(static::$redisHost, static::$redisPort);
+						}
 					}
 
 					if (static::$redis->set('lock_' . $name, $code, ['nx', 'px' => $timeout * 1000])) {

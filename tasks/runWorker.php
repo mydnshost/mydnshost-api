@@ -34,12 +34,13 @@
 
 			sendReply('OK', 'Worker for function: ', $func, ' (', $funcFileName, ')');
 		} else if ($cmd == 'setRedisHost') {
-			$args = explode(" ", $args);
+			$args = explode(" ", trim($args));
 
 			$host = $args[0];
+			$port = isset($args[1]) ? $args[1] : '';
 
-			sendReply('OK', 'Set redis host: ', $host);
-			TaskWorker::setRedisHost($host);
+			sendReply('OK', 'Set redis host: ', $host, (!empty($port) ? ':' . $port : ''));
+			TaskWorker::setRedisHost($host, $port);
 		} else if ($cmd == 'setTaskServer') {
 			$args = explode(" ", $args);
 
