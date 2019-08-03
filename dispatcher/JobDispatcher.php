@@ -32,4 +32,8 @@
 
 	EventQueue::get()->consumeEvents(function ($event) {
 		echo showTime(), ' ', 'Event: ', $event['event'], '(', json_encode($event['args']), ')', "\n";
+
+		EventQueue::get()->handleSubscribers();
 	});
+
+	EventQueue::get()->comsume();

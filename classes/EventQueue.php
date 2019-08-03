@@ -48,11 +48,11 @@
 		 */
 		public function publish($event, $args) {
 			$this->connect();
-			$this->channel->exchange_declare('events', 'fanout', false, false, false);
+			$this->channel->exchange_declare('events', 'topic', false, false, false);
 
 			$event = strtolower($event);
 			$msg = new AMQPMessage(json_encode(['event' => $event, 'args' => $args]));
-			$this->channel->basic_publish($msg, 'events');
+			$this->channel->basic_publish($msg, 'events', 'event.' . $event);
 		}
 
 
@@ -70,32 +70,47 @@
 			$this->subscribers[$event][] = $function;
 		}
 
-		/**
-		 * Begin consuming events from the bus.
-		 *
-		 * @param $function If this is given, this will be called before our
-		 *                  own handling of the events.
-		 */
-		public function consumeEvents($function = NULL) {
-			$this->connect();
-			$this->channel->exchange_declare('events', 'fanout', false, false, false);
-			$this->channel->queue_bind($this->myqueue, 'events');
-
-			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) use ($function) {
-				$event = json_decode($msg->body, true);
-
-				if ($function != null) { call_user_func_array($function, [$event]); }
-
+		public function handleSubscribers($event) {
+			if (isset($event['event'])) {
 				if (array_key_exists($event['event'], $this->subscribers)) {
 					foreach ($this->subscribers[$event['event']] as $callable) {
 						try {
-							call_user_func_array($callable, $event['args']);
+							call_user_func_array($callable, isset($event['args']) ? $event['args'] : []);
 						} catch (Exception $ex) {
 							// TODO: Handle this somewhere?
 						}
 					}
 				}
+			}
+		}
+
+		/**
+		 * Allow consuming events from the bus.
+		 *
+		 * @param $function If this is given, this will be called instead of
+		 *                  our own handling.
+		 */
+		public function consumeEvents($function = NULL, $bindingKey = '#') {
+			$this->connect();
+			$this->channel->exchange_declare('events', 'topic', false, false, false);
+			$this->channel->queue_bind($this->myqueue, 'events', $bindingKey);
+
+			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) use ($function) {
+				$event = json_decode($msg->body, true);
+
+				if ($function != null) {
+					call_user_func_array($function, [$event]);
+				} else {
+					$this->handleSubscribers($event);
+				}
 			});
+		}
+
+		/**
+		 * Start consuming from Rabbit MQ..
+		 */
+		public function consume() {
+			$this->connect();
 
 			while ($this->channel->is_consuming()) {
 				$this->channel->wait();
