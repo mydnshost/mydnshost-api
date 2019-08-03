@@ -536,25 +536,27 @@
 
 			if ($soa->save()) {
 				$this->getContextKey('db')->commit();
+
+				foreach ($deletedRecords as $r) {
+					EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
+				}
+
+				foreach ($newRecords as $r) {
+					EventQueue::get()->publish('add_record', [$domain->getID(), $r->getID()]);
+				}
+
+				EventQueue::get()->publish('update_record', [$domain->getID(), $soa->getID()]);
+
+				EventQueue::get()->publish('records_changed', [$domain->getID()]);
+				EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
+
+				$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
+
 			} else {
 				$this->getContextKey('db')->rollback();
 				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
 			}
 
-			foreach ($deletedRecords as $r) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
-			}
-
-			foreach ($newRecords as $r) {
-				EventQueue::get()->publish('add_record', [$domain->getID(), $r->getID()]);
-			}
-
-			EventQueue::get()->publish('update_record', [$domain->getID(), $soa->getID()]);
-
-			EventQueue::get()->publish('records_changed', [$domain->getID()]);
-			EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
-
-			$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
 			return true;
 		}
 
@@ -1164,7 +1166,7 @@
 				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
 				$result[] = $r;
 				if ($r['deleted']) {
-					$deletedRecords[] = $r;
+					$deletedRecords[] = $record;
 					$changeCount++;
 				}
 			}
