@@ -1354,6 +1354,7 @@
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
 				EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getDomainRaw()]);
+				// The domain will be gone, the hooks won't exist, so we can't call them... Annoying.
 				// EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
 
 				// We need to serial bump and rebuild all the direct children...
