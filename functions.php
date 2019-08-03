@@ -221,7 +221,7 @@
 
 		if (isset($config['redis']) && !empty($config['redis'])) {
 			ini_set('session.save_handler', 'redis');
-			ini_set('session.save_path', 'tcp://' . $config['redis'] . ':' . $config['redisPort'] . '/?prefix=' . $config['redisSessionPrefix']);
+			ini_set('session.save_path', 'tcp://' . $config['redis'] . ':' . $config['redisPort'] . '/?prefix=' . urlencode($config['redisSessionPrefix'] . ':'));
 		} else if (isset($config['memcached']) && !empty($config['memcached'])) {
 			ini_set('session.save_handler', 'memcached');
 			ini_set('session.save_path', $config['memcached']);
