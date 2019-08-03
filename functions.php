@@ -42,7 +42,6 @@
 
 	// Event Queue
 	EventQueue::get()->setRabbitMQ($config['rabbitmq']);
-	EventQueue::get()->publish('test_event', ['some', 'args']);
 
 	// Functions
 	function recursiveFindFiles($dir) {
