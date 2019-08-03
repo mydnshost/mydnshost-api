@@ -543,3 +543,7 @@
 
 		return false;
 	}
+
+	function showTime() {
+		return date('[Y-m-d H:i:s O]');
+	}

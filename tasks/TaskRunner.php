@@ -34,13 +34,9 @@
 			$this->redisHost = $redis['host'];
 			$this->redisPort = isset($redis['port']) ? $redis['port'] : '';
 
-			echo $this->showTime(), ' ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
-			echo $this->showTime(), ' ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
-			echo $this->showTime(), ' ', "\t", 'Redis Host: ', $this->redisHost, (!empty($this->redisPort) ? ':' . $this->redisPort : ''), "\n";
-		}
-
-		private function showTime() {
-			return date('[Y-m-d H:i:s O]');
+			echo showTime(), ' ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
+			echo showTime(), ' ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+			echo showTime(), ' ', "\t", 'Redis Host: ', $this->redisHost, (!empty($this->redisPort) ? ':' . $this->redisPort : ''), "\n";
 		}
 
 		/**
@@ -58,7 +54,7 @@
 			$this->checkWorkers();
 
 			// Begin the event loop.
-			echo $this->showTime(), ' ', 'Running.', "\n";
+			echo showTime(), ' ', 'Running.', "\n";
 			$this->loop->run();
 		}
 
@@ -67,12 +63,12 @@
 		 */
 		public function stop() {
 			if ($this->stopping) {
-				echo $this->showTime(), ' ', 'Force Stopping!', "\n";
+				echo showTime(), ' ', 'Force Stopping!', "\n";
 				$this->loop->stop();
 				return;
 			}
 
-			echo $this->showTime(), ' ', 'Stopping...', "\n";
+			echo showTime(), ' ', 'Stopping...', "\n";
 			$this->stopping = true;
 
 			// Stop the check timer
@@ -96,7 +92,7 @@
 		 */
 		public function addJob($function, $workerConfig) {
 			if (isset($workerConfig['include']) && !$workerConfig['include']) {
-				echo $this->showTime(), ' ', 'Excluding worker type: ', $function, "\n";
+				echo showTime(), ' ', 'Excluding worker type: ', $function, "\n";
 				return;
 			}
 
@@ -107,9 +103,9 @@
 			                          'workers' => []
 			                         ];
 
-			echo $this->showTime(), ' ', 'Adding worker type: ', $function, "\n";
-			echo $this->showTime(), ' ', "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
-			echo $this->showTime(), ' ', "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
+			echo showTime(), ' ', 'Adding worker type: ', $function, "\n";
+			echo showTime(), ' ', "\t", 'Processes: ', $this->jobs[$function]['maxWorkers'], "\n";
+			echo showTime(), ' ', "\t", 'Max Jobs: ', $this->jobs[$function]['maxJobs'], "\n";
 		}
 
 		/**
@@ -193,7 +189,7 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerStart($function, $pid) {
-			echo $this->showTime(), ' ', '[', $function, '::', $pid, ']  Process started.', "\n";
+			echo showTime(), ' ', '[', $function, '::', $pid, ']  Process started.', "\n";
 
 			// Configure the worker.
 			$process = $this->jobs[$function]['workers'][$pid]['process'];
@@ -232,7 +228,7 @@
 		 * @param $data Data from the worker
 		 */
 		private function processWorkerData($function, $pid, $data) {
-			echo $this->showTime(), ' ', $this->showIdent($function, $pid), '> ', trim($data), "\n";
+			echo showTime(), ' ', $this->showIdent($function, $pid), '> ', trim($data), "\n";
 
 			$bits = explode(" ", $data, 2);
 			$cmd = $bits[0];
@@ -243,7 +239,7 @@
 				$this->jobs[$function]['workers'][$pid]['jobcount']++;
 				$process = $this->jobs[$function]['workers'][$pid];
 				if ($process['jobcount'] >= $this->jobs[$function]['maxJobs']) {
-					echo $this->showTime(), ' ', $this->showIdent($function, $pid), '  Terminating process after ' . $process['jobcount'] . ' jobs.', "\n";
+					echo showTime(), ' ', $this->showIdent($function, $pid), '  Terminating process after ' . $process['jobcount'] . ' jobs.', "\n";
 
 					$process['process']->terminate(SIGTERM);
 
@@ -262,7 +258,7 @@
 		 * @param $pid Process ID for this worker
 		 */
 		private function processWorkerExit($function, $pid, $exitCode, $termSignal) {
-			echo $this->showTime(), ' ', $this->showIdent($function, $pid), '  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
+			echo showTime(), ' ', $this->showIdent($function, $pid), '  Process exited. (', $exitCode, '/', $termSignal, ')', "\n";
 			unset($this->jobs[$function]['workers'][$pid]);
 		}
 	}

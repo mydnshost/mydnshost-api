@@ -72,8 +72,11 @@
 
 		/**
 		 * Begin consuming events from the bus.
+		 *
+		 * @param $function If this is given, this will be called before our
+		 *                  own handling of the events.
 		 */
-		public function consumeEvents() {
+		public function consumeEvents($function = NULL) {
 			$this->connect();
 			$this->channel->exchange_declare('events', 'fanout', false, false, false);
 			$this->channel->queue_bind($this->myqueue, 'events');
@@ -81,6 +84,7 @@
 			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) {
 				$event = json_decode($msg->body, true);
 
+				if ($function != null) { call_user_func_array($function, [$event]); }
 
 				if (array_key_exists($event['event'], $this->subscribers)) {
 					foreach ($this->subscribers[$event['event']] as $callable) {
@@ -100,4 +104,5 @@
 			$this->channel->close();
 			$this->connection->close();
 		}
+
 	}
