@@ -31,10 +31,8 @@
 			$gmc->doBackground('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('delete_domain', function($domainid) use ($gmc) {
-			$domain = Domain::load(DB::get(), $domainid);
-
-			$gmc->doBackground('bind_delete_domain', json_encode(['domain' => $domain->getDomainRaw()]));
+		EventQueue::get()->subscribe('delete_domain', function($domainid, $domainRaw) use ($gmc) {
+			$gmc->doBackground('bind_delete_domain', json_encode(['domain' => $domainRaw]));
 		});
 
 		EventQueue::get()->subscribe('records_changed', function($domainid) use ($gmc) {
