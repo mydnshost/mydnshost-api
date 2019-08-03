@@ -239,7 +239,7 @@
 							EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
 						}
 					} else if ($isCreate) {
-						EventQueue::get()->publish('new_user', [$user]);
+						EventQueue::get()->publish('new_user', [$user->getID()]);
 
 						if ($sendWelcome) {
 							$te = TemplateEngine::get();
@@ -669,7 +669,7 @@
 				$this->getContextKey('response')->setHeader('info', 'Key will be verified in the background.');
 
 				// Fire off a key-validation hook.
-				EventQueue::get()->publish('verify_2fa_push', [$key, 'Key verification on ' . $config['sitename']]);
+				EventQueue::get()->publish('verify_2fa_push', [$key->getID(), 'Key verification on ' . $config['sitename']]);
 
 				return TRUE;
 			} else if (!$key->isPush() && !$key->verify($data['data']['code'], 1)) {

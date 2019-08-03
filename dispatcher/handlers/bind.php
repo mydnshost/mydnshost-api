@@ -19,19 +19,27 @@
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
-		EventQueue::get()->subscribe('add_domain', function($domain) use ($gmc) {
+		EventQueue::get()->subscribe('add_domain', function($domainid) use ($gmc) {
+			$domain = Domain::load(DB::get(), $domainid);
+
 			$gmc->doBackground('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('rename_domain', function($oldName, $domain) use ($gmc) {
+		EventQueue::get()->subscribe('rename_domain', function($oldName, $domainid) use ($gmc) {
+			$domain = Domain::load(DB::get(), $domainid);
+
 			$gmc->doBackground('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('delete_domain', function($domain) use ($gmc) {
+		EventQueue::get()->subscribe('delete_domain', function($domainid) use ($gmc) {
+			$domain = Domain::load(DB::get(), $domainid);
+
 			$gmc->doBackground('bind_delete_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('records_changed', function($domain) use ($gmc) {
+		EventQueue::get()->subscribe('records_changed', function($domainid) use ($gmc) {
+			$domain = Domain::load(DB::get(), $domainid);
+
 			$domains = [];
 			$domains[] = $domain;
 
@@ -47,7 +55,9 @@
 			}
 		});
 
-		EventQueue::get()->subscribe('sync_domain', function($domain) use ($gmc) {
+		EventQueue::get()->subscribe('sync_domain', function($domainid) use ($gmc) {
+			$domain = Domain::load(DB::get(), $domainid);
+
 			$gmc->doBackground('job_sequence', json_encode(['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']],
 			                                                           ['wait' => '1', 'job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
 			                                                           ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'add']],
