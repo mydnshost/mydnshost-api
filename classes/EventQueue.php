@@ -7,11 +7,6 @@
 		// Instance of EventQueue.
 		private static $instance = null;
 
-		private $rabbitmq;
-		private $connection;
-		private $channel;
-		private $myqueue;
-
 		private $subscribers = [];
 
 		/**
@@ -27,19 +22,6 @@
 			return self::$instance;
 		}
 
-		public function setRabbitMQ($rabbitmq) {
-			$this->rabbitmq = $rabbitmq;
-		}
-
-		private function connect() {
-			if ($this->connection !== null) { return; }
-
-			$this->connection = new AMQPStreamConnection($this->rabbitmq['host'], $this->rabbitmq['port'], $this->rabbitmq['user'], $this->rabbitmq['pass']);
-			$this->channel = $this->connection->channel();
-
-			list($this->myqueue, ,) = $this->channel->queue_declare("", false, false, true, false);
-		}
-
 		/**
 		 * Publish an event to the bus.
 		 *
@@ -47,12 +29,11 @@
 		 * @param $args Event Arguments
 		 */
 		public function publish($event, $args) {
-			$this->connect();
-			$this->channel->exchange_declare('events', 'topic', false, false, false);
+			RabbitMQ::get()->getChannel()->exchange_declare('events', 'topic', false, false, false);
 
 			$event = strtolower($event);
 			$msg = new AMQPMessage(json_encode(['event' => $event, 'args' => $args]));
-			$this->channel->basic_publish($msg, 'events', 'event.' . $event);
+			RabbitMQ::get()->getChannel()->basic_publish($msg, 'events', 'event.' . $event);
 		}
 
 		/**
@@ -90,11 +71,10 @@
 		 *                  our own handling.
 		 */
 		public function consumeEvents($function = NULL, $bindingKey = '#') {
-			$this->connect();
-			$this->channel->exchange_declare('events', 'topic', false, false, false);
-			$this->channel->queue_bind($this->myqueue, 'events', $bindingKey);
+			RabbitMQ::get()->getChannel()->exchange_declare('events', 'topic', false, false, false);
+			RabbitMQ::get()->getChannel()->queue_bind(RabbitMQ::get()->getQueue(), 'events', $bindingKey);
 
-			$this->channel->basic_consume($this->myqueue, '', false, true, false, false, function($msg) use ($function) {
+			RabbitMQ::get()->getChannel()->basic_consume(RabbitMQ::get()->getQueue(), '', false, true, false, false, function($msg) use ($function) {
 				$event = json_decode($msg->body, true);
 
 				if ($function != null) {
@@ -104,19 +84,4 @@
 				}
 			});
 		}
-
-		/**
-		 * Start consuming from Rabbit MQ..
-		 */
-		public function consume() {
-			$this->connect();
-
-			while ($this->channel->is_consuming()) {
-				$this->channel->wait();
-			}
-
-			$this->channel->close();
-			$this->connection->close();
-		}
-
 	}

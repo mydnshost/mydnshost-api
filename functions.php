@@ -40,8 +40,11 @@
 	// Mailer
 	Mailer::get()->setConfig($config['email']);
 
-	// Event Queue
-	EventQueue::get()->setRabbitMQ($config['rabbitmq']);
+	// RabbitMQ
+	RabbitMQ::get()->setRabbitMQ($config['rabbitmq']);
+
+	// Event Queue.
+	EventQueue::get();
 
 	// Functions
 	function recursiveFindFiles($dir) {

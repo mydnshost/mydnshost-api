@@ -36,4 +36,4 @@
 		EventQueue::get()->handleSubscribers();
 	});
 
-	EventQueue::get()->comsume();
+	RabbitMQ::get()->consume();
