@@ -496,6 +496,23 @@ DROP TABLE `hooks`;
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Jobs Table
+			// ------------------------------------------------------------------------
+			$dataChanges[33] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `jobs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL,
+  `data` TEXT,
+  `created` int(11) NOT NULL,
+  `started` int(11) NOT NULL,
+  `finished` int(11) NOT NULL,
+  `state` ENUM('created', 'started', 'finished', 'error') NOT NULL DEFAULT 'created'
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

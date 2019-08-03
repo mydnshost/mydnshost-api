@@ -55,7 +55,6 @@
 			$this->channel->basic_publish($msg, 'events', 'event.' . $event);
 		}
 
-
 		/**
 		 * Subscribe to events of a certain type on the bus.
 		 *
