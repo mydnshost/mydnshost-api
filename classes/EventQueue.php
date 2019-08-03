@@ -29,10 +29,11 @@
 
 		public function setRabbitMQ($rabbitmq) {
 			$this->rabbitmq = $rabbitmq;
-			$this->connect();
 		}
 
 		private function connect() {
+			if ($this->connection !== null) { return; }
+
 			$this->connection = new AMQPStreamConnection($this->rabbitmq['host'], $this->rabbitmq['port'], $this->rabbitmq['user'], $this->rabbitmq['pass']);
 			$this->channel = $this->connection->channel();
 
@@ -46,6 +47,7 @@
 		 * @param $args Event Arguments
 		 */
 		public function publish($event, $args) {
+			$this->connect();
 			$this->channel->exchange_declare('events', 'fanout', false, false, false);
 
 			$event = strtolower($event);
@@ -72,6 +74,7 @@
 		 * Begin consuming events from the bus.
 		 */
 		public function consumeEvents() {
+			$this->connect();
 			$this->channel->exchange_declare('events', 'fanout', false, false, false);
 			$this->channel->queue_bind($this->myqueue, 'events');
 
