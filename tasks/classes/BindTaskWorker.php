@@ -86,13 +86,9 @@
 			// valid.
 			$jobArgs = ['domain' => $domain->getDomainRaw(), 'filename' => $filename];
 
-			// Ensure the file exists to let us lock it.
-			if (!file_exists($filename)) { file_put_contents($filename, ''); }
-
-			// Try and lock the file to ensure that we are the only ones
+			// Try and lock the zone to ensure that we are the only ones
 			// writing to it.
-			$fp = fopen($filename, 'r+');
-			if (flock($fp, LOCK_EX)) {
+			if (TaskWorker::acquireLock('zone_' . $domain->getDomainRaw())) {
 				if ($hasNS) {
 					// if filemtime is the same as now, we need to wait to ensure
 					// bind does the right thing.
@@ -115,8 +111,7 @@
 					$jobArgs['change'] = 'remove';
 				}
 
-				flock($fp, LOCK_UN);
-				fclose($fp);
+				TaskWorker::releaseLock('zone_' . $domain->getDomainRaw());
 			}
 
 			$this->writeZoneKeys($domain);
@@ -132,8 +127,7 @@
 			$bind = new Bind($domain->getDomainRaw(), $this->bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
 
-			$fp = fopen($filename, 'r+');
-			if (flock($fp, LOCK_EX)) {
+			if (TaskWorker::acquireLock('zone_' . $domain->getDomainRaw())) {
 				// Output any missing keys.
 				$keys = $domain->getZoneKeys();
 
@@ -166,8 +160,7 @@
 					}
 				}
 
-				flock($fp, LOCK_UN);
-				fclose($fp);
+				TaskWorker::releaseLock('zone_' . $domain->getDomainRaw());
 			}
 		}
 

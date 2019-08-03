@@ -33,6 +33,13 @@
 			$functions[] = ['name' => $func, 'file' => $funcFileName];
 
 			sendReply('OK', 'Worker for function: ', $func, ' (', $funcFileName, ')');
+		} else if ($cmd == 'setRedisHost') {
+			$args = explode(" ", $args);
+
+			$host = $args[0];
+
+			sendReply('OK', 'Set redis host: ', $host);
+			TaskWorker::setRedisHost($host);
 		} else if ($cmd == 'setTaskServer') {
 			$args = explode(" ", $args);
 

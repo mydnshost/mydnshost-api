@@ -14,6 +14,12 @@
 	// Config for session data
 	$config['memcached'] = getEnvOrDefault('MEMCACHED', '');
 
+	// Config for redis.
+	//
+	// This will be used for sessions instead of memcached if defined, and also
+	// used for locking between distributed job workers.
+	$config['redis'] = getEnvOrDefault('REDIS', '');
+
 	// Config for Site registration
 	$config['register_enabled'] = parseBool(getEnvOrDefault('ALLOW_REGISTER', 'true'));
 	$config['register_manual_verify'] = parseBool(getEnvOrDefault('REGISTER_MANUAL_VERIFY', 'false'));
@@ -82,25 +88,32 @@
 		return $result;
 	}
 
-	$config['jobworkers'] = [];
-	foreach (explode(',', getEnvOrDefault('WORKER_WORKERS', '')) AS $w) {
-		if (empty($w)) { continue; }
+	function getJobWorkers($workerList) {
+		$result = [];
 
-		$includeWorker = true;
-		if ($w{0} == '-') { $w = substr($w, 1); $includeWorker = false; }
+		foreach (explode(',', $workerList) as $w) {
+			if (empty($w)) { continue; }
 
-		if ($w == '*') {
-			foreach (recursiveFindFiles(__DIR__ . '/tasks/workers') as $file) {
-				$w = pathinfo($file, PATHINFO_FILENAME);
+			$includeWorker = true;
+			if ($w{0} == '-') { $w = substr($w, 1); $includeWorker = false; }
 
-				$config['jobworkers'][$w] = getJobWorkerConfig($w);
-				$config['jobworkers'][$w]['include'] = $includeWorker;
+			if ($w == '*') {
+				foreach (recursiveFindFiles(__DIR__ . '/tasks/workers') as $file) {
+					$w = pathinfo($file, PATHINFO_FILENAME);
+
+					$result[$w] = getJobWorkerConfig($w);
+					$result[$w]['include'] = $includeWorker;
+				}
+			} else {
+				$result[$w] = getJobWorkerConfig($w);
+				$result[$w]['include'] = $includeWorker;
 			}
-		} else {
-			$config['jobworkers'][$w] = getJobWorkerConfig($w);
-			$config['jobworkers'][$w]['include'] = $includeWorker;
 		}
+
+		return $result;
 	}
+
+	$config['jobworkers'] = getJobWorkers(getEnvOrDefault('WORKER_WORKERS', ''));
 
 	// Default DNS Records
 	$config['defaultRecords'] = [];

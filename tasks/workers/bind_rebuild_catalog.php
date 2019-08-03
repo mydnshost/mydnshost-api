@@ -12,8 +12,7 @@
 			$zoneName = $this->bindConfig['catalogZoneName'];
 			$zoneFile = $this->bindConfig['catalogZoneFile'];
 
-			$fp = fopen($zoneFile . '.lock', 'r+');
-			if (flock($fp, LOCK_EX)) {
+			if (TaskWorker::acquireLock('zone_' . $zoneName)) {
 				$bind = new Bind($zoneName, '', $zoneFile);
 				$bind->parseZoneFile();
 				$bindSOA = $bind->getSOA();
@@ -51,8 +50,7 @@
 				$jobArgs = ['domain' => $zoneName, 'change' => 'change', 'noCatalog' => true, 'filename' => $zoneFile];
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
 
-				flock($fp, LOCK_UN);
-				fclose($fp);
+				TaskWorker::releaseLock('zone_' . $zoneName);
 			}
 
 			$job->setResult('OK');

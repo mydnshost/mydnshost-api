@@ -6,6 +6,9 @@
 		/** Job server information. */
 		private $server;
 
+		/** Redis Host */
+		private $redisHost;
+
 		/** React-PHP Event Loop. */
 		private $loop;
 
@@ -23,13 +26,16 @@
 		 *
 		 * @param $server Job Server information
 		 */
-		public function __construct($server) {
+		public function __construct($server, $redisHost) {
 			$this->server = $server;
 			$loop = React\EventLoop\Factory::create();
 			$this->loop = $loop;
 
+			$this->redisHost = $redisHost;
+
 			echo $this->showTime(), ' ', 'Creating ProcessManager for server type: ', $server['type'], "\n";
 			echo $this->showTime(), ' ', "\t", 'Server: ', $server['host'], ':', $server['port'], "\n";
+			echo $this->showTime(), ' ', "\t", 'Redis Host: ', $redisHost, "\n";
 		}
 
 		private function showTime() {
@@ -190,6 +196,7 @@
 
 			// Configure the worker.
 			$process = $this->jobs[$function]['workers'][$pid]['process'];
+			$process->stdin->write('setRedisHost ' . $this->redisHost . "\n");
 			$process->stdin->write('addFunction ' . $function . "\n");
 			$process->stdin->write('setTaskServer ' . $this->server['type'] . ' ' . $this->server['host'] . ' ' . $this->server['port'] . "\n");
 			$process->stdin->write('run' . "\n");
@@ -259,8 +266,12 @@
 		}
 	}
 
+	if (empty($config['redis']) || !class_exists('Redis')) {
+		die('Redis is required for TaskRunner.');
+	}
+
 	// Create the process manager
-	$pm = new ProcessManager($config['jobserver']);
+	$pm = new ProcessManager($config['jobserver'], $config['redis']);
 
 	// Add the workers.
 	foreach ($config['jobworkers'] as $worker => $conf) {

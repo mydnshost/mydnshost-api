@@ -55,8 +55,7 @@
 			}
 
 			// Now update.
-			$fp = fopen($this->bindConfig['catalogZoneFile'] . '.lock', 'r+');
-			if (flock($fp, LOCK_EX)) {
+			if (TaskWorker::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
 				$bind = new Bind($this->bindConfig['catalogZoneName'], '', $this->bindConfig['catalogZoneFile']);
 
 				$bind->parseZoneFile();
@@ -81,8 +80,7 @@
 							$this->getTaskServer()->runBackgroundJob($newjob);
 						} else {
 							// Transfer list has not changed, abort.
-							flock($fp, LOCK_UN);
-							fclose($fp);
+							TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 							return;
 						}
 					}
@@ -103,8 +101,7 @@
 					}
 				}
 
-				flock($fp, LOCK_UN);
-				fclose($fp);
+				TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 			}
 		}
 	}
