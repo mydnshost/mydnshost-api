@@ -129,7 +129,7 @@
 
 			// Call various hooks.
 			foreach ($deleted as $record) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			foreach ($added as $record) {
 				EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);

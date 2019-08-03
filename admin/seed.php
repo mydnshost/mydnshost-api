@@ -61,7 +61,7 @@
 			$domain->setAccess($admin->getID(), 'Write')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('delete_domain', [$domain->getID()]);
+		EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getRawDomain()]);
 		EventQueue::get()->publish('add_domain', [$domain->getID()]);
 	}
 
@@ -85,7 +85,7 @@
 			$domain->setAccess($admin->getID(), 'Read')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('delete_domain', [$domain->getID()]);
+		EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getRawDomain()]);
 		EventQueue::get()->publish('add_domain', [$domain->getID()]);
 	}
 

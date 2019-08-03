@@ -542,7 +542,7 @@
 			}
 
 			foreach ($deletedRecords as $r) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 
 			foreach ($newRecords as $r) {
@@ -1206,7 +1206,7 @@
 
 			// Only call hooks if we are not rolling back.
 			foreach ($deletedRecords as $record) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			foreach ($updatedRecords as $record) {
 				EventQueue::get()->publish('update_record', [$domain->getID(), $record->getID()]);
@@ -1290,7 +1290,7 @@
 			$deleted = $record->delete();
 			$this->getContextKey('response')->set('deleted', $deleted ? 'true' : 'false');
 			if ($deleted) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			$serial = $domain->updateSerial();
 			EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
@@ -1323,7 +1323,7 @@
 			foreach ($records as $record) {
 				if ($record->delete()) {
 					$count++;
-					EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID()]);
+					EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
 				}
 			}
 			$this->getContextKey('response')->set('deleted', $count);
@@ -1351,7 +1351,7 @@
 			$deleted = $domain->delete();
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
-				EventQueue::get()->publish('delete_domain', [$domain->getID()]);
+				EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getDomainRaw()]);
 				// EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
 
 				// We need to serial bump and rebuild all the direct children...
