@@ -243,7 +243,7 @@
 			return array_unique($ips);
 		}
 
-		protected function sleepForZoneFile($zone) {
+		protected function sleepForZoneFile($zonefile) {
 			// Make sure there is at least 1 second between subsequent
 			// writes to a file.
 			$filetime = filemtime($zonefile);
