@@ -51,13 +51,15 @@
 		}
 
 		public function handleSubscribers($event) {
-			if (isset($event['event'])) {
+			if (is_array($event) && isset($event['event'])) {
 				if (array_key_exists($event['event'], $this->subscribers)) {
 					foreach ($this->subscribers[$event['event']] as $callable) {
 						try {
 							call_user_func_array($callable, isset($event['args']) ? $event['args'] : []);
-						} catch (Exception $ex) {
-							// TODO: Handle this somewhere?
+						} catch (Throwable $ex) {
+							if ($event['event'] != 'subscriber.error') {
+								EventQueue::get()->publish('subscriber.error', [$ex->getMessage(), $ex->getTraceAsString(), $event]);
+							}
 						}
 					}
 				}
@@ -75,7 +77,8 @@
 			RabbitMQ::get()->getChannel()->queue_bind(RabbitMQ::get()->getQueue(), 'events', $bindingKey);
 
 			RabbitMQ::get()->getChannel()->basic_consume(RabbitMQ::get()->getQueue(), '', false, true, false, false, function($msg) use ($function) {
-				$event = json_decode($msg->body, true);
+				$event = @json_decode($msg->body, true);
+				if (json_last_error() != JSON_ERROR_NONE) { $event = $msg->body; }
 
 				if ($function != null) {
 					call_user_func_array($function, [$event]);

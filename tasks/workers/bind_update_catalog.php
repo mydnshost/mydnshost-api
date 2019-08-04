@@ -35,13 +35,7 @@
 		}
 
 		protected function bind_sleepForCatalog() {
-			// Make sure there is at least 1 second between subsequent
-			// writes to the catalog.
-			$filetime = filemtime($this->bindConfig['catalogZoneFile']);
-			if ($filetime >= time()) {
-				echo 'Sleeping for catalog: ', $filename, "\n";
-				@time_sleep_until($filetime + 2);
-			}
+			$this->sleepForZoneFile($this->bindConfig['catalogZoneFile']);
 		}
 
 		protected function updateCatalogZone($domainraw, $mode = 'remove', $refresh = true) {

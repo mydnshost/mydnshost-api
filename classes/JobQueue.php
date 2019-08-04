@@ -25,20 +25,31 @@
 		}
 
 		/**
-		 * Publish a job.
+		 * Create a job, this will not publish it.
 		 *
 		 * @param $job Job name
 		 * @param $args Job Arguments
 		 */
-		public function publish($jobname, $args) {
+		public function create($jobname, $args) {
 			$jobname = strtolower($jobname);
-
-			RabbitMQ::get()->getChannel()->exchange_declare('jobs', 'direct', false, true, false);
 
 			$job = new Job(DB::get());
 			$job->setName($jobname)->setJobData($args)->setCreated(time())->setState('created')->save();
 
-			$msg = new AMQPMessage(json_encode(['job' => $jobname, 'args' => $args, 'jobid' => $job->getID()]), ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
+			return $job;
+		}
+
+		/**
+		 * Publish a job.
+		 *
+		 * @param $job Job to publish
+		 */
+		public function publish($job) {
+			$jobname = strtolower($job->getName());
+
+			RabbitMQ::get()->getChannel()->exchange_declare('jobs', 'direct', false, true, false);
+
+			$msg = new AMQPMessage(json_encode(['job' => $jobname, 'args' => $job->getJobData(), 'jobid' => $job->getID()]), ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT]);
 			RabbitMQ::get()->getChannel()->basic_publish($msg, 'jobs', 'job.' . $jobname);
 
 
@@ -49,16 +60,13 @@
 		/**
 		 * Publish a job and wait for the result.
 		 *
-		 * @param $job Job name
-		 * @param $args Job Arguments
+		 * @param $job Job to publish
+		 * @return Output from job.
 		 */
-		public function publishAndWait($jobname, $args) {
-			$jobname = strtolower($jobname);
+		public function publishAndWait($job) {
+			$jobname = strtolower($job->getName());
 
 			RabbitMQ::get()->getChannel()->exchange_declare('jobs', 'direct', false, true, false);
-
-			$job = new Job(DB::get());
-			$job->setName($jobname)->setJobData($args)->setCreated(time())->setState('created')->save();
 
 			if ($this->callbackQueue == null) {
 				list($this->callbackQueue, ,) = RabbitMQ::get()->getChannel()->queue_declare("", false, false, true, false);
@@ -71,7 +79,7 @@
 			}
 
 			$correlation_id = genUUID();
-			$msg = new AMQPMessage(json_encode(['job' => $jobname, 'args' => $args, 'jobid' => $job->getID()]), ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, 'reply_to' => $this->callbackQueue, 'correlation_id' => $correlation_id]);
+			$msg = new AMQPMessage(json_encode(['job' => $jobname, 'args' => $job->getJobData(), 'jobid' => $job->getID()]), ['delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT, 'reply_to' => $this->callbackQueue, 'correlation_id' => $correlation_id]);
 			RabbitMQ::get()->getChannel()->basic_publish($msg, 'jobs', 'job.' . $jobname);
 
 			// Wait for response.

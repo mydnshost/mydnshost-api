@@ -4,5 +4,5 @@
 	EventQueue::get()->subscribe('domain.hooks.call', function($domainid, $data) {
 		$domain = Domain::load(DB::get(), $domainid);
 
-		dispatchJob('call_domain_hooks', ['domain' => $domain->getDomainRaw(), 'data' => $data]);
+		dispatchJob(createJob('call_domain_hooks', ['domain' => $domain->getDomainRaw(), 'data' => $data]));
 	});

@@ -6,14 +6,14 @@
 
 		public function runBackgroundJob($jobinfo) {
 			echo 'Scheduling background job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
-			$jobID = JobQueue::get()->publish($jobinfo->getFunction(), $jobinfo->getPayload());
+			$jobID = JobQueue::get()->publish(JobQueue::get()->create($jobinfo->getFunction(), $jobinfo->getPayload()));
 			echo 'Scheduled as: ', $jobID, "\n";
 		}
 
 		public function runJob($jobinfo) {
 			echo 'Running foreground job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
 
-			[$jobID, $result] = JobQueue::get()->publishAndWait($jobinfo->getFunction(), $jobinfo->getPayload());
+			[$jobID, $result] = JobQueue::get()->publishAndWait(JobQueue::get()->create($jobinfo->getFunction(), $jobinfo->getPayload()));
 			echo 'Scheduled and finished as: ', $jobID, "\n";
 			return $result;
 		}
@@ -46,7 +46,7 @@
 					sendReply('EXCEPTION', 'Invalid Payload.');
 
 					$resultMsg = 'EXCEPTION';
-					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
+					$job->setState('error')->setFinished(time())->setResult($resultMsg)->save();
 					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
 					JobQueue::get()->replyToJob($msg, $resultMsg);
 
@@ -65,7 +65,7 @@
 					// $msg->delivery_info['channel']->basic_reject($msg->delivery_info['delivery_tag'], true);
 
 					$resultMsg = 'EXCEPTION';
-					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
+					$job->setState('error')->setFinished(time())->setResult($resultMsg)->save();
 					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
 					JobQueue::get()->replyToJob($msg, $resultMsg);
 
@@ -74,9 +74,11 @@
 				}
 
 				$resultMsg = null;
+				$resultState = 'finished';
 
 				if ($jobinfo->hasError()) {
-					$resultMsg = 'ERRROR';
+					$resultMsg = 'ERROR';
+					$resultState = 'error';
 					sendReply('EXCEPTION', 'There was an error: ' . $jobinfo->getError());
 				} else {
 					if ($jobinfo->hasResult()) {
@@ -89,7 +91,7 @@
 				}
 
 				if ($resultMsg !== null) {
-					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
+					$job->setState($resultState)->setFinished(time())->setResult($resultMsg)->save();
 					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
 					JobQueue::get()->replyToJob($msg, $resultMsg);
 

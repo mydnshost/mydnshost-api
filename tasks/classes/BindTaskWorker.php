@@ -242,4 +242,14 @@
 
 			return array_unique($ips);
 		}
+
+		protected function sleepForZoneFile($zone) {
+			// Make sure there is at least 1 second between subsequent
+			// writes to a file.
+			$filetime = filemtime($zonefile);
+			if ($filetime >= time()) {
+				echo 'Sleeping for zone: ', $zonefile, "\n";
+				@time_sleep_until($filetime + 2);
+			}
+		}
 	}

@@ -137,7 +137,7 @@ class Job extends DBObject {
 	/**
 	 * Get jobs that require us to complete before they can start.
 	 */
-	public function getDependedOn() {
+	public function getDependants() {
 		// Get dependencies
 		$query = 'SELECT `child_id` FROM job_depends WHERE `parent_id` = :parent';
 		$params = [':parent' => $this->getID()];

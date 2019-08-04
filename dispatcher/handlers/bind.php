@@ -22,17 +22,17 @@
 		EventQueue::get()->subscribe('domain.add', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			dispatchJob('bind_add_domain', ['domain' => $domain->getDomainRaw()]);
+			dispatchJob(createJob('bind_add_domain', ['domain' => $domain->getDomainRaw()]));
 		});
 
 		EventQueue::get()->subscribe('domain.rename', function($oldName, $domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			dispatchJob('bind_rename_domain', ['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]);
+			dispatchJob(createJob('bind_rename_domain', ['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 		});
 
 		EventQueue::get()->subscribe('domain.delete', function($domainid, $domainRaw) {
-			dispatchJob('bind_delete_domain', ['domain' => $domainRaw]);
+			dispatchJob(createJob('bind_delete_domain', ['domain' => $domainRaw]));
 		});
 
 		EventQueue::get()->subscribe('domain.records.changed', function($domainid) {
@@ -49,22 +49,27 @@
 			}
 
 			foreach ($domains as $d) {
-				dispatchJob('bind_records_changed', ['domain' => $d->getDomainRaw()]);
+				dispatchJob(createJob('bind_records_changed', ['domain' => $d->getDomainRaw()]));
 			}
 		});
 
 		EventQueue::get()->subscribe('domain.sync', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
-			dispatchJob('job_sequence', ['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']],
-			                                        ['wait' => '1', 'job' => 'bind_records_changed', 'args' => ['domain' => $domain->getDomainRaw()]],
-			                                        ['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'add']],
-			                                       ]
-			                             ]);
+			$remove = createJob('bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'remove']);
+
+			// TODO: This needs a start-delay.
+			$change = createJob('bind_records_changed', ['domain' => $domain->getDomainRaw()]);
+			$change->addDependency($remove->getID())->setState('blocked')->save();
+
+			$add = createJob('bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'add']);
+			$add->addDependency($change->getID())->setState('blocked')->save();
+
+			dispatchJob($remove);
 		});
 	}
 
 /*
 	require_once('/dnsapi/functions.php');
-	print_r(JobQueue::get()->publishAndWait('', []));
+	print_r(JobQueue::get()->publishAndWait(JobQueue::get()->create('', [])));
 */

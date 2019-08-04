@@ -43,7 +43,7 @@
 			$j = Job::load($this->getContextKey('db'), $job);
 
 			if ($j !== false) {
-				$newID = JobQueue::get()->publish($j->getName(), $j->getJobData());
+				$newID = JobQueue::get()->publish(JobQueue::get()->create($j->getName(), $j->getJobData()));
 
 				$this->getContextKey('response')->data(['jobid' => $newID, 'status' => 'Repeat job scheduled.']);
 			} else {
