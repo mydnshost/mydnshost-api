@@ -178,7 +178,7 @@ class User extends DBObject {
 	}
 
 	public function getPasswordNonce() {
-		return crc32($this->getID() . '-' . $this->getRawPassword() . '-' . json_encode($this->getPermissions()));
+		return crc32($this->getID() . '-' . $this->getRawPassword() /* . '-' . json_encode($this->getPermissions()) */);
 	}
 
 	/**
