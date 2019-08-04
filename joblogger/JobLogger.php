@@ -21,7 +21,9 @@
 	});
 
 	EventQueue::get()->subscribe('job.log', function($jobid, $message) use (&$activeJobs) {
-		$activeJobs[$jobid]->addLog($message);
+		$job = isset($activeJobs[$jobid]) ? $activeJobs[$jobid] : Job::load(DB::get(), $jobid);
+
+		$job->addLog($message);
 	});
 
 	EventQueue::get()->subscribe('job.finished', function($jobid) use (&$activeJobs) {
