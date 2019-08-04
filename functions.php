@@ -14,7 +14,7 @@
 	require_once(dirname(__FILE__) . '/vendor/autoload.php');
 
 	// Prep DB
-	function checkDBAlive() {
+	function checkDBAlive($wait = 0) {
 		global $database;
 
 		$errmode = NULL;
@@ -27,12 +27,23 @@
 			} catch (Exception $e) { }
 		}
 
-		$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password']);
+		$opts = [PDO::ATTR_TIMEOUT => 1, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
+		while (true) {
+			try {
+				$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password'], $opts);
+			} catch (PDOException $ex) {
+				if (stristr($ex->getMessage(), 'Connection timed out') !== FALSE) {
+					if ($wait-- > 0) { echo 'Waiting for DB...', "\n"; continue; }
+				}
+
+				throw $ex;
+			}
+		}
 		DB::get()->setPDO($pdo);
 
 		if ($errmode !== NULL) { DB::get()->getPDO()->setAttribute(PDO::ATTR_ERRMODE, $errmode); }
 	}
-	checkDBAlive();
+	if (!defined('NODB') || parseBool(NODB) !== TRUE) { checkDBAlive(); }
 
 	// Template Engine
 	TemplateEngine::get()->setConfig($config['templates'])->setVar('sitename', $config['sitename'])->setVar('siteurl', $config['siteurl']);

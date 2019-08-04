@@ -2,11 +2,14 @@
 <?php
 	use shanemcc\phpdb\DB;
 
+	define('NODB', true);
 	require_once(dirname(__FILE__) . '/init_functions.php');
 
 	echo 'Updating public suffixes...';
 	updatePublicSuffixes();
 	echo ' Done.', "\n";
+
+	checkDBAlive(30);
 
 	initDataServer(DB::get());
 

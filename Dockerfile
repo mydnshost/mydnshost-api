@@ -11,3 +11,5 @@ RUN \
   su www-data --shell=/bin/bash -c "cd /dnsapi; /usr/bin/composer install" && \
   groupadd -for -g 999 docker && \
   usermod -aG docker www-data
+
+ENTRYPOINT ["/dnsapi/docker/run.sh"]
