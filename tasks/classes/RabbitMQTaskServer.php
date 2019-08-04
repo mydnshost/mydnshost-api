@@ -25,22 +25,6 @@
 				sendReply('FUNCTION', $msgInfo['job']);
 				sendReply('PAYLOAD', json_encode($msgInfo['args']));
 
-				$payload = $msgInfo['args'];
-				if (empty($payload)) {
-					$payload = [];
-				} else if (!is_array($payload)) {
-					sendReply('EXCEPTION', 'Invalid Payload.');
-
-					$resultMsg = 'Invalid Payload';
-					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
-					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
-					JobQueue::get()->replyToJob($msg, $resultMsg);
-
-					throw new Exception('Invalid Payload.');
-				}
-
-				$jobinfo = new JobInfo($msgInfo['jobid'], $msgInfo['job'], $payload);
-
 				try {
 					checkDBAlive();
 				} catch (Exception $ex) {
@@ -51,6 +35,22 @@
 				}
 
 				$job = Job::load(DB::get(), $msgInfo['jobid']);
+
+				$payload = $msgInfo['args'];
+				if (empty($payload)) {
+					$payload = [];
+				} else if (!is_array($payload)) {
+					sendReply('EXCEPTION', 'Invalid Payload.');
+
+					$resultMsg = 'EXCEPTION';
+					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
+					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
+					JobQueue::get()->replyToJob($msg, $resultMsg);
+
+					throw new Exception('Invalid Payload.');
+				}
+
+				$jobinfo = new JobInfo($msgInfo['jobid'], $msgInfo['job'], $payload);
 
 				$job->setState('started')->setStarted(time())->save();
 
