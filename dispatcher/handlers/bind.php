@@ -35,7 +35,7 @@
 			dispatchJob('bind_delete_domain', ['domain' => $domainRaw]);
 		});
 
-		EventQueue::get()->subscribe('changed.records', function($domainid) {
+		EventQueue::get()->subscribe('domain.records.changed', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			$domains = [];
