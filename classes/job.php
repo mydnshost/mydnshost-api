@@ -2,7 +2,7 @@
 
 use shanemcc\phpdb\DBObject;
 
-class job extends DBObject {
+class Job extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'name' => NULL,
 	                             'data' => NULL,
@@ -10,6 +10,7 @@ class job extends DBObject {
 	                             'started' => NULL,
 	                             'finished' => NULL,
 	                             'state' => NULL,
+	                             'result' => NULL,
 	                            ];
 	protected static $_key = 'id';
 	protected static $_table = 'jobs';
@@ -22,7 +23,7 @@ class job extends DBObject {
 		return $this->setData('name', $value);
 	}
 
-	public function setData($value) {
+	public function setJobData($value) {
 		return $this->setData('data', json_encode($value));
 	}
 
@@ -42,6 +43,10 @@ class job extends DBObject {
 		return $this->setData('state', $value);
 	}
 
+	public function setResult($value) {
+		return $this->setData('result', $value);
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -50,7 +55,7 @@ class job extends DBObject {
 		return $this->getData('name');
 	}
 
-	public function getData() {
+	public function getJobData() {
 		return json_decode($this->getData('data'));
 	}
 
@@ -68,6 +73,10 @@ class job extends DBObject {
 
 	public function getState() {
 		return $this->getData('state');
+	}
+
+	public function getResult() {
+		return $this->getData('result');
 	}
 
 	public function validate() {

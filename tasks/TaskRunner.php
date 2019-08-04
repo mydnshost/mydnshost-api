@@ -146,7 +146,7 @@
 
 			// Store the process.
 			$pid = $process->getPid();
-			$this->jobs[$function]['workers'][$pid] = ['jobcount' => 0, 'process' => $process, 'buffers' => ['stdout' => '', 'stderr' => '']];
+			$this->jobs[$function]['workers'][$pid] = ['jobcount' => 0, 'process' => $process, 'buffers' => ['stdout' => '', 'stderr' => ''], 'currentJob' => null];
 
 			// Register handlers for output from the worker.
 			// STDOUT data from the worker.
@@ -234,6 +234,8 @@
 			$cmd = $bits[0];
 			$args = isset($bits[1]) ? $bits[1] : '';
 
+			$jobFinished = false;
+
 			// Count the jobs from the worker, restarting it as needed.
 			if ($cmd == 'JOB') {
 				$this->jobs[$function]['workers'][$pid]['jobcount']++;
@@ -246,8 +248,21 @@
 					// Replace the worker immediately if we stop it.
 					$this->startWorker($function);
 				}
+
+				// Also, learn this worker's job ID.
+				$this->jobs[$function]['workers'][$pid]['currentJob'] = $args;
 			} else if ($cmd == 'EXCEPTION') {
 				EventQueue::get()->publish('worker_error', [$function, $args]);
+				$jobFinished = true;
+			} else if ($cmd == 'RESULT') {
+				$jobFinished = true;
+			}
+
+			if ($this->jobs[$function]['workers'][$pid]['currentJob'] !== null) {
+				EventQueue::get()->publish('job_log', [$this->jobs[$function]['workers'][$pid]['currentJob'], $data]);
+				if ($jobFinished) {
+					$this->jobs[$function]['workers'][$pid]['currentJob'] = null;
+				}
 			}
 		}
 
@@ -268,7 +283,9 @@
 	}
 
 	// Create the process manager
-	$pm = new ProcessManager($config['jobserver'], ['host' => $config['redis'], 'port' => $config['redisPort']]);
+	$jobServerInfo = $config['rabbitmq'];
+	$jobServerInfo['type'] = 'rabbitmq';
+	$pm = new ProcessManager($jobServerInfo, ['host' => $config['redis'], 'port' => $config['redisPort']]);
 
 	// Add the workers.
 	foreach ($config['jobworkers'] as $worker => $conf) {

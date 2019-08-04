@@ -507,9 +507,26 @@ CREATE TABLE `jobs` (
   `created` int(11) NOT NULL,
   `started` int(11) NOT NULL,
   `finished` int(11) NOT NULL,
-  `state` ENUM('created', 'started', 'finished', 'error') NOT NULL DEFAULT 'created'
+  `state` ENUM('created', 'started', 'finished', 'error') NOT NULL DEFAULT 'created',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
+			// ------------------------------------------------------------------------
+			// Jobs Table - Fix not-null fields.
+			// ------------------------------------------------------------------------
+			$dataChanges[34] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `jobs` MODIFY `started` int(11);
+ALTER TABLE `jobs` MODIFY `finished` int(11);
+MYSQLQUERY
+);
+
+			// ------------------------------------------------------------------------
+			// Jobs Table - Add result column.
+			// ------------------------------------------------------------------------
+			$dataChanges[35] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `jobs` ADD COLUMN `result` varchar(1024) DEFAULT NULL AFTER `state`;
 MYSQLQUERY
 );
 

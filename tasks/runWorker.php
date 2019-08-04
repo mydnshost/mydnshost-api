@@ -4,7 +4,7 @@
 	require_once(dirname(__FILE__) . '/classes/TaskWorker.php');
 	require_once(dirname(__FILE__) . '/classes/JobInfo.php');
 	require_once(dirname(__FILE__) . '/classes/TaskServer.php');
-	require_once(dirname(__FILE__) . '/classes/GearmanTaskServer.php');
+	require_once(dirname(__FILE__) . '/classes/RabbitMQTaskServer.php');
 
 	$functions = [];
 	$type = '';
@@ -58,8 +58,8 @@
 	}
 
 	// Load TaskServer
-	if ($type == 'gearman') {
-		$taskServer = new GearmanTaskServer($server, $port);
+	if ($type == 'rabbitmq') {
+		$taskServer = new RabbitMQTaskServer();
 	} else {
 		sendReply('ERR', 'Invalid TaskServer type: ', $type);
 		exit(2);
