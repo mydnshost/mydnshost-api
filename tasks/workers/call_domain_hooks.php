@@ -16,9 +16,11 @@
 				if ($domain !== FALSE) {
 					$hooks = DomainHook::loadFromDomainID(DB::get(), $domain->getID());
 
-					foreach ($hooks as $hook) {
-						echo 'Calling Hook: ', $hook->getID(), ' => ', $hook->getUrl(), "\n";
-						$hook->call($payload['data']);
+					if (is_array($hooks)) {
+						foreach ($hooks as $hook) {
+							echo 'Calling Hook: ', $hook->getID(), ' => ', $hook->getUrl(), "\n";
+							$hook->call($payload['data']);
+						}
 					}
 				} else {
 					$job->setError('Unknown domain: ' . $payload['domain']);
