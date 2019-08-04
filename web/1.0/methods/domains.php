@@ -329,7 +329,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainSync($domain) {
-			EventQueue::get()->publish('sync_domain', [$domain->getID()]);
+			EventQueue::get()->publish('domain.sync', [$domain->getID()]);
 			return true;
 		}
 
@@ -538,17 +538,17 @@
 				$this->getContextKey('db')->commit();
 
 				foreach ($deletedRecords as $r) {
-					EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
+					EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 				}
 
 				foreach ($newRecords as $r) {
-					EventQueue::get()->publish('add_record', [$domain->getID(), $r->getID()]);
+					EventQueue::get()->publish('record.add', [$domain->getID(), $r->getID()]);
 				}
 
-				EventQueue::get()->publish('update_record', [$domain->getID(), $soa->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $soa->getID()]);
 
-				EventQueue::get()->publish('records_changed', [$domain->getID()]);
-				EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
+				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
+				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
 
 				$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
 
@@ -910,34 +910,34 @@
 			$this->getContextKey('db')->commit();
 
 			if ($isCreate) {
-				EventQueue::get()->publish('new_domain', [$domain->getID()]);
-				EventQueue::get()->publish('add_domain', [$domain->getID()]);
+				EventQueue::get()->publish('domain.new', [$domain->getID()]);
+				EventQueue::get()->publish('domain.add', [$domain->getID()]);
 			} else if ($isRename) {
-				EventQueue::get()->publish('rename_domain', [$oldName, $domain->getID()]);
+				EventQueue::get()->publish('domain.rename', [$oldName, $domain->getID()]);
 			}
 
 			if ($isCreate) {
-				EventQueue::get()->publish('add_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.add', [$domain->getID(), $domain->getSOARecord()->getID()]);
 			} else {
-				EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
 			}
 
 			// If we are triggering the superalias, no need to trigger us, we will
 			// get indirectly triggered.
 			if (!$triggerSuperAlias) {
-				EventQueue::get()->publish('records_changed', [$domain->getID()]);
+				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 			}
 
 			$r = $this->getDomainInfoArray($domain);
 
 			$serial = isset($r['SOA']) ? $r['SOA']['serial'] : $newSuperAlias->getSOARecord()->parseSOA()['serial'];
 
-			EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
+			EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
 
 			if ($triggerSuperAlias) {
 				// If we are here, $serial will be the serial of the super alias which is what we want...
-				EventQueue::get()->publish('records_changed', [$newSuperAlias->getID()]);
-				EventQueue::get()->publish('call_domain_hooks', [$newSuperAlias->getID(), ['domain' => $newSuperAlias->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
+				EventQueue::get()->publish('domain.records.changed', [$newSuperAlias->getID()]);
+				EventQueue::get()->publish('domain.hooks.call', [$newSuperAlias->getID(), ['domain' => $newSuperAlias->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
 			}
 
 			$this->getContextKey('response')->data($r);
@@ -956,7 +956,7 @@
 				try {
 					$record->validate();
 					if ($record->save()) {
-						EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+						EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 					}
 				} catch (ValidationFailed $ex) { }
 			}
@@ -1093,11 +1093,11 @@
 				if ($record->hasChanged()) {
 					$record->validate();
 					if ($record->save()) {
-						EventQueue::get()->publish('update_record', [$domain->getID(), $record->getID()]);
+						EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID()]);
 
 						$serial = $domain->updateSerial();
-						EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
-						EventQueue::get()->publish('records_changed', [$domain->getID()]);
+						EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+						EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 					}
 				}
 			} catch (ValidationFailed $ex) {
@@ -1109,7 +1109,7 @@
 			$r['name'] = idn_to_utf8($r['name']);
 
 			if ($serial > 0) {
-				EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_record', 'serial' => $serial, 'time' => time()]]);
+				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_record', 'serial' => $serial, 'time' => time()]]);
 			}
 
 			$this->getContextKey('response')->data($r);
@@ -1208,25 +1208,25 @@
 
 			// Only call hooks if we are not rolling back.
 			foreach ($deletedRecords as $record) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
+				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			foreach ($updatedRecords as $record) {
-				EventQueue::get()->publish('update_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID()]);
 			}
 			foreach ($addedRecords as $record) {
-				EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 			}
 
 			if ($changeCount > 0) {
 				$serial = $domain->updateSerial();
-				EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
-				EventQueue::get()->publish('records_changed', [$domain->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 			} else {
 				$serial = $domain->getSOARecord()->parseSOA()['serial'];
 			}
 
 			if ($changeCount > 0) {
-				EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
+				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			}
 
 			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
@@ -1292,13 +1292,13 @@
 			$deleted = $record->delete();
 			$this->getContextKey('response')->set('deleted', $deleted ? 'true' : 'false');
 			if ($deleted) {
-				EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
+				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			$serial = $domain->updateSerial();
-			EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
-			EventQueue::get()->publish('records_changed', [$domain->getID()]);
+			EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+			EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
-			EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
+			EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
 
 			$this->getContextKey('response')->set('serial', $serial);
 			return true;
@@ -1325,15 +1325,15 @@
 			foreach ($records as $record) {
 				if ($record->delete()) {
 					$count++;
-					EventQueue::get()->publish('delete_record', [$domain->getID(), $record->getID(), json_encode($record)]);
+					EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 				}
 			}
 			$this->getContextKey('response')->set('deleted', $count);
 			$serial = $domain->updateSerial();
-			EventQueue::get()->publish('update_record', [$domain->getID(), $domain->getSOARecord()->getID()]);
-			EventQueue::get()->publish('records_changed', [$domain->getID()]);
+			EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+			EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
-			EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
+			EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
 
 			$this->getContextKey('response')->set('serial', $serial);
 
@@ -1353,7 +1353,7 @@
 			$deleted = $domain->delete();
 			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
 			if ($deleted) {
-				EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getDomainRaw()]);
+				EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 				// The domain will be gone, the hooks won't exist, so we can't call them... Annoying.
 				// EventQueue::get()->publish('call_domain_hooks', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'domain_deleted', 'time' => time()]]);
 
@@ -1361,8 +1361,8 @@
 				foreach ($aliases as $alias) {
 					$serial = $alias->updateSerial($oldSOA['serial']);
 
-					EventQueue::get()->publish('records_changed', [$alias->getID()]);
-					EventQueue::get()->publish('call_domain_hooks', [$alias->getID(), ['domain' => $alias->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'parent_deleted', 'serial' => $serial, 'time' => time()]]);
+					EventQueue::get()->publish('domain.records.changed', [$alias->getID()]);
+					EventQueue::get()->publish('domain.hooks.call', [$alias->getID(), ['domain' => $alias->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'parent_deleted', 'serial' => $serial, 'time' => time()]]);
 				}
 
 			}

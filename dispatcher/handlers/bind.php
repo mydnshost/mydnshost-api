@@ -19,23 +19,23 @@
 	// $config['hooks']['bind']['slaveServers'] = ['1.1.1.1', '2.2.2.2', '3.3.3.3'];
 
 	if (isset($config['hooks']['bind']['enabled']) && parseBool($config['hooks']['bind']['enabled'])) {
-		EventQueue::get()->subscribe('add_domain', function($domainid) {
+		EventQueue::get()->subscribe('domain.add', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			dispatchJob('bind_add_domain', json_encode(['domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('rename_domain', function($oldName, $domainid) {
+		EventQueue::get()->subscribe('domain.rename', function($oldName, $domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			dispatchJob('bind_rename_domain', json_encode(['oldName' => $oldName, 'domain' => $domain->getDomainRaw()]));
 		});
 
-		EventQueue::get()->subscribe('delete_domain', function($domainid, $domainRaw) {
+		EventQueue::get()->subscribe('domain.delete', function($domainid, $domainRaw) {
 			dispatchJob('bind_delete_domain', json_encode(['domain' => $domainRaw]));
 		});
 
-		EventQueue::get()->subscribe('records_changed', function($domainid) {
+		EventQueue::get()->subscribe('changed.records', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			$domains = [];
@@ -53,7 +53,7 @@
 			}
 		});
 
-		EventQueue::get()->subscribe('sync_domain', function($domainid) {
+		EventQueue::get()->subscribe('domain.sync', function($domainid) {
 			$domain = Domain::load(DB::get(), $domainid);
 
 			dispatchJob('job_sequence', json_encode(['jobs' => [['job' => 'bind_zone_changed', 'args' => ['domain' => $domain->getDomainRaw(), 'change' => 'remove']],

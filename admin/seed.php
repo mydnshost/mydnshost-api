@@ -38,8 +38,8 @@
 		$domain = new Domain(DB::get());
 		$domain->setDomain('test' . $i . '.com')->setAccess($admin->getID(), 'Owner')->save();
 		$domains[] = $domain;
-		EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getRawDomain()]);
-		EventQueue::get()->publish('add_domain', [$domain->getID()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 
 		$key = new DomainKey(DB::get());
 		$key->setKey('9426F536-2559-4FA0-BA50-644C90B5FAE4')->setDescription('Write Key')->setDomainID($domain->getID())->setCreated(time());
@@ -61,8 +61,8 @@
 			$domain->setAccess($admin->getID(), 'Write')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getRawDomain()]);
-		EventQueue::get()->publish('add_domain', [$domain->getID()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 	}
 
 	$user->setRealName('2FA User')->save();
@@ -85,8 +85,8 @@
 			$domain->setAccess($admin->getID(), 'Read')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('delete_domain', [$domain->getID(), $domain->getRawDomain()]);
-		EventQueue::get()->publish('add_domain', [$domain->getID()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 	}
 
 	foreach ($domains as $domain) {
@@ -100,7 +100,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -111,7 +111,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -122,7 +122,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -133,7 +133,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -144,7 +144,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -155,7 +155,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -166,7 +166,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -177,7 +177,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -189,7 +189,7 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
 		$record = new Record(DB::get());
 		$record->setDomainID($domain->getID());
@@ -201,9 +201,9 @@
 		$record->setChangedAt(time());
 		$record->validate();
 		$record->save();
-		EventQueue::get()->publish('add_record', [$domain->getID(), $record->getID()]);
+		EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
 
-		EventQueue::get()->publish('records_changed', [$domain->getID()]);
+		EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 	}
 
 	exit(0);

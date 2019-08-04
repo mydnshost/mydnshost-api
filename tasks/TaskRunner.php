@@ -253,7 +253,7 @@
 				// Also, learn this worker's job ID.
 				$this->jobs[$function]['workers'][$pid]['currentJob'] = $args;
 			} else if ($cmd == 'EXCEPTION') {
-				EventQueue::get()->publish('worker_error', [$function, $args]);
+				EventQueue::get()->publish('worker.error', [$function, $args]);
 				$jobFinished = true;
 			} else if ($cmd == 'RESULT') {
 				$jobFinished = true;

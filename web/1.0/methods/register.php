@@ -71,8 +71,8 @@
 				$te = TemplateEngine::get();
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-				EventQueue::get()->publish('send_mail', [$user->getEmail(), $subject, $message, $htmlmessage]);
-				EventQueue::get()->publish('new_user', [$user->getID()]);
+				EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+				EventQueue::get()->publish('user.new', [$user->getID()]);
 
 				return TRUE;
 			}
@@ -116,12 +116,12 @@
 				$user->setDisabled(true);
 				$user->setDisabledReason('Account is pending manual approval.');
 
-				EventQueue::get()->publish('new_user_pending', [$user->getID()]);
+				EventQueue::get()->publish('user.new.pending', [$user->getID()]);
 			} else {
 				$data = ['success' => 'Registration was successful, you can now log in.'];
 				$user->setDisabled(false);
 
-				EventQueue::get()->publish('new_user_confirmed', [$user->getID()]);
+				EventQueue::get()->publish('user.new.confirmed', [$user->getID()]);
 			}
 
 			$result = $user->save();
