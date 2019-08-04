@@ -30,6 +30,12 @@
 					$payload = [];
 				} else if (!is_array($payload)) {
 					sendReply('EXCEPTION', 'Invalid Payload.');
+
+					$resultMsg = 'Invalid Payload';
+					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
+					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
+					JobQueue::get()->replyToJob($msg, $resultMsg);
+
 					throw new Exception('Invalid Payload.');
 				}
 
