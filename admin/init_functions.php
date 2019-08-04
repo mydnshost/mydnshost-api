@@ -545,6 +545,22 @@ CREATE TABLE `joblogs` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Job Dependencies
+			// ------------------------------------------------------------------------
+			$dataChanges[37] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `job_depends` (
+  `parent_id` int(11) NOT NULL,
+  `child_id` int(11) NOT NULL,
+  PRIMARY KEY (`parent_id`,`child_id`),
+  CONSTRAINT `job_depends_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `job_depends_child_id` FOREIGN KEY (`child_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE `jobs` MODIFY `state` ENUM('created', 'blocked', 'started', 'finished', 'error') NOT NULL DEFAULT 'created';
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}
