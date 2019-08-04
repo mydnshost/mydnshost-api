@@ -26,6 +26,7 @@ class User extends DBObject {
 	                                       'manage_permissions',
 	                                       'impersonate_users',
 	                                       'system_service_mgmt',
+	                                       'system_job_mgmt',
 	                                       'manage_articles',
 	                                       '2fa_push',
 	                                      ];
