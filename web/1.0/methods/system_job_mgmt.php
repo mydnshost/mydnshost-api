@@ -38,6 +38,21 @@
 		}
 	});
 
+	$router->get('/system/jobs/([0-9]+)/repeat', new class extends SystemJobsMgmt {
+		function run($job) {
+			$j = Job::load($this->getContextKey('db'), $job);
+
+			if ($j !== false) {
+				$newID = JobQueue::get()->publish($j->getName(), $j->getJobData());
+
+				$this->getContextKey('response')->data(['jobid' => $newID, 'status' => 'Repeat job scheduled.']);
+			} else {
+				$this->getContextKey('response')->sendError('Error loading job.');
+			}
+			return TRUE;
+		}
+	});
+
 	$router->get('/system/jobs/([0-9]+)/logs', new class extends SystemJobsMgmt {
 		function run($job) {
 			$j = Job::load($this->getContextKey('db'), $job);
