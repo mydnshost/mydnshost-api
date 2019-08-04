@@ -52,9 +52,10 @@
 			$j = Job::load($this->getContextKey('db'), $job);
 
 			if ($j !== false) {
-				$newID = JobQueue::get()->publish(JobQueue::get()->create($j->getName(), $j->getJobData()));
+				$job = JobQueue::get()->create($j->getName(), $j->getJobData());
+				JobQueue::get()->publish($job);
 
-				$this->getContextKey('response')->data(['jobid' => $newID, 'status' => 'Repeat job scheduled.']);
+				$this->getContextKey('response')->data(['jobid' => $job->getID(), 'status' => 'Repeat job scheduled.']);
 			} else {
 				$this->getContextKey('response')->sendError('Error loading job.');
 			}
