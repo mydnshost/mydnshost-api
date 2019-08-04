@@ -259,7 +259,7 @@
 			}
 
 			if ($this->jobs[$function]['workers'][$pid]['currentJob'] !== null) {
-				EventQueue::get()->publish('job_log', [$this->jobs[$function]['workers'][$pid]['currentJob'], $data]);
+				EventQueue::get()->publish('job.log', [$this->jobs[$function]['workers'][$pid]['currentJob'], $data]);
 				if ($jobFinished) {
 					$this->jobs[$function]['workers'][$pid]['currentJob'] = null;
 				}

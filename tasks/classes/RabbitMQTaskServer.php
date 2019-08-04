@@ -19,7 +19,7 @@
 			JobQueue::get()->consumeJobs($function, function ($msg) use ($function, $worker) {
 				$msgInfo = json_decode($msg->body, true);
 
-				EventQueue::get()->publish('job_started', [$msgInfo['jobid']]);
+				EventQueue::get()->publish('job.started', [$msgInfo['jobid']]);
 
 				sendReply('JOB', $msgInfo['jobid']);
 				sendReply('FUNCTION', $msgInfo['job']);
@@ -57,7 +57,7 @@
 
 					$resultMsg = 'EXCEPTION';
 					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
-					EventQueue::get()->publish('job_finished', [$msgInfo['jobid'], $resultMsg]);
+					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
 					JobQueue::get()->replyToJob($msg, $resultMsg);
 
 					sendReply('ERR', 'Exception: ' . $ex->getMessage() . "\n" . $ex->getTraceAsString());
@@ -81,7 +81,7 @@
 
 				if ($resultMsg !== null) {
 					$job->setState('finished')->setFinished(time())->setResult($resultMsg)->save();
-					EventQueue::get()->publish('job_finished', [$msgInfo['jobid'], $resultMsg]);
+					EventQueue::get()->publish('job.finished', [$msgInfo['jobid'], $resultMsg]);
 					JobQueue::get()->replyToJob($msg, $resultMsg);
 
 					return true;

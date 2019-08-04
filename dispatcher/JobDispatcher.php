@@ -22,6 +22,8 @@
 	EventQueue::get()->consumeEvents(function ($event) {
 		echo showTime(), ' ', 'Event: ', $event['event'], '(', json_encode($event['args']), ')', "\n";
 
+		checkDBAlive();
+
 		EventQueue::get()->handleSubscribers($event);
 	});
 
