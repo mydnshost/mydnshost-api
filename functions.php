@@ -31,6 +31,7 @@
 		while (true) {
 			try {
 				$pdo = new PDO(sprintf('%s:host=%s;dbname=%s', $database['type'], $database['server'], $database['database']), $database['username'], $database['password'], $opts);
+				break;
 			} catch (PDOException $ex) {
 				if (stristr($ex->getMessage(), 'Connection timed out') !== FALSE) {
 					if ($wait-- > 0) { echo 'Waiting for DB...', "\n"; continue; }
