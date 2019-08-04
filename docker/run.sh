@@ -7,7 +7,7 @@ set -e
 # fi
 
 CMD="${@}"
-if [ "${CMD}" = "apache2-foreground" ]; then
+if [ "${CMD}" = "" ]; then
 	php /dnsapi/admin/init.php && exec "apache2-foreground"
 else
 	exec "$@"
