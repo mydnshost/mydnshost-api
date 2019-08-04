@@ -58,6 +58,12 @@
 				$job->setState('started')->setStarted(time())->save();
 
 				try {
+					if (isset($payload['__wait'])) {
+						$waitUntil = microtime(true) + $payload['__wait'];
+						echo 'Waiting until: ', date('r', $waitUntil), "\n";
+						time_sleep_until($waitUntil);
+					}
+
 					$worker->run($jobinfo);
 				} catch (Throwable $ex) {
 					sendReply('EXCEPTION', 'Uncaught Exception: ' . $ex->getMessage());

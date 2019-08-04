@@ -58,8 +58,7 @@
 
 			$remove = createJob('bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'remove']);
 
-			// TODO: This needs a start-delay.
-			$change = createJob('bind_records_changed', ['domain' => $domain->getDomainRaw()]);
+			$change = createJob('bind_records_changed', ['domain' => $domain->getDomainRaw(), '__wait' => 1]);
 			$change->addDependency($remove->getID())->setState('blocked')->save();
 
 			$add = createJob('bind_zone_changed', ['domain' => $domain->getDomainRaw(), 'change' => 'add']);
