@@ -39,7 +39,7 @@
 				$arr = $j->toArray();
 				$arr['dependsOn'] = array_keys($j->getDependsOn());
 				$arr['dependants'] = array_keys($j->getDependants());
-				$this->getContextKey('response')->data();
+				$this->getContextKey('response')->data($arr);
 			} else {
 				$this->getContextKey('response')->sendError('Error loading job.');
 			}
