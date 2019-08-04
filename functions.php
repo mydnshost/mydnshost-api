@@ -143,7 +143,7 @@
 	}
 
 	function isPublicSuffix($domain) {
-		$domain = idn_to_ascii($domain);
+		$domain = do_idn_to_ascii($domain);
 
 		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
 		$rules = $manager->getRules();
@@ -153,7 +153,7 @@
 	}
 
 	function hasValidPublicSuffix($domain) {
-		$domain = idn_to_ascii($domain);
+		$domain = do_idn_to_ascii($domain);
 		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
 		$rules = $manager->getRules();
 		$parser = $rules->resolve($domain);
@@ -549,4 +549,12 @@
 
 	function showTime() {
 		return date('[Y-m-d H:i:s O]');
+	}
+
+	function do_idn_to_ascii($domain) {
+		return idn_to_ascii($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+	}
+
+	function do_idn_to_utf8($domain) {
+		return idn_to_utf8($domain, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
 	}

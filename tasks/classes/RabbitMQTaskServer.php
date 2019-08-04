@@ -6,13 +6,16 @@
 
 		public function runBackgroundJob($jobinfo) {
 			echo 'Scheduling background job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
-			JobQueue::get()->publish($jobinfo->getFunction(), $jobinfo->getPayload());
+			$jobID = JobQueue::get()->publish($jobinfo->getFunction(), $jobinfo->getPayload());
+			echo 'Scheduled as: ', $jobID, "\n";
 		}
 
 		public function runJob($jobinfo) {
 			echo 'Running foreground job: ', $jobinfo->getFunction(), ' => ', json_encode($jobinfo->getPayload()), "\n";
 
-			return JobQueue::get()->publishAndWait($jobinfo->getFunction(), $jobinfo->getPayload());
+			[$jobID, $result] = JobQueue::get()->publishAndWait($jobinfo->getFunction(), $jobinfo->getPayload());
+			echo 'Scheduled and finished as: ', $jobID, "\n";
+			return $result;
 		}
 
 		public function addTaskWorker($function, $worker) {

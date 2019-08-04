@@ -27,7 +27,7 @@ class Domain extends DBObject {
 	}
 
 	public function setDomain($value) {
-		return $this->setData('domain', idn_to_ascii($value));
+		return $this->setData('domain', do_idn_to_ascii($value));
 	}
 
 	public function setDisabled($value) {
@@ -54,7 +54,7 @@ class Domain extends DBObject {
 	 * @return FALSE if no object exists, else the object.
 	 */
 	public static function loadFromDomain($db, $name) {
-		$result = static::find($db, ['domain' => idn_to_ascii($name)]);
+		$result = static::find($db, ['domain' => do_idn_to_ascii($name)]);
 		if ($result) {
 			return $result[0];
 		} else {
@@ -144,7 +144,7 @@ class Domain extends DBObject {
 	}
 
 	public function getDomain() {
-		return idn_to_utf8($this->getData('domain'));
+		return do_idn_to_utf8($this->getData('domain'));
 	}
 
 	public function getDomainRaw() {
@@ -416,6 +416,6 @@ class Domain extends DBObject {
 
 	public static function validDomainName($name) {
 		// https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
-		return preg_match('#^((?=[_a-z0-9-]{1,63}\.)(xn--)?[_a-z0-9]+(-[_a-z0-9]+)*\.)+(xn--)?[a-z]{2,63}$#i', idn_to_ascii($name));
+		return preg_match('#^((?=[_a-z0-9-]{1,63}\.)(xn--)?[_a-z0-9]+(-[_a-z0-9]+)*\.)+(xn--)?[a-z]{2,63}$#i', do_idn_to_ascii($name));
 	}
 }

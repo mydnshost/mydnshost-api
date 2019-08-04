@@ -127,7 +127,7 @@
 		protected function getRecordID($domain, $record) {
 			$r = $record->toArray();
 			unset($r['domain_id']);
-			$r['name'] = idn_to_utf8($r['name']);
+			$r['name'] = do_idn_to_utf8($r['name']);
 
 			$this->getContextKey('response')->data($r);
 
@@ -156,7 +156,7 @@
 			foreach ($records as $record) {
 				$r = $record->toArray();
 				unset($r['domain_id']);
-				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', do_idn_to_utf8($r['name']));
 				$list[] = $r;
 
 				$hasNS |= ($r['type'] == 'NS' && !parseBool($r['disabled']) && $r['name'] === '');
@@ -174,7 +174,7 @@
 
 		protected function getDomainInfoArray($domain) {
 			$r = $domain->toArray();
-			$r['domain'] = idn_to_utf8($r['domain']);
+			$r['domain'] = do_idn_to_utf8($r['domain']);
 
 			$r['aliases'] = [];
 			$r['aliases']['direct'] = [];
@@ -578,7 +578,7 @@
 				unset($r['userinfo'][$e]['access']);
 			}
 
-			$r['domain'] = idn_to_utf8($r['domain']);
+			$r['domain'] = do_idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
 			return true;
@@ -620,7 +620,7 @@
 				$r['userinfo'][$e] = $ui;
 				unset($r['userinfo'][$e]['access']);
 			}
-			$r['domain'] = idn_to_utf8($r['domain']);
+			$r['domain'] = do_idn_to_utf8($r['domain']);
 
 			$this->getContextKey('response')->data($r);
 			return true;
@@ -746,7 +746,7 @@
 
 			$domains = [];
 			foreach ($rows as $row) {
-				$row['domain'] = idn_to_utf8($row['domain']);
+				$row['domain'] = do_idn_to_utf8($row['domain']);
 				if (!array_key_exists($row['domain'], $domains)) {
 					$domains[$row['domain']] = ['disabled' => $row['disabled'], 'users' => [], 'userinfo' => []];
 				}
@@ -1025,7 +1025,7 @@
 
 
 			$currentAlias = ($domain->getAliasOf() != null) ? strtolower($domain->getAliasDomain()->getDomainRaw()) : '';
-			$wantedAlias = array_key_exists('aliasof', $data) ? strtolower(idn_to_ascii($data['aliasof'])) : '';
+			$wantedAlias = array_key_exists('aliasof', $data) ? strtolower(do_idn_to_ascii($data['aliasof'])) : '';
 
 			// Handle AliasOf specially.
 			if (array_key_exists('aliasof', $data) && $this->checkAccess($domain, ['owner'], true) && $wantedAlias != $currentAlias) {
@@ -1106,7 +1106,7 @@
 
 			$r = $record->toArray();
 			unset($r['domain_id']);
-			$r['name'] = idn_to_utf8($r['name']);
+			$r['name'] = do_idn_to_utf8($r['name']);
 
 			if ($serial > 0) {
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_record', 'serial' => $serial, 'time' => time()]]);
@@ -1187,7 +1187,7 @@
 				$new = $record->getID() === NULL;
 				$r['updated'] = $record->save();
 				$r['id'] = $record->getID();
-				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', do_idn_to_utf8($r['name']));
 				$result[] = $r;
 				if ($r['updated']) {
 					if ($new) {

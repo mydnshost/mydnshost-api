@@ -114,7 +114,7 @@
 				if (!$error) {
 					$r['updated'] = $record->save();
 					$r['id'] = $record->getID();
-					// $r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', idn_to_utf8($r['name']));
+					// $r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', do_idn_to_utf8($r['name']));
 					$result[] = $r;
 				}
 			}

@@ -55,7 +55,7 @@
 		 * @param $file (optional) File to load domain info from
 		 */
 		function __construct($domain, $zonedirectory, $file = '') {
-			$domain = idn_to_ascii($domain);
+			$domain = do_idn_to_ascii($domain);
 			$this->domain = $domain;
 			$this->zonedirectory = $zonedirectory;
 			if ($file == '' || !file_exists($file) || !is_file($file) || !is_readable($file)) {
@@ -362,8 +362,8 @@
 		 * @param $soa The SOA record for this domain.
 		 */
 		function setSOA($soa) {
-			$soa['Nameserver'] = idn_to_ascii(substr($soa['Nameserver'], -1) == '.' ? substr($soa['Nameserver'], 0, -1) : $soa['Nameserver']) . '.';
-			$soa['Email'] = idn_to_ascii(substr($soa['Email'], -1) == '.' ? substr($soa['Email'], 0, -1) : $soa['Email']) . '.';
+			$soa['Nameserver'] = do_idn_to_ascii(substr($soa['Nameserver'], -1) == '.' ? substr($soa['Nameserver'], 0, -1) : $soa['Nameserver']) . '.';
+			$soa['Email'] = do_idn_to_ascii(substr($soa['Email'], -1) == '.' ? substr($soa['Email'], 0, -1) : $soa['Email']) . '.';
 			$this->domainInfo['SOA'][$this->domain.'.'][0] = $soa;
 		}
 
@@ -396,7 +396,7 @@
 		 * @param $priority (optional) Priority of the record (for mx)
 		 */
 		function setRecord($name, $type, $data, $ttl = '', $priority = '') {
-			$name = idn_to_ascii($name);
+			$name = do_idn_to_ascii($name);
 			$domainInfo = $this->domainInfo;
 			if ($ttl == '') { $ttl = $domainInfo[' META ']['TTL']; }
 
@@ -407,7 +407,7 @@
 			}
 
 			if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
-				$info['Address'] = idn_to_ascii($info['Address']);
+				$info['Address'] = do_idn_to_ascii($info['Address']);
 			} else if ($type == 'TXT') {
 				$info['Address'] = Bind::stringToTXTRecord($info['Address']);
 			}
