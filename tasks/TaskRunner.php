@@ -27,6 +27,7 @@
 		 * @param $server Job Server information
 		 */
 		public function __construct($server, $redis) {
+			$server['type'] = 'rabbitmq';
 			$this->server = $server;
 			$loop = React\EventLoop\Factory::create();
 			$this->loop = $loop;
@@ -283,9 +284,7 @@
 	}
 
 	// Create the process manager
-	$jobServerInfo = $config['rabbitmq'];
-	$jobServerInfo['type'] = 'rabbitmq';
-	$pm = new ProcessManager($jobServerInfo, ['host' => $config['redis'], 'port' => $config['redisPort']]);
+	$pm = new ProcessManager($config['rabbitmq'], ['host' => $config['redis'], 'port' => $config['redisPort']]);
 
 	// Add the workers.
 	foreach ($config['jobworkers'] as $worker => $conf) {

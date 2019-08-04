@@ -79,11 +79,6 @@
 	$config['rabbitmq']['user'] = getEnvOrDefault('RABBITMQ_USER', 'guest');
 	$config['rabbitmq']['pass'] = getEnvOrDefault('RABBITMQ_PASS', 'guest');
 
-	// Config for jobserver.
-	$config['jobserver']['type'] = getEnvOrDefault('JOBSERVER_TYPE', 'none');
-	$config['jobserver']['host'] = getEnvOrDefault('JOBSERVER_HOST', '127.0.0.1');
-	$config['jobserver']['port'] = getEnvOrDefault('JOBSERVER_PORT', 4730);
-
 	function getJobWorkerConfig($w) {
 		$result = [];
 		$result['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', getEnvOrDefault('WORKER_PROCESSES', 1));
