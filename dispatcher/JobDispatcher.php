@@ -45,6 +45,11 @@
 		foreach ($dependants as $j) {
 			echo showTime(), ' ', "\t", 'Dependant: ', $j->getID(), "\n";
 
+			if (!in_array($j->getState(), ['created', 'blocked'])) {
+				echo showTime(), ' ', "\t\t", 'Job in invalid state for starting, ignoring.', "\n";
+				continue;
+			}
+
 			$canRun = true;
 			foreach ($j->getDependsOn() as $j2) {
 				echo showTime(), ' ', "\t\t", 'Depends on: ', $j2->getID(), ' which has state: ', $j2->getState(), "\n";

@@ -17,7 +17,13 @@
 			$jobSearch->order('id', 'desc');
 			$jobSearch->limit(50);
 
-			$rows = $jobSearch->getRows();
+			$rows = [];
+			foreach ($jobSearch->search([]) as $j) {
+				$arr = $j->toArray();
+				$arr['dependsOn'] = array_keys($j->getDependsOn());
+				$arr['dependants'] = array_keys($j->getDependants());
+				$rows[] = $arr;
+			}
 
 			$this->getContextKey('response')->data($rows);
 
@@ -30,7 +36,10 @@
 			$j = Job::load($this->getContextKey('db'), $job);
 
 			if ($j !== false) {
-				$this->getContextKey('response')->data($j->toArray());
+				$arr = $j->toArray();
+				$arr['dependsOn'] = array_keys($j->getDependsOn());
+				$arr['dependants'] = array_keys($j->getDependants());
+				$this->getContextKey('response')->data();
 			} else {
 				$this->getContextKey('response')->sendError('Error loading job.');
 			}
