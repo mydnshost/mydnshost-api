@@ -1,28 +1,17 @@
 #!/usr/bin/env php
 <?php
 	// This takes events from the event queue, and dispatches some of them as
-	// jobs onto gearman instead
+	// jobs.
 
 	require_once(dirname(__FILE__) . '/../functions.php');
 
 	echo showTime(), ' ', 'Job Dispatcher started.', "\n";
 
-	$gmc = new GearmanClient();
-
-	try {
-		$gmc->addServer($config['jobserver']['host'], $config['jobserver']['port']);
-		$gmc->setTimeout(5000);
-
-		echo showTime(), ' ', "\t", 'Gearman Server: ', $config['jobserver']['host'], ':', $config['jobserver']['port'], "\n";
-	} catch (Exception $e) {
-		die('Unable to connect to gearman.');
-	}
-
 	function dispatchJob($job, $args) {
 		global $gmc;
 
 		echo showTime(), ' ', 'Dispatching: ', $job, '(', json_encode($args), ')', "\n";
-		$gmc->doBackground($job, $args);
+		JobQueue::get()->publish($job, $args);
 	}
 
 	foreach (recursiveFindFiles(__DIR__ . '/handlers') as $file) {
