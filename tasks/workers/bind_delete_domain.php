@@ -23,10 +23,8 @@
 				// Remove DNSSEC Keys
 				$keys = glob($this->bindConfig['keydir'] . '/K' . $payload['domain'] . '.+*');
 				foreach ($keys as $key) {
-					if (!in_array($key, $validFiles)) {
-						echo 'Removing keyfile: ', $key, "\n";
-						unlink($key);
-					}
+					echo 'Removing keyfile: ', $key, "\n";
+					unlink($key);
 				}
 
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', ['domain' => $payload['domain'], 'change' => 'remove', 'filename' => $filename]));
