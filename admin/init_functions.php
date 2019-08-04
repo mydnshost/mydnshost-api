@@ -530,6 +530,21 @@ ALTER TABLE `jobs` ADD COLUMN `result` varchar(1024) DEFAULT NULL AFTER `state`;
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Job Logs
+			// ------------------------------------------------------------------------
+			$dataChanges[36] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `joblogs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `job_id` int(11) NOT NULL,
+  `time` int(11) NOT NULL,
+  `data` BLOB,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `joblogs_job_id` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}

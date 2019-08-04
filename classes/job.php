@@ -79,6 +79,30 @@ class Job extends DBObject {
 		return $this->getData('result');
 	}
 
+	public function getLogs() {
+		$result = [];
+
+		// Get access levels;
+		$query = 'SELECT `time`, `data` FROM `joblogs` WHERE `job_id` = :jobid';
+		$params = [':jobid' => $this->getID()];
+		$statement = $this->getDB()->getPDO()->prepare($query);
+		$statement->execute($params);
+		$sqlresult = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach ($sqlresult as $row) {
+			$result[] = $row;
+		}
+
+		return $result;
+	}
+
+	public function addLog($text) {
+		$setQuery = 'INSERT INTO `joblogs` (`job_id`, `time`, `data`) VALUES (:jobid, :time, :data)';
+		$setStatement = $this->getDB()->getPDO()->prepare($setQuery);
+
+		$setStatement->execute([':jobid' => $this->getID(), ':time' => time(), ':data' => $text]);
+	}
+
 	public function validate() {
 		return true;
 	}
