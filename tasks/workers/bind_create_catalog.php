@@ -7,7 +7,7 @@
 	class bind_create_catalog extends bind_update_catalog {
 		public function run($job) {
 
-			if (TaskWorker::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
+			if (RedisLock::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
 				file_put_contents($this->bindConfig['catalogZoneFile'], '');
 				$bind = new Bind($this->bindConfig['catalogZoneName'], '', $this->bindConfig['catalogZoneFile']);
 				$bind->clearRecords();
@@ -27,7 +27,7 @@
 				$bind->saveZoneFile($this->bindConfig['catalogZoneFile']);
 				chmod($this->bindConfig['catalogZoneFile'], 0777);
 
-				TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
+				RedisLock::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 			}
 
 			$this->getTaskServer()->runJob(new JobInfo('', 'bind_rebuild_catalog'));

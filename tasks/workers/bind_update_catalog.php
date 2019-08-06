@@ -49,7 +49,7 @@
 			}
 
 			// Now update.
-			if (TaskWorker::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
+			if (RedisLock::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
 				$bind = new Bind($this->bindConfig['catalogZoneName'], '', $this->bindConfig['catalogZoneFile']);
 
 				$bind->parseZoneFile();
@@ -74,7 +74,7 @@
 							$this->getTaskServer()->runBackgroundJob($newjob);
 						} else {
 							// Transfer list has not changed, abort.
-							TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
+							RedisLock::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 							return;
 						}
 					}
@@ -95,7 +95,7 @@
 					}
 				}
 
-				TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
+				RedisLock::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 			}
 		}
 	}

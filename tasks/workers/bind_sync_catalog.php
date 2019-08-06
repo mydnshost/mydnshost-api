@@ -18,7 +18,7 @@
 				$this->updateCatalogZone($d["domain"], $change, false);
 			}
 
-			if (TaskWorker::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
+			if (RedisLock::acquireLock('zone_' . $this->bindConfig['catalogZoneName'])) {
 				// Touch the catalog file to bump the time if needed.
 				$this->bind_sleepForCatalog();
 				touch($this->bindConfig['catalogZoneFile']);
@@ -27,7 +27,7 @@
 				$jobArgs = ['domain' => $this->bindConfig['catalogZoneName'], 'change' => 'change', 'noCatalog' => true, 'filename' => $this->bindConfig['catalogZoneFile']];
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
 
-				TaskWorker::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
+				RedisLock::releaseLock('zone_' . $this->bindConfig['catalogZoneName']);
 			}
 
 			$job->setResult('OK');

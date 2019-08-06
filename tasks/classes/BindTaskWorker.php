@@ -88,7 +88,7 @@
 
 			// Try and lock the zone to ensure that we are the only ones
 			// writing to it.
-			if (TaskWorker::acquireLock('zone_' . $domain->getDomainRaw())) {
+			if (RedisLock::acquireLock('zone_' . $domain->getDomainRaw())) {
 				if ($hasNS) {
 					// if filemtime is the same as now, we need to wait to ensure
 					// bind does the right thing.
@@ -111,7 +111,7 @@
 					$jobArgs['change'] = 'remove';
 				}
 
-				TaskWorker::releaseLock('zone_' . $domain->getDomainRaw());
+				RedisLock::releaseLock('zone_' . $domain->getDomainRaw());
 			}
 
 			$this->writeZoneKeys($domain);
@@ -127,7 +127,7 @@
 			$bind = new Bind($domain->getDomainRaw(), $this->bindConfig['zonedir']);
 			list($filename, $filename2) = $bind->getFileNames();
 
-			if (TaskWorker::acquireLock('zone_' . $domain->getDomainRaw())) {
+			if (RedisLock::acquireLock('zone_' . $domain->getDomainRaw())) {
 				// Output any missing keys.
 				$keys = $domain->getZoneKeys();
 
@@ -160,7 +160,7 @@
 					}
 				}
 
-				TaskWorker::releaseLock('zone_' . $domain->getDomainRaw());
+				RedisLock::releaseLock('zone_' . $domain->getDomainRaw());
 			}
 		}
 

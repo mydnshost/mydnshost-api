@@ -40,7 +40,7 @@
 			$port = isset($args[1]) ? $args[1] : '';
 
 			sendReply('OK', 'Set redis host: ', $host, (!empty($port) ? ':' . $port : ''));
-			TaskWorker::setRedisHost($host, $port);
+			RedisLock::setRedisHost($host, $port);
 		} else if ($cmd == 'setTaskServer') {
 			$args = explode(" ", $args);
 

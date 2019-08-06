@@ -12,7 +12,7 @@
 			$zoneName = $this->bindConfig['catalogZoneName'];
 			$zoneFile = $this->bindConfig['catalogZoneFile'];
 
-			if (TaskWorker::acquireLock('zone_' . $zoneName)) {
+			if (RedisLock::acquireLock('zone_' . $zoneName)) {
 				$bind = new Bind($zoneName, '', $zoneFile);
 				$bind->parseZoneFile();
 				$bindSOA = $bind->getSOA();
@@ -50,7 +50,7 @@
 				$jobArgs = ['domain' => $zoneName, 'change' => 'change', 'noCatalog' => true, 'filename' => $zoneFile];
 				$this->getTaskServer()->runBackgroundJob(new JobInfo('', 'bind_zone_changed', $jobArgs));
 
-				TaskWorker::releaseLock('zone_' . $zoneName);
+				RedisLock::releaseLock('zone_' . $zoneName);
 			}
 
 			$job->setResult('OK');
