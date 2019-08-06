@@ -1,6 +1,6 @@
 <?php
 
-	public abstract class RedisLock {
+	abstract class RedisLock {
 		private static $redisHost;
 		private static $redisPort;
 		private static $redis;
