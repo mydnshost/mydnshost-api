@@ -538,7 +538,7 @@
 				$this->getContextKey('db')->commit();
 
 				foreach ($deletedRecords as $r) {
-					EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
+					EventQueue::get()->publish('record.delete', [$domain->getID(), $r->getID(), json_encode($r)]);
 				}
 
 				foreach ($newRecords as $r) {
