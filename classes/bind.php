@@ -274,7 +274,7 @@
 		 */
 		public static function parseTXTRecord($input) {
 			// If there are no spaces and no quotes, then just use input as-is.
-			if (preg_match('#^[^\s"]+$#', $input, $m)) { return '"' . $m[1] . '"'; }
+			if (preg_match('#^([^\s"]+)$#', $input, $m)) { return '"' . $m[1] . '"'; }
 
 			$last = '';
 			$output = '';
