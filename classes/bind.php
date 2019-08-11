@@ -274,7 +274,7 @@
 		 */
 		public static function parseTXTRecord($input) {
 			// If there are no spaces and no quotes, then just use input as-is.
-			if (preg_match('#^([^\s"]+)$#', $input, $m)) { return $m[1]; }
+			if (preg_match('#^[^\s"]+$#', $input, $m)) { return $input; }
 			// TODO:  I think I'm technically wrong still here, as I'll still
 			//        require a string to be quoted if you want to put a " in
 			//        it somewhere. Currently the input: foo"bar will fall
