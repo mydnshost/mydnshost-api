@@ -19,6 +19,12 @@
 	$pdo->exec('DROP TABLE domainkeys;');
 	$pdo->exec('DROP TABLE domainhooks;');
 	$pdo->exec('DROP TABLE zonekeys;');
+	$pdo->exec('DROP TABLE articles;');
+	$pdo->exec('DROP TABLE job_depends;');
+	$pdo->exec('DROP TABLE joblogs;');
+	$pdo->exec('DROP TABLE jobs;');
+	$pdo->exec('DROP TABLE usercustomdata;');
+	$pdo->exec('DROP TABLE userdomaincustomdata;');
 	$pdo->exec('DROP TABLE __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
