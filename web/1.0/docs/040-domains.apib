@@ -774,6 +774,33 @@ As with other update methods, only fields that are provided will be changed, you
                 }
             }
 
+## Domain Logs [/domains/{domain}/logs]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Get logs for this domain [GET]
+
+Get recent logs related to this domain.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "5d5afd8092ecf",
+                "method": "domains/example.org/logs",
+                "response":[
+                    {
+                        "timestamp": "2019-08-19T19:12:47.710Z",
+                        "message": "19-Aug-2019 19:12:47.709 zone example.org/IN (signed): reconfiguring zone keys"
+                    },
+                    {
+                        "timestamp": "2019-08-19T19:12:47.711Z",
+                        "message": "19-Aug-2019 19:12:47.710 zone example.org/IN (signed): next key event: 19-Aug-2019 20:12:47.709"
+                    }
+                ]
+            }
+
 ## Domain export [/domains/{domain}/export]
 
 + Parameters
