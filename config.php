@@ -79,6 +79,10 @@
 	$config['rabbitmq']['user'] = getEnvOrDefault('RABBITMQ_USER', 'guest');
 	$config['rabbitmq']['pass'] = getEnvOrDefault('RABBITMQ_PASS', 'guest');
 
+	// Config for MongoDB
+	$config['mongodb']['server'] = getEnvOrDefault('MONGO_HOST', '127.0.0.1');
+	$config['mongodb']['database'] = getEnvOrDefault('MONGO_DB', 'mydnshost');
+
 	function getJobWorkerConfig($w) {
 		$result = [];
 		$result['processes'] = getEnvOrDefault('WORKER_' . $w . '_PROCESSES', getEnvOrDefault('WORKER_PROCESSES', 1));
@@ -132,7 +136,7 @@
 
 	// Domain Logs Source
 	// $config['domainlogs']['source'] = getEnvOrDefault('DOMAINLOGS_SOURCE', 'file:/var/log/bind.log');
-	$config['domainlogs']['source'] = getEnvOrDefault('DOMAINLOGS_SOURCE', 'docker:mydnshost_bind');
+	$config['domainlogs']['source'] = getEnvOrDefault('DOMAINLOGS_SOURCE', 'docker:bind');
 
 	// Local configuration.
 	if (file_exists(dirname(__FILE__) . '/config.local.php')) {

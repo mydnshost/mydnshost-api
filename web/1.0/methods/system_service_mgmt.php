@@ -8,23 +8,15 @@
 			}
 
 			$this->checkPermissions(['system_service_mgmt']);
-
-			if (!file_exists('/var/run/docker.sock')) {
-				$this->getContextKey('response')->sendError('Unable to obtain data.');
-			}
 		}
 	}
 
 	$router->get('/system/service/list', new class extends SystemServiceMgmt {
 		function run() {
-			$containers = getFromDocker('/containers/json');
+			Mongo::get()->connect();
+			$containers = Mongo::get()->getCollection('dockerlogs')->distinct('docker.hostname');
 
-			$list = [];
-			foreach ($containers as $container) {
-				$list[] = substr($container['Names'][0], 1);
-			}
-
-			$this->getContextKey('response')->data($list);
+			$this->getContextKey('response')->data($containers);
 
 			return TRUE;
 		}
@@ -32,9 +24,10 @@
 
 	$router->get('/system/service/([^/]+)/logs', new class extends SystemServiceMgmt {
 		function run($service) {
-			$since = isset($_REQUEST['since']) ? 0 + $_REQUEST['since'] : -1;
-			$logs = getLogsFromDocker($service, $since);
-			$this->getContextKey('response')->data($logs);
+			Mongo::get()->connect();
+
+			$logs = Mongo::get()->getCollection('dockerlogs')->find(['docker.hostname' => $service], ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'limit' => 100])->toArray();
+			$this->getContextKey('response')->data(array_reverse($logs));
 
 			return TRUE;
 		}
