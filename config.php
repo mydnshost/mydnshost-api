@@ -97,7 +97,7 @@
 			if ($w{0} == '-') { $w = substr($w, 1); $includeWorker = false; }
 
 			if ($w == '*') {
-				foreach (recursiveFindFiles(__DIR__ . '/tasks/workers') as $file) {
+				foreach (recursiveFindFiles(__DIR__ . '/workers/workers') as $file) {
 					$w = pathinfo($file, PATHINFO_FILENAME);
 
 					$result[$w] = getJobWorkerConfig($w);
