@@ -285,16 +285,18 @@
 
 		if ($source[0] == 'docker' && isset($source[1])) {
 
+			$regex = '(\'| |\()' . preg_quote($domain->getDomain());
+
+			$search = ['docker.hostname' => $source[1], 'message' => ['$regex' => $regex]];
+			$options = ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'limit' => 100];
+
 			Mongo::get()->connect();
-			$logs = Mongo::get()->getCollection('dockerlogs')->find(['docker.hostname' => $source[1]], ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'limit' => 1000])->toArray();
+			$logs = Mongo::get()->getCollection('dockerlogs')->find($search, $options)->toArray();
 			$logs = array_reverse($logs);
 
 			$result = [];
 			foreach ($logs as $log) {
-				// TODO: Better filtering of zone-specific log entries.
-				if (preg_match('#(\'| |\()' . preg_quote($domain->getDomain(), '#') . '#', $log['message'])) {
-					$result[] = $log['message'];
-				}
+				$result[] = ['timestamp' => $log['timestamp'], 'message' => $log['message']];
 			}
 
 			return $result;
