@@ -5,3 +5,7 @@ hooks/*
 vendor/
 templates_c/
 test/
+workers/
+joblogger/
+dispatcher/
+containerlogger/
