@@ -17,8 +17,20 @@
 			$jobSearch->order('id', 'desc');
 			$jobSearch->limit(50);
 
+			$filter = isset($_REQUEST['filter']) ? $_REQUEST['filter'] : [];
+
 			$rows = [];
 			foreach ($jobSearch->search([]) as $j) {
+				if (isset($filter['data'])) {
+					foreach ($filter['data'] as $key => $value) {
+						$json = $j->getJobData();
+
+						if (!isset($json[$key]) || strtolower($json[$key]) != strtolower($value)) {
+							continue 2;
+						}
+					}
+				}
+
 				$arr = $j->toArray();
 				$arr['dependsOn'] = array_keys($j->getDependsOn());
 				$arr['dependants'] = array_keys($j->getDependants());

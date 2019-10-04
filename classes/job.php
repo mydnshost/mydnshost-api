@@ -59,7 +59,7 @@ class Job extends DBObject {
 	}
 
 	public function getJobData() {
-		return json_decode($this->getData('data'));
+		return json_decode($this->getData('data'), true);
 	}
 
 	public function getCreated() {
