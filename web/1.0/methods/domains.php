@@ -414,36 +414,26 @@
 				}
 			}
 
-			$tmpname = tempnam('/tmp', 'ZONEIMPORT');
-			if ($tmpname === FALSE) {
-				$this->getContextKey('response')->sendError('Unable to import zone.');
-			}
+			$zoneData = [];
 
-			file_put_contents($tmpname, $data['data']['zone']);
-
-			$bind = new Bind($domain->getDomain(), '', $tmpname);
 			try {
-				$bind->parseZoneFile();
-				$bind->getSOA();
-				unlink($tmpname);
+				$zfh = new BindZoneFileHandler();
+
+				$zoneData = $zfh->parseZoneFile($domain->getDomain(), $data['data']['zone']);
 			} catch (Exception $ex) {
-				unlink($tmpname);
-				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
+				$this->getContextKey('response')->sendError('Unable to import zone. (' . $ex->getMessage() . ')');
 			}
 
-			$domainInfo = $bind->getDomainInfo();
-
-			$bindsoa = $bind->getSOA();
 			$soa = $domain->getSOARecord();
 			$parsedsoa = $soa->parseSOA();
 
-			$parsedsoa['primaryNS'] = $bindsoa['Nameserver'];
-			$parsedsoa['adminAddress'] = $bindsoa['Email'];
+			$parsedsoa['primaryNS'] = $zoneData['soa']['Nameserver'];
+			$parsedsoa['adminAddress'] = $zoneData['soa']['Email'];
 			$parsedsoa['serial'] = $domain->getNextSerial($parsedsoa['serial']);
-			$parsedsoa['refresh'] = $bindsoa['Refresh'];
-			$parsedsoa['retry'] = $bindsoa['Retry'];
-			$parsedsoa['expire'] = $bindsoa['Expire'];
-			$parsedsoa['minttl'] = $bindsoa['MinTTL'];
+			$parsedsoa['refresh'] = $zoneData['soa']['Refresh'];
+			$parsedsoa['retry'] = $zoneData['soa']['Retry'];
+			$parsedsoa['expire'] = $zoneData['soa']['Expire'];
+			$parsedsoa['minttl'] = $zoneData['soa']['MinTTL'];
 
 			try {
 				$soa->updateSOAContent($parsedsoa);
@@ -454,10 +444,8 @@
 
 			$newRecords = [];
 
-			foreach ($domainInfo as $type => $bits) {
-				if ($type == 'SOA' || $type == ' META ') { continue; }
-
-				foreach ($bits as $rname => $records) {
+			foreach ($zoneData['records'] as $type => $entries) {
+				foreach ($entries as $rname => $records) {
 					foreach ($records as $record) {
 						$r = (new Record($domain->getDB()))->setDomainID($domain->getID());
 
@@ -485,8 +473,6 @@
 								}
 							}
 						}
-
-						$record['TTL'] = $bind->ttlToInt($record['TTL']);
 
 						// Test for cloudflare imports.
 						if ($type == 'NS' && $record['Address'] == 'REPLACE&ME$WITH^YOUR@NAMESERVER') {

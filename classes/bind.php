@@ -124,7 +124,7 @@
 		 */
 		function parseZoneFile() {
 			$file = $this->getZoneFileContents();
-			$zonettl = '2d';
+			$zonettl = $this->ttlToInt('2d');
 			$origin = $this->domain.'.';
 			$startname = $origin;
 
@@ -138,7 +138,7 @@
 
 				$bits = preg_split('/\s+/', $line);
 				if (strtolower($bits[0]) == '$ttl') {
-					$zonettl = $bits[++$pos];
+					$zonettl = $this->ttlToInt($bits[++$pos]);
 					$this->debug('parseZoneFile', 'TTL is now: '.$zonettl);
 					if (!isset($domainInfo[' META ']['TTL'])) { $domainInfo[' META ']['TTL'] = $zonettl; }
 				} else if (strtolower($bits[0]) == '$origin') {
@@ -154,7 +154,7 @@
 
 					for ($pos = 1; $pos < count($bits); $pos++) {
 						if (is_numeric($bits[$pos])) {
-							$thisttl = $bits[$pos];
+							$thisttl = $this->ttlToInt($bits[$pos]);
 						} else if (strtoupper($bits[$pos]) == 'IN') {
 							continue;
 						} else {
