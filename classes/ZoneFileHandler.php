@@ -24,4 +24,12 @@
 		 * @return String representing a zone file.
 		 */
 		abstract public function generateZoneFile($domainName, $data);
+
+		public final static function get($type = 'bind') {
+			if (strtolower($type) == 'bind') {
+				return new BindZoneFileHandler();
+			} else {
+				throw new Exception('Unknown zone file type: ' . $type);
+			}
+		}
 	}

@@ -801,10 +801,11 @@ Get recent logs related to this domain.
                 ]
             }
 
-## Domain export [/domains/{domain}/export]
+## Domain export [/domains/{domain}/export/{type}]
 
 + Parameters
     + domain: `example.org` (required, string) - The domain name
+    + type: `bind` (optional, string) - Zone file format to export as (Valid types: bind)
 
 ### Export zone as bind zone file [GET]
 + Response 200 (application/json)
@@ -818,10 +819,11 @@ Get recent logs related to this domain.
                 }
             }
 
-## Domain import [/domains/{domain}/import]
+## Domain import [/domains/{domain}/import/{type}]
 
 + Parameters
     + domain: `example.org` (required, string) - The domain name
+    + type: `bind` (optional, string) - Zone file format to import from (Valid types: bind)
 
 ### Export zone as bind zone file [POST]
 + Request import from zone file(application/json)

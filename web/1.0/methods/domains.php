@@ -337,9 +337,10 @@
 		 * Get zone data in BIND format.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $type Type of zone file to export as.
 		 * @return TRUE if we handled this method.
 		 */
-		protected function getDomainExport($domain) {
+		protected function getDomainExport($domain, $type) {
 			$recordDomain = ($domain->getAliasOf() != null) ? $domain->getAliasDomain(true) : $domain;
 
 			$soa = $recordDomain->getSOARecord()->parseSOA();
@@ -384,10 +385,14 @@
 				$records[$record->getType()][$name][] = ['Address' => $content, 'TTL' => $record->getTTL(), 'Priority' => $record->getPriority()];
 			}
 
-			$zfh = new BindZoneFileHandler();
-			$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records]);
+			try {
+				$zfh = ZoneFileHandler::get($type);
+				$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records]);
 
-			$this->getContextKey('response')->data(['zone' => $output]);
+				$this->getContextKey('response')->data(['zone' => $output]);
+			} catch (Exception $ex) {
+				$this->getContextKey('response')->sendError('Unable to export zone. (' . $ex->getMessage() . ')');
+			}
 
 			return true;
 		}
@@ -398,9 +403,10 @@
 		 * Import zone data as BIND format.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
+		 * @param $type Type of zone file to import from.
 		 * @return TRUE if we handled this method.
 		 */
-		protected function doDomainImport($domain) {
+		protected function doDomainImport($domain, $type) {
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']['zone'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -420,7 +426,7 @@
 			$zoneData = [];
 
 			try {
-				$zfh = new BindZoneFileHandler();
+				$zfh = ZoneFileHandler::get($type);
 
 				$zoneData = $zfh->parseZoneFile($domain->getDomain(), $data['data']['zone']);
 			} catch (Exception $ex) {
@@ -1624,24 +1630,24 @@
 		}
 	});
 
-	$router->get('/domains/([^/]+)/export', new class extends Domains {
-		function run($domain) {
+	$router->get('/domains/([^/]+)/export(?:/([^/]+))?', new class extends Domains {
+		function run($domain, $type = 'bind') {
 			$this->checkPermissions(['domains_read']);
 
 			$domain = $this->getDomainFromParam($domain);
 			// $this->checkAliasOf($domain);
-			return $this->getDomainExport($domain);
+			return $this->getDomainExport($domain, $type);
 		}
 	});
 
-	$router->post('/domains/([^/]+)/import', new class extends Domains {
-		function run($domain) {
+	$router->post('/domains/([^/]+)/import(?:/([^/]+))?', new class extends Domains {
+		function run($domain, $type = 'bind') {
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
 			$this->checkAliasOf($domain);
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
-			return $this->doDomainImport($domain);
+			return $this->doDomainImport($domain, $type);
 		}
 	});
 
