@@ -29,4 +29,21 @@
 			return $result;
 		}
 
+		public function generateZoneFile($domainName, $data) {
+			$bind = new Bind($domainName, '');
+			$bind->clearRecords();
+
+			$bind->setSOA($data['soa']);
+
+			foreach ($data['records'] as $type => $entries) {
+				foreach ($entries as $rname => $records) {
+					foreach ($records as $record) {
+						$bind->setRecord($rname, $type, $record['Address'], $record['TTL'], $record['Priority']);
+					}
+				}
+			}
+
+			return implode("\n", $bind->getParsedZoneFile());
+		}
+
 	}

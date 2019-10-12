@@ -340,9 +340,6 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainExport($domain) {
-			$bind = new Bind($domain->getDomain(), '');
-			$bind->clearRecords();
-
 			$recordDomain = ($domain->getAliasOf() != null) ? $domain->getAliasDomain(true) : $domain;
 
 			$soa = $recordDomain->getSOARecord()->parseSOA();
@@ -354,7 +351,7 @@
 			                 'Expire' => $soa['expire'],
 			                 'MinTTL' => $soa['minttl']);
 
-			$bind->setSOA($bindSOA);
+			$records = [];
 
 			foreach ($recordDomain->getRecords() as $record) {
 				if ($record->isDisabled()) { continue; }
@@ -381,10 +378,16 @@
 					$hasNS = true;
 				}
 
-				$bind->setRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
+				if (!isset($records[$record->getType()])) { $records[$record->getType()] = []; }
+				if (!isset($records[$record->getType()][$name])) { $records[$record->getType()][$name] = []; }
+
+				$records[$record->getType()][$name][] = ['Address' => $content, 'TTL' => $record->getTTL(), 'Priority' => $record->getPriority()];
 			}
 
-			$this->getContextKey('response')->data(['zone' => implode("\n", $bind->getParsedZoneFile())]);
+			$zfh = new BindZoneFileHandler();
+			$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records]);
+
+			$this->getContextKey('response')->data(['zone' => $output]);
 
 			return true;
 		}
