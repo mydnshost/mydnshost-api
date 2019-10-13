@@ -228,6 +228,8 @@
 					                  'MinTTL' => $min];
 				} else if ($type == ':') { // Custom Record
 					throw new Exception('Custom records are not supported: ' . $line);
+				} else {
+					throw new Exception('Unknown Record Type: ' . $line);
 				}
 			}
 
