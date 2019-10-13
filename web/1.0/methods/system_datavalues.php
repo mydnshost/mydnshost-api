@@ -91,3 +91,19 @@
 			return TRUE;
 		}
 	});
+
+	$router->get('/system/datavalue/importTypes', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('importTypes', ['bind', 'tinydns']);
+
+			return TRUE;
+		}
+	});
+
+	$router->get('/system/datavalue/exportTypes', new class extends RouterMethod {
+		function run() {
+			$this->getContextKey('response')->set('exportTypes', ['bind']);
+
+			return TRUE;
+		}
+	});

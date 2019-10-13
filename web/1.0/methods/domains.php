@@ -352,7 +352,7 @@
 			                 'Expire' => $soa['expire'],
 			                 'MinTTL' => $soa['minttl']);
 
-			$records = [];
+			$records = new RecordsInfo();
 
 			foreach ($recordDomain->getRecords() as $record) {
 				if ($record->isDisabled()) { continue; }
@@ -379,15 +379,12 @@
 					$hasNS = true;
 				}
 
-				if (!isset($records[$record->getType()])) { $records[$record->getType()] = []; }
-				if (!isset($records[$record->getType()][$name])) { $records[$record->getType()][$name] = []; }
-
-				$records[$record->getType()][$name][] = ['Address' => $content, 'TTL' => $record->getTTL(), 'Priority' => $record->getPriority()];
+				$records->addRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 			}
 
 			try {
 				$zfh = ZoneFileHandler::get($type);
-				$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records]);
+				$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records->get()]);
 
 				$this->getContextKey('response')->data(['zone' => $output]);
 			} catch (Exception $ex) {
@@ -463,6 +460,8 @@
 						if (!endsWith($name, '.')) {
 							if (!empty($name) || $name == "0") { $name .= '.'; }
 							$name .= $domain->getDomain();
+						} else {
+							$name = rtrim($name, '.');
 						}
 
 						if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
@@ -520,6 +519,7 @@
 								if (!$r->save()) { throw new ValidationFailed('Error saving record: ' . $ex->getMessage()); }
 							} catch (Exception $ex) {
 								$this->getContextKey('db')->rollback();
+								$record['Type'] = $type;
 								$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
 							}
 
@@ -528,6 +528,8 @@
 					}
 				}
 			}
+
+
 
 			if ($soa->save()) {
 				$this->getContextKey('db')->commit();
@@ -549,7 +551,7 @@
 
 			} else {
 				$this->getContextKey('db')->rollback();
-				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => ' . print_r($record, true));
+				$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage());
 			}
 
 			return true;
