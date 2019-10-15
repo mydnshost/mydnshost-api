@@ -63,7 +63,7 @@ class Record extends DBObject {
 	}
 
 	public function setPriority($value) {
-		if (empty($value) && $value !== 0) { $value = NULL; }
+		if (empty($value) && $value !== 0 && $value !== '0') { $value = NULL; }
 		return $this->setData('priority', $value);
 	}
 
