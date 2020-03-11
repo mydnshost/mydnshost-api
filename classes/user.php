@@ -309,7 +309,7 @@ class User extends DBObject {
 	public function postSave($result) {
 		if ($result) {
 			// Persist permission changes
-			$setQuery = 'INSERT INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
+			$setQuery = 'INSERT IGNORE INTO permissions (`user_id`, `permission`) VALUES (:user, :permission)';
 			$setStatement = $this->getDB()->getPDO()->prepare($setQuery);
 
 			$params = [':user' => $this->getID()];
