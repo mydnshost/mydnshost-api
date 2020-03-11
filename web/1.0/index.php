@@ -102,6 +102,7 @@
 	if ($hasBearer || $hasSessionID) {
 		$authPayload = [];
 
+
 		if ($hasBearer && ReallySimpleJWT\Token::validate($bearerToken, getJWTSecret())) {
 			$authPayload = ReallySimpleJWT\Token::getPayload($bearerToken, getJWTSecret());
 		} else if ($hasSessionID) {
@@ -114,15 +115,19 @@
 		if (isset($authPayload['userid']) && isset($authPayload['access'])) {
 			$user = User::load($context['db'], $authPayload['userid']);
 			$key = FALSE;
+
 			if (isset($authPayload['keyid'])) {
 				$key = APIKey::load($context['db'], $authPayload['keyid']);
-				if ($key == FALSE) {
+
+				if ($key != FALSE) {
 					$key->setLastUsed(time())->save();
 				} else {
 					// Key no longer exists, so session is no longer valid.
 					$user = FALSE;
 				}
-			} else if (isset($authPayload['nonce'])) {
+			}
+
+			if (isset($authPayload['nonce'])) {
 				if ($authPayload['nonce'] != $user->getPasswordNonce()) {
 					// Password changed, so session is no longer valid.
 					$user = FALSE;
