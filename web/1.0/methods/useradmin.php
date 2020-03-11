@@ -272,6 +272,13 @@
 					$keys['disabled'] = 'setDisabled';
 					$keys['disabledreason'] = 'setDisabledReason';
 				}
+			} else {
+				// If this user doesn't have manage_users, but does have
+				// admin_managed_user, then they can't change some details.
+				if ($this->checkPermissions(['admin_managed_user'], true)) {
+					unset($keys['email']);
+					unset($keys['password']);
+				}
 			}
 
 			foreach ($keys as $k => $f) {

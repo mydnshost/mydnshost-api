@@ -34,7 +34,7 @@
 		// other useful things.
 		if ($user->getAcceptTerms() < getSystemAPIMinimumTermsTime()) {
 			foreach ($access as $permission => &$value) {
-				if (!in_array($permission, ['user_read', 'user_write'])) {
+				if (!in_array($permission, User::getNoTermsPermissions())) {
 					$value = false;
 				}
 			}

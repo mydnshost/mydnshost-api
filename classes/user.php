@@ -17,6 +17,7 @@ class User extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'users';
 
+    // Permission flags that can be set on an account
 	protected static $VALID_PERMISSIONS = ['system_stats',
 	                                       'domains_logs',
 	                                       'domains_stats',
@@ -29,7 +30,15 @@ class User extends DBObject {
 	                                       'system_job_mgmt',
 	                                       'manage_articles',
 	                                       '2fa_push',
+	                                       'admin_managed_user',
 	                                      ];
+
+    // Permissions that should not be disabled if the user has not accepted the
+    // terms and conditions.
+	protected static $NO_TERMS_PERMISSION = ['user_read',
+	                                         'user_write',
+	                                         'admin_managed_user',
+	                                        ];
 
 	// Permissions levels for unknown objects.
 	protected $_permissions = [];
@@ -188,6 +197,15 @@ class User extends DBObject {
 	 */
 	public static function getValidPermissions() {
 		return User::$VALID_PERMISSIONS;
+	}
+
+	/**
+	 * Get valid permissions for users who haven't accepted terms.
+	 *
+	 * @return Valid permissions.
+	 */
+	public static function getNoTermsPermissions() {
+		return User::$NO_TERMS_PERMISSION;
 	}
 
 	/**
