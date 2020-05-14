@@ -579,16 +579,16 @@
         },
         {
             "name": "php-amqplib/php-amqplib",
-            "version": "v2.11.1",
+            "version": "v2.11.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-amqplib/php-amqplib.git",
-                "reference": "cfbfaf6262cd8d017f29862164f75e265d832434"
+                "reference": "6353c5d2d3021a301914bc6566e695c99cfeb742"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/cfbfaf6262cd8d017f29862164f75e265d832434",
-                "reference": "cfbfaf6262cd8d017f29862164f75e265d832434",
+                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/6353c5d2d3021a301914bc6566e695c99cfeb742",
+                "reference": "6353c5d2d3021a301914bc6566e695c99cfeb742",
                 "shasum": ""
             },
             "require": {
@@ -630,11 +630,6 @@
                     "role": "Original Maintainer"
                 },
                 {
-                    "name": "John Kelly",
-                    "email": "johnmkelly86@gmail.com",
-                    "role": "Maintainer"
-                },
-                {
                     "name": "Raúl Araya",
                     "email": "nubeiro@gmail.com",
                     "role": "Maintainer"
@@ -642,6 +637,11 @@
                 {
                     "name": "Luke Bakken",
                     "email": "luke@bakken.io",
+                    "role": "Maintainer"
+                },
+                {
+                    "name": "Ramūnas Dronga",
+                    "email": "github@ramuno.lt",
                     "role": "Maintainer"
                 }
             ],
@@ -652,7 +652,7 @@
                 "queue",
                 "rabbitmq"
             ],
-            "time": "2020-02-24T17:37:52+00:00"
+            "time": "2020-05-13T13:56:11+00:00"
         },
         {
             "name": "phpgangsta/googleauthenticator",
@@ -761,16 +761,16 @@
         },
         {
             "name": "phpseclib/phpseclib",
-            "version": "2.0.24",
+            "version": "2.0.27",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
-                "reference": "40998159a0907cc523e1f2d1904d45765613a617"
+                "reference": "34620af4df7d1988d8f0d7e91f6c8a3bf931d8dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/40998159a0907cc523e1f2d1904d45765613a617",
-                "reference": "40998159a0907cc523e1f2d1904d45765613a617",
+                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/34620af4df7d1988d8f0d7e91f6c8a3bf931d8dc",
+                "reference": "34620af4df7d1988d8f0d7e91f6c8a3bf931d8dc",
                 "shasum": ""
             },
             "require": {
@@ -849,7 +849,7 @@
                 "x.509",
                 "x509"
             ],
-            "time": "2020-02-04T12:15:04+00:00"
+            "time": "2020-04-04T23:17:33+00:00"
         },
         {
             "name": "psr/http-message",
