@@ -11,7 +11,7 @@ class User extends DBObject {
 	                             'disabled' => false,
 	                             'verifycode' => NULL,
 	                             'disabledreason' => NULL,
-	                             'acceptterms' => NULL,
+	                             'acceptterms' => -1,
 	                             'avatar' => 'gravatar',
 	                            ];
 	protected static $_key = 'id';

@@ -7,32 +7,32 @@
 	// This will delete the database and seed it with test data.
 	$pdo = DB::get()->getPDO();
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 0;');
-	$pdo->exec('DROP TABLE users;');
-	$pdo->exec('DROP TABLE domains;');
-	$pdo->exec('DROP TABLE domain_access;');
-	$pdo->exec('DROP TABLE records;');
-	$pdo->exec('DROP TABLE apikeys;');
-	$pdo->exec('DROP TABLE hooks;');
-	$pdo->exec('DROP TABLE permissions;');
-	$pdo->exec('DROP TABLE twofactorkeys;');
-	$pdo->exec('DROP TABLE twofactordevices;');
-	$pdo->exec('DROP TABLE domainkeys;');
-	$pdo->exec('DROP TABLE domainhooks;');
-	$pdo->exec('DROP TABLE zonekeys;');
-	$pdo->exec('DROP TABLE articles;');
-	$pdo->exec('DROP TABLE job_depends;');
-	$pdo->exec('DROP TABLE joblogs;');
-	$pdo->exec('DROP TABLE jobs;');
-	$pdo->exec('DROP TABLE usercustomdata;');
-	$pdo->exec('DROP TABLE userdomaincustomdata;');
-	$pdo->exec('DROP TABLE __MetaData;');
+	$pdo->exec('DROP TABLE IF EXISTS users;');
+	$pdo->exec('DROP TABLE IF EXISTS domains;');
+	$pdo->exec('DROP TABLE IF EXISTS domain_access;');
+	$pdo->exec('DROP TABLE IF EXISTS records;');
+	$pdo->exec('DROP TABLE IF EXISTS apikeys;');
+	$pdo->exec('DROP TABLE IF EXISTS hooks;');
+	$pdo->exec('DROP TABLE IF EXISTS permissions;');
+	$pdo->exec('DROP TABLE IF EXISTS twofactorkeys;');
+	$pdo->exec('DROP TABLE IF EXISTS twofactordevices;');
+	$pdo->exec('DROP TABLE IF EXISTS domainkeys;');
+	$pdo->exec('DROP TABLE IF EXISTS domainhooks;');
+	$pdo->exec('DROP TABLE IF EXISTS zonekeys;');
+	$pdo->exec('DROP TABLE IF EXISTS articles;');
+	$pdo->exec('DROP TABLE IF EXISTS job_depends;');
+	$pdo->exec('DROP TABLE IF EXISTS joblogs;');
+	$pdo->exec('DROP TABLE IF EXISTS jobs;');
+	$pdo->exec('DROP TABLE IF EXISTS usercustomdata;');
+	$pdo->exec('DROP TABLE IF EXISTS userdomaincustomdata;');
+	$pdo->exec('DROP TABLE IF EXISTS __MetaData;');
 	$pdo->exec('SET FOREIGN_KEY_CHECKS = 1;');
 	initDataServer(DB::get());
 
 	$domains = array();
 
 	$admin = new User(DB::get());
-	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setPermission('all', true)->save();
+	$admin->setEmail('admin@example.org')->setRealName('Admin User')->setPassword('password')->setPermission('all', true)->setAcceptTerms(time())->save();
 
 	$adminKey = new APIKey(DB::get());
 	$adminKey->setKey('69299C29-5BED-447D-B2F9-840DD01FE0B5')->setDescription('Test Key')->setUserID($admin->getID())->setCreated(time());
@@ -44,7 +44,7 @@
 		$domain = new Domain(DB::get());
 		$domain->setDomain('test' . $i . '.com')->setAccess($admin->getID(), 'Owner')->save();
 		$domains[] = $domain;
-		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 
 		$key = new DomainKey(DB::get());
@@ -59,7 +59,7 @@
 
 	for ($i = 1; $i <= 5; $i++) {
 		$user = new User(DB::get());
-		$user->setEmail('user' . $i . '@example.org')->setRealName('Normal User ' . $i)->setPassword('password')->setPermission('all', false)->save();
+		$user->setEmail('user' . $i . '@example.org')->setRealName('Normal User ' . $i)->setPassword('password')->setPermission('all', false)->setAcceptTerms($i < 4 ? time() : 4 - $i)->save();
 
 		$domain = new Domain(DB::get());
 		$domain->setDomain('example' . $i . '.org')->setAccess($user->getID(), 'Owner')->save();
@@ -67,7 +67,7 @@
 			$domain->setAccess($admin->getID(), 'Write')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 	}
 
@@ -91,7 +91,7 @@
 			$domain->setAccess($admin->getID(), 'Read')->save();
 		}
 		$domains[] = $domain;
-		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getRawDomain()]);
+		EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 		EventQueue::get()->publish('domain.add', [$domain->getID()]);
 	}
 
