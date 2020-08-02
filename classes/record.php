@@ -166,7 +166,7 @@ class Record extends DBObject {
 
 	public function validate() {
 		$type = $this->getType();
-		$content = $this->getContent();
+		$content = trim($this->getContent());
 
 		$testName = $this->getName();
 		$testName = preg_replace('#^\*\.#', 'WILDCARD.', $testName);
@@ -177,6 +177,10 @@ class Record extends DBObject {
 
 		if (!in_array($type, Record::$VALID_RRs)) {
 			throw new ValidationFailed('Unknown record type: '. $type);
+		}
+
+		if (empty($content)) {
+			throw new ValidationFailed('Content must not be empty.');
 		}
 
 		if ($type == 'SOA') {
