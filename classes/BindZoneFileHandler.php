@@ -35,6 +35,8 @@
 
 			$bind->setSOA($data['soa']);
 
+			if ($data['records'] instanceof RecordsInfo) { $data['records'] = $data['records']->get(); }
+
 			foreach ($data['records'] as $type => $entries) {
 				foreach ($entries as $rname => $records) {
 					foreach ($records as $record) {

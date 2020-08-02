@@ -21,7 +21,9 @@
 		 * Take parsed zone data and produce a zone file.
 		 *
 		 * @param  $domainName Domain name this data represents.
-		 * @param  $data zone data (in the same format as parseZoneFile outputs)
+		 * @param  $data zone data (Generally in the same format as
+		 *               parseZoneFile outputs, except 'records' can optionally
+		 *               be a RecordsInfo object)
 		 * @return String representing a zone file.
 		 */
 		abstract public function generateZoneFile($domainName, $data);

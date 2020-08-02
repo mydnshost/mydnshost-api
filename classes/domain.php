@@ -414,6 +414,54 @@ class Domain extends DBObject {
 		return TRUE;
 	}
 
+
+	public function getRecordsInfo($expandRecordsInfo = false) {
+		$recordDomain = ($this->getAliasOf() != null) ? $this->getAliasDomain(true) : $this;
+
+		$soa = $recordDomain->getSOARecord()->parseSOA();
+		$bindSOA = array('Nameserver' => $soa['primaryNS'],
+		                 'Email' => $soa['adminAddress'],
+		                 'Serial' => $soa['serial'],
+		                 'Refresh' => $soa['refresh'],
+		                 'Retry' => $soa['retry'],
+		                 'Expire' => $soa['expire'],
+		                 'MinTTL' => $soa['minttl']);
+
+		$records = new RecordsInfo();
+
+		foreach ($recordDomain->getRecords() as $record) {
+			if ($record->isDisabled()) { continue; }
+
+			$name = $record->getName() . '.';
+			if ($recordDomain != $this) { $name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $name); }
+
+			$content = $record->getContent();
+			if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
+				$content = $record->getContent() . '.';
+				if ($recordDomain != $this) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content); }
+
+			} else if ($record->getType() == 'SRV') {
+				if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+					if ($m[1] != ".") {
+						$content = $record->getContent() . '.';
+						if ($recordDomain != $this) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content); }
+
+					}
+				}
+			}
+
+			if ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain()) {
+				$hasNS = true;
+			}
+
+			$records->addRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
+		}
+
+		if ($expandRecordsInfo) { $records = $records->get(); }
+
+		return ['soa' => $bindSOA, 'records' => $records];
+	}
+
 	public static function validDomainName($name) {
 		// https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
 		return preg_match('#^((?=[_a-z0-9-]{1,63}\.)(xn--)?[_a-z0-9]+(-[_a-z0-9]+)*\.)+(xn--)?[a-z]{2,63}$#i', do_idn_to_ascii($name));

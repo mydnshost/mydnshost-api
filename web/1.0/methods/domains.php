@@ -341,50 +341,9 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainExport($domain, $type) {
-			$recordDomain = ($domain->getAliasOf() != null) ? $domain->getAliasDomain(true) : $domain;
-
-			$soa = $recordDomain->getSOARecord()->parseSOA();
-			$bindSOA = array('Nameserver' => $soa['primaryNS'],
-			                 'Email' => $soa['adminAddress'],
-			                 'Serial' => $soa['serial'],
-			                 'Refresh' => $soa['refresh'],
-			                 'Retry' => $soa['retry'],
-			                 'Expire' => $soa['expire'],
-			                 'MinTTL' => $soa['minttl']);
-
-			$records = new RecordsInfo();
-
-			foreach ($recordDomain->getRecords() as $record) {
-				if ($record->isDisabled()) { continue; }
-
-				$name = $record->getName() . '.';
-				if ($recordDomain != $domain) { $name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $name); }
-
-				$content = $record->getContent();
-				if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
-					$content = $record->getContent() . '.';
-					if ($recordDomain != $domain) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $content); }
-
-				} else if ($record->getType() == 'SRV') {
-					if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
-						if ($m[1] != ".") {
-							$content = $record->getContent() . '.';
-							if ($recordDomain != $domain) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $domain->getDomainRaw() . '.', $content); }
-
-						}
-					}
-				}
-
-				if ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain()) {
-					$hasNS = true;
-				}
-
-				$records->addRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
-			}
-
 			try {
 				$zfh = ZoneFileHandler::get($type);
-				$output = $zfh->generateZoneFile($domain->getDomain(), ['soa' => $bindSOA, 'records' => $records->get()]);
+				$output = $zfh->generateZoneFile($domain->getDomain(), $domain->getRecordsInfo(true));
 
 				$this->getContextKey('response')->data(['zone' => $output]);
 			} catch (Exception $ex) {
