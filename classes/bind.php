@@ -571,7 +571,7 @@
 		function saveZoneFile($savefile = '') {
 			if ($savefile == '') { $savefile = $this->file; }
 
-			$res = $this->file_put_contents_atomic($savefile, implode("\n", $this->getParsedZoneFile()));
+			$res = self::file_put_contents_atomic($savefile, implode("\n", $this->getParsedZoneFile()));
 
 			if ($res > 0) {
 				// Update the stored contents to use the version we just saved
@@ -581,7 +581,7 @@
 			return $res;
 		}
 
-		function file_put_contents_atomic($filename, $data, $flags = 0, $context = null) {
+		public static function file_put_contents_atomic($filename, $data, $flags = 0, $context = null) {
 			$tempFile = tempnam(sys_get_temp_dir(), 'ZONE');
 
 			if (file_put_contents($tempFile, $data, $flags, $context) === strlen($data)) {
