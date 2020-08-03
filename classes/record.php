@@ -143,7 +143,7 @@ class Record extends DBObject {
 	public function postLoad() {
 		$type = $this->getType();
 		$content = $this->getContent();
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
 			$this->setContent(do_idn_to_utf8($content));
 		}
 	}
@@ -151,7 +151,7 @@ class Record extends DBObject {
 	public function preSave() {
 		$type = $this->getType();
 		$content = $this->getContent();
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
 			$this->setContent(do_idn_to_ascii($content));
 		}
 	}
@@ -227,7 +227,7 @@ class Record extends DBObject {
 			throw new ValidationFailed('Content must be a valid IPv4 Address.');
 		}
 
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
 			$testName = $content;
 			if (substr($testName, -1) == '.') {
 				$testName = substr($testName, 0, -1);
@@ -236,9 +236,9 @@ class Record extends DBObject {
 			if (filter_var($testName, FILTER_VALIDATE_IP) !== FALSE) {
 				throw new ValidationFailed('Content must be a name not an IP.');
 			} else if ($type != 'PTR' && !Domain::validDomainName($testName)) {
-				throw new ValidationFailed('Content must be a valid name.');
+				throw new ValidationFailed('Content must be a valid FQDN.');
 			} else if ($type == 'PTR' && !preg_match('#^[a-z0-9\-_.]*$#i', $testName)) {
-				throw new ValidationFailed('Content must be a valid name.');
+				throw new ValidationFailed('Content must be a valid FQDN.');
 			} else if ($testName != $content) {
 				$this->setContent($testName);
 			}
@@ -365,7 +365,7 @@ class Record extends DBObject {
 		$content = $this->getContent();
 		if ($this->getType() == "TXT") {
 			$content = '"' . $this->getContent() . '"';
-		} else if (in_array($this->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
+		} else if (in_array($this->getType(), ['CNAME', 'NS', 'MX', 'PTR', 'RRCLONE'])) {
 			$content = $this->getContent() . '.';
 		} else if ($this->getType() == 'SRV') {
 			if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
@@ -430,7 +430,7 @@ class Record extends DBObject {
 
 		$content = implode(' ', $bits);
 
-		if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
+		if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR', 'RRCLONE'])) {
 			if (endsWith($content, '.')) {
 				$content = rtrim($content, '.');
 			} else {

@@ -485,6 +485,7 @@ class Domain extends DBObject {
 
 			foreach ($records->getByName($content) as $sourceRecord) {
 				$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
+				$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
 			}
 		}
 

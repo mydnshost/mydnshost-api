@@ -161,6 +161,10 @@
 
 				$hasNS |= ($r['type'] == 'NS' && !parseBool($r['disabled']) && $r['name'] === '');
 			}
+			// TODO: hasNS needs to resolve clone records.
+			// This could be done better.
+			$hasNS = $domain->getRecordsInfo()['hasNS'];
+
 			$this->getContextKey('response')->set('records', $list);
 			$this->getContextKey('response')->set('hasNS', $hasNS);
 
