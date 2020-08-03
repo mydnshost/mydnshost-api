@@ -483,9 +483,19 @@ class Domain extends DBObject {
 			$name = $this->fixRecordName($record, $recordDomain);
 			$content = $this->fixRecordContent($record, $recordDomain);
 
-			foreach ($records->getByName($content) as $sourceRecord) {
-				$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
-				$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+			$wantedRecord = explode(' ', $content);
+			$wantedRecord = $wantedRecord[count($wantedRecord) - 1];
+
+			$importTypes = [];
+			if (preg_match('#^\(([A-Z,*]+)\) ([^\s]+)$#i', $content, $m)) {
+				$importTypes = explode(',', strtoupper($m[1]));
+			}
+
+			foreach ($records->getByName($wantedRecord) as $sourceRecord) {
+				if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
+					$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
+					$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+				}
 			}
 		}
 

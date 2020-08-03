@@ -143,16 +143,24 @@ class Record extends DBObject {
 	public function postLoad() {
 		$type = $this->getType();
 		$content = $this->getContent();
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			$this->setContent(do_idn_to_utf8($content));
+		} else if ($type == 'SRV' || $type == 'RRCLONE') {
+			$content = explode(' ', $content);
+			$content[count($content) - 1] = do_idn_to_utf8($content[count($content) - 1]);
+			$this->setContent(implode(' ', $content));
 		}
 	}
 
 	public function preSave() {
 		$type = $this->getType();
 		$content = $this->getContent();
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			$this->setContent(do_idn_to_ascii($content));
+		} else if ($type == 'SRV' || $type == 'RRCLONE') {
+			$content = explode(' ', $content);
+			$content[count($content) - 1] = do_idn_to_ascii($content[count($content) - 1]);
+			$this->setContent(implode(' ', $content));
 		}
 	}
 
@@ -227,7 +235,7 @@ class Record extends DBObject {
 			throw new ValidationFailed('Content must be a valid IPv4 Address.');
 		}
 
-		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS' || $type == 'RRCLONE') {
+		if ($type == 'MX' || $type == 'CNAME' || $type == 'PTR' || $type == 'NS') {
 			$testName = $content;
 			if (substr($testName, -1) == '.') {
 				$testName = substr($testName, 0, -1);
@@ -244,6 +252,38 @@ class Record extends DBObject {
 			}
 		}
 
+		if ($type == 'RRCLONE') {
+			if (preg_match('#^\(([A-Z,*]+)\) ([^\s]+)$#i', $content, $m)) {
+				if ($m[2] != ".") {
+					$testName = $m[2];
+					if (substr($testName, -1) == '.') {
+						$testName = substr($testName, 0, -1);
+					}
+
+					if (!Domain::validDomainName($testName)) {
+						throw new ValidationFailed('Target must be a valid FQDN.');
+					} else {
+						$this->setContent('(' . $m[1] . ') ' . $testName);
+					}
+				}
+			} else if (preg_match('#^([^\s]+)$#', $content, $m)) {
+				if ($m[1] != ".") {
+					$testName = $m[1];
+					if (substr($testName, -1) == '.') {
+						$testName = substr($testName, 0, -1);
+					}
+
+					if (!Domain::validDomainName($testName)) {
+						throw new ValidationFailed('Target must be a valid FQDN.');
+					} else {
+						$this->setContent($testName);
+					}
+				}
+			} else {
+				throw new ValidationFailed('RRCLONE Record content should have the format: "(<types>) <target>" or "<target>"');
+			}
+		}
+
 		if ($type == 'SRV') {
 			if (preg_match('#^([0-9]+ [0-9]+) ([^\s]+)$#', $content, $m)) {
 				if (filter_var($m[2], FILTER_VALIDATE_IP) !== FALSE) {
@@ -257,7 +297,7 @@ class Record extends DBObject {
 					}
 
 					if (!Domain::validDomainName($testName)) {
-						throw new ValidationFailed('Target must be a valid name.');
+						throw new ValidationFailed('Target must be a valid FQDN.');
 					} else {
 						$this->setContent($m[1] . ' ' . $testName);
 					}
@@ -324,10 +364,10 @@ class Record extends DBObject {
 				}
 			}
 
-
 			if ($this->getType() == 'RRCLONE') {
 				// Check that the content we want exists.
-				$contentFilter = $this->getContent();
+				$contentFilter = explode(' ', $this->getContent());
+				$contentFilter = $contentFilter[count($contentFilter) - 1];
 				$contentFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $contentFilter);
 
 				$exists = false;
@@ -340,6 +380,8 @@ class Record extends DBObject {
 					// TODO: Allow RRCLONE to reference other RRCLONE records eventually.
 					if ($r->getType() == 'RRCLONE') { continue; }
 
+					// TODO: This doesn't care if the imported types will
+					//       actually import anything.
 					$exists = true;
 					break;
 				}
