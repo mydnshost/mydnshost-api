@@ -53,6 +53,24 @@
 			$this->records[$rrtype][$rrname][] = $value;
 		}
 
+		public function getByName($name) {
+			$result = [];
+			foreach ($this->records as $type => $entries) {
+				foreach ($entries as $rname => $records) {
+					if ($rname != $name) { continue; }
+					foreach ($records as $record) {
+						$result[] = ['Name' => $rname,
+						             'Type' => $type,
+						             'Address' => $record['Address'],
+						             'TTL' => $record['TTL'],
+						             'Priority' => isset($record['Priority']) ? $record['Priority'] : null,
+						            ];
+					}
+				}
+			}
+			return $result;
+		}
+
 		public function get() {
 			return $this->records;
 		}

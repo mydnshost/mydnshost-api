@@ -415,6 +415,36 @@ class Domain extends DBObject {
 	}
 
 
+	private function fixRecordName($record, $recordDomain = Null) {
+		$name = $record->getName() . '.';
+		if ($recordDomain instanceof Domain && $recordDomain != $this) {
+			$name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $name);
+		}
+
+		return $name;
+	}
+
+	private function fixRecordContent($record, $recordDomain = Null) {
+		$content = $record->getContent();
+		if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR', 'RRCLONE'])) {
+			$content = $record->getContent() . '.';
+			if ($recordDomain instanceof Domain && $recordDomain != $this) {
+				$content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content);
+			}
+		} else if ($record->getType() == 'SRV') {
+			if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
+				if ($m[1] != ".") {
+					$content = $record->getContent() . '.';
+					if ($recordDomain instanceof Domain && $recordDomain != $this) {
+						$content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content);
+					}
+				}
+			}
+		}
+
+		return $content;
+	}
+
 	public function getRecordsInfo($expandRecordsInfo = false) {
 		$recordDomain = ($this->getAliasOf() != null) ? $this->getAliasDomain(true) : $this;
 
@@ -429,37 +459,38 @@ class Domain extends DBObject {
 
 		$records = new RecordsInfo();
 
+		$cloneRecords = [];
+
+		$hasNS = false;
 		foreach ($recordDomain->getRecords() as $record) {
 			if ($record->isDisabled()) { continue; }
 
-			$name = $record->getName() . '.';
-			if ($recordDomain != $this) { $name = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $name); }
+			$name = $this->fixRecordName($record, $recordDomain);
+			$content = $this->fixRecordContent($record, $recordDomain);
 
-			$content = $record->getContent();
-			if (in_array($record->getType(), ['CNAME', 'NS', 'MX', 'PTR'])) {
-				$content = $record->getContent() . '.';
-				if ($recordDomain != $this) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content); }
+			$hasNS |= ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain());
 
-			} else if ($record->getType() == 'SRV') {
-				if (preg_match('#^[0-9]+ [0-9]+ ([^\s]+)$#', $content, $m)) {
-					if ($m[1] != ".") {
-						$content = $record->getContent() . '.';
-						if ($recordDomain != $this) { $content = preg_replace('#' . preg_quote($recordDomain->getDomainRaw()) . '.$#', $this->getDomainRaw() . '.', $content); }
-
-					}
-				}
-			}
-
-			if ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain()) {
-				$hasNS = true;
+			if ($record->getType() == 'RRCLONE') {
+				$cloneRecords[] = $record;
+				continue;
 			}
 
 			$records->addRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 		}
 
+		// TODO: Allow RRCLONE to reference other RRCLONE records eventually.
+		foreach ($cloneRecords as $record) {
+			$name = $this->fixRecordName($record, $recordDomain);
+			$content = $this->fixRecordContent($record, $recordDomain);
+
+			foreach ($records->getByName($content) as $sourceRecord) {
+				$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
+			}
+		}
+
 		if ($expandRecordsInfo) { $records = $records->get(); }
 
-		return ['soa' => $bindSOA, 'records' => $records];
+		return ['soa' => $bindSOA, 'hasNS' => $hasNS, 'records' => $records];
 	}
 
 	public static function validDomainName($name) {

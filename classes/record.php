@@ -18,7 +18,7 @@ class Record extends DBObject {
 	protected static $_key = 'id';
 	protected static $_table = 'records';
 
-	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP', 'TLSA'];
+	protected static $VALID_RRs = ['A', 'AAAA', 'TXT', 'SRV', 'SOA', 'MX', 'TXT', 'PTR', 'CNAME', 'NS', 'CAA', 'DS', 'SSHFP', 'TLSA', 'RRCLONE'];
 
 	public static function getValidRecordTypes() {
 		return Record::$VALID_RRs;
@@ -321,6 +321,31 @@ class Record extends DBObject {
 					if ($r->isDisabled() || $this->isDisabled() || $r->getID() == $this->getID()) { continue; }
 
 					throw new ValidationFailed('There already exists a CNAME for this record: ' . $nameFilter);
+				}
+			}
+
+
+			if ($this->getType() == 'RRCLONE') {
+				// Check that the content we want exists.
+				$contentFilter = $this->getContent();
+				$contentFilter = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $contentFilter);
+
+				$exists = false;
+				// Check known records.
+				// TODO: This doesn't check pending records when adding new
+				//       records to a domain
+				foreach ($domain->getRecords($contentFilter) as $r) {
+					if ($r->isDisabled() || $this->isDisabled() || $r->getID() == $this->getID()) { continue; }
+
+					// TODO: Allow RRCLONE to reference other RRCLONE records eventually.
+					if ($r->getType() == 'RRCLONE') { continue; }
+
+					$exists = true;
+					break;
+				}
+
+				if (!$exists) {
+					throw new ValidationFailed('Valid content record for RRCLONE does not exist: ' . $contentFilter);
 				}
 			}
 		}
