@@ -95,6 +95,9 @@
 	$router->get('/system/datavalue/importTypes', new class extends RouterMethod {
 		function run() {
 			$this->getContextKey('response')->set('importTypes', ['bind', 'tinydns']);
+			$this->getContextKey('response')->set('descriptions', ['bind' => 'Standard BIND9 Zone File (Default)',
+			                                                       'tinydns' => 'tinydns Compatible Zone File',
+			                                                      ]);
 
 			return TRUE;
 		}
@@ -102,7 +105,10 @@
 
 	$router->get('/system/datavalue/exportTypes', new class extends RouterMethod {
 		function run() {
-			$this->getContextKey('response')->set('exportTypes', ['bind']);
+			$this->getContextKey('response')->set('exportTypes', ['bind', 'raw']);
+			$this->getContextKey('response')->set('descriptions', ['bind' => 'Standard BIND9 Zone File (Default)',
+			                                                       'raw' => 'BIND9 Zone File without expanding RRCLONE records.',
+			                                                      ]);
 
 			return TRUE;
 		}

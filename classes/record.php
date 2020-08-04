@@ -178,6 +178,7 @@ class Record extends DBObject {
 
 		$testName = $this->getName();
 		$testName = preg_replace('#^\*\.#', 'WILDCARD.', $testName);
+		$testName = preg_replace('#^\$#', 'VAR', $testName);
 
 		if (!empty($testName) && !Domain::validDomainName($testName)) {
 			throw new ValidationFailed('Invalid name: "' . $this->getName() . '"');
@@ -260,7 +261,11 @@ class Record extends DBObject {
 						$testName = substr($testName, 0, -1);
 					}
 
-					if (!Domain::validDomainName($testName)) {
+					$checkName = $testName;
+					$checkName = preg_replace('#^\*\.#', 'WILDCARD.', $checkName);
+					$checkName = preg_replace('#^\$#', 'VAR', $checkName);
+
+					if (!Domain::validDomainName($checkName)) {
 						throw new ValidationFailed('Target must be a valid FQDN.');
 					} else {
 						$this->setContent('(' . $m[1] . ') ' . $testName);
@@ -273,7 +278,11 @@ class Record extends DBObject {
 						$testName = substr($testName, 0, -1);
 					}
 
-					if (!Domain::validDomainName($testName)) {
+					$checkName = $testName;
+					$checkName = preg_replace('#^\*\.#', 'WILDCARD.', $checkName);
+					$checkName = preg_replace('#^\$#', 'VAR', $checkName);
+
+					if (!Domain::validDomainName($checkName)) {
 						throw new ValidationFailed('Target must be a valid FQDN.');
 					} else {
 						$this->setContent($testName);
@@ -364,7 +373,8 @@ class Record extends DBObject {
 				}
 			}
 
-			if ($this->getType() == 'RRCLONE') {
+			// TODO: Until this can check for pending records, it's not a useful check.
+			if (false && $this->getType() == 'RRCLONE') {
 				// Check that the content we want exists.
 				$contentFilter = explode(' ', $this->getContent());
 				$contentFilter = $contentFilter[count($contentFilter) - 1];

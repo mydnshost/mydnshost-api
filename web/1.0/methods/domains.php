@@ -342,12 +342,13 @@
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
 		 * @param $type Type of zone file to export as.
+		 * @param $raw Export Special records (eg RRCLONE) as-is?
 		 * @return TRUE if we handled this method.
 		 */
-		protected function getDomainExport($domain, $type) {
+		protected function getDomainExport($domain, $type, $raw) {
 			try {
 				$zfh = ZoneFileHandler::get($type);
-				$output = $zfh->generateZoneFile($domain->getDomain(), $domain->getRecordsInfo(true));
+				$output = $zfh->generateZoneFile($domain->getDomain(), $domain->getRecordsInfo(true, $raw));
 
 				$this->getContextKey('response')->data(['zone' => $output]);
 			} catch (Exception $ex) {
@@ -1599,9 +1600,14 @@
 		function run($domain, $type = 'bind') {
 			$this->checkPermissions(['domains_read']);
 
+			if ($type == 'raw') {
+				$raw = true;
+				$type = 'bind';
+			}
+
 			$domain = $this->getDomainFromParam($domain);
 			// $this->checkAliasOf($domain);
-			return $this->getDomainExport($domain, $type);
+			return $this->getDomainExport($domain, $type, $raw);
 		}
 	});
 

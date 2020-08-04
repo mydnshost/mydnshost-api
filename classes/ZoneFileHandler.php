@@ -43,6 +43,13 @@
 	class RecordsInfo {
 		private $records = [];
 
+		public function removeRecords($rrname, $rrtype) {
+			if (!isset($this->records[$rrtype])) { return; }
+			if (!isset($this->records[$rrtype][$rrname])) { return; }
+
+			unset($this->records[$rrtype][$rrname]);
+		}
+
 		public function addRecord($rrname, $rrtype, $content, $ttl, $priority = null) {
 			if (!isset($this->records[$rrtype])) { $this->records[$rrtype] = []; }
 			if (!isset($this->records[$rrtype][$rrname])) { $this->records[$rrtype][$rrname] = []; }

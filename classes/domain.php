@@ -445,7 +445,19 @@ class Domain extends DBObject {
 		return $content;
 	}
 
-	public function getRecordsInfo($expandRecordsInfo = false) {
+	/**
+	 * Get RecordsInfo for this domain.
+	 * This will return an array that can be passed into ZoneFileHandlers.
+	 *
+	 * @param  $expandRecordsInfo (Default: False) Should the 'records' entry
+	 *                            be expanded into an array rather than a RecordsInfo object?
+	 * @param  $raw (Default: False) Should we return special records (RRCLONE)
+	 *              as-is rather than expanding them to real records?
+	 * @return Array of ['soa' => <soa array>,
+	 *                   'records' => <RecordsInfo|Records Array>,
+	 *                   'hasNS' => <boolean>];
+	 */
+	public function getRecordsInfo($expandRecordsInfo = false, $raw = false) {
 		$recordDomain = ($this->getAliasOf() != null) ? $this->getAliasDomain(true) : $this;
 
 		$soa = $recordDomain->getSOARecord()->parseSOA();
@@ -470,7 +482,7 @@ class Domain extends DBObject {
 
 			$hasNS |= ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain());
 
-			if ($record->getType() == 'RRCLONE') {
+			if (!$raw && $record->getType() == 'RRCLONE') {
 				$cloneRecords[] = $record;
 				continue;
 			}
@@ -478,23 +490,34 @@ class Domain extends DBObject {
 			$records->addRecord($name, $record->getType(), $content, $record->getTTL(), $record->getPriority());
 		}
 
-		// TODO: Allow RRCLONE to reference other RRCLONE records eventually.
-		foreach ($cloneRecords as $record) {
-			$name = $this->fixRecordName($record, $recordDomain);
-			$content = $this->fixRecordContent($record, $recordDomain);
+		if (!$raw) {
+			// TODO: Maybe allow RRCLONE to reference other RRCLONE records eventually.
+			foreach ($cloneRecords as $record) {
+				$name = $this->fixRecordName($record, $recordDomain);
+				$content = $this->fixRecordContent($record, $recordDomain);
 
-			$wantedRecord = explode(' ', $content);
-			$wantedRecord = $wantedRecord[count($wantedRecord) - 1];
+				$wantedRecord = explode(' ', $content);
+				$wantedRecord = $wantedRecord[count($wantedRecord) - 1];
 
-			$importTypes = [];
-			if (preg_match('#^\(([A-Z,*]+)\) ([^\s]+)$#i', $content, $m)) {
-				$importTypes = explode(',', strtoupper($m[1]));
+				$importTypes = [];
+				if (preg_match('#^\(([A-Z,*]+)\) ([^\s]+)$#i', $content, $m)) {
+					$importTypes = explode(',', strtoupper($m[1]));
+				}
+
+				foreach ($records->getByName($wantedRecord) as $sourceRecord) {
+					if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
+						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
+						$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+					}
+				}
 			}
 
-			foreach ($records->getByName($wantedRecord) as $sourceRecord) {
-				if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
-					$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
-					$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+			// Remove names starting with $ which are only used as sources for RRCLONE records.
+			foreach ($records->get() as $rrtype => $rrnames) {
+				foreach (array_keys($rrnames) as $rrname) {
+					if (preg_match('#^\$#', $rrname)) {
+						$records->removeRecords($rrname, $rrtype);
+					}
 				}
 			}
 		}
