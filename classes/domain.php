@@ -566,7 +566,8 @@ class Domain extends DBObject {
 
 				foreach ($sourceRecords as $sourceRecord) {
 					if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
-						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
+						$ttl = $record->getTTL() >= 1 ? $record->getTTL() : $sourceRecord['TTL'];
+						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $ttl, $sourceRecord['Priority']);
 						$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
 					}
 				}

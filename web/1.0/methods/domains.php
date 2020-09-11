@@ -1223,7 +1223,7 @@
 			}
 
 			if (array_key_exists('ttl', $data)) {
-				if (empty($data['ttl'])) {
+				if ($data['ttl'] === '') {
 					$data['ttl'] = $domain->getDefaultTTL();
 				}
 			}

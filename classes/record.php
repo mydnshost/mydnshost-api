@@ -259,7 +259,9 @@ class Record extends DBObject {
 			throw new ValidationFailed('Priority should not be set for records of type: ' . $type);
 		}
 
-		if (empty($this->getTTL())) {
+		if (''.$this->getTTL() === '0' && $type == 'RRCLONE') {
+			// Allow specifically as 0.
+		} else if (empty($this->getTTL())) {
 			$this->setTTL(NULL);
 		} else if (!preg_match('#^[0-9]+$#', $this->getTTL())) {
 			throw new ValidationFailed('TTL must be numeric.');
