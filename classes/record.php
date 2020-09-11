@@ -2,6 +2,7 @@
 
 use shanemcc\phpdb\DBObject;
 use shanemcc\phpdb\ValidationFailed;
+use shanemcc\phpdb\DB;
 
 class Record extends DBObject {
 	protected static $_fields = ['id' => NULL,
@@ -22,6 +23,43 @@ class Record extends DBObject {
 
 	public static function getValidRecordTypes() {
 		return Record::$VALID_RRs;
+	}
+
+	public static function findDomainForRecord($context, $record) {
+		// Remove trailing .
+		$record = rtrim($record, '.');
+
+		// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
+		$bits = explode('.', $record);
+
+		// Domains can have at most 255 characters,
+		// subdomains require a . between them leaving a maximum sub-domain count of ~128 levels deep.
+		// If someone tries to look for more than this then just ignore them.
+		$limit = 128;
+		do {
+			// Get the domain to look for ([foo, bar, baz, example, com] => foo.bar.baz.example.com)
+			$dom = implode('.', $bits);
+
+			// If we have an exact match for this domain, then only return it in the output.
+			// There may be a nicer way to do this than asking the DB every time.
+			var_dump($context);
+			if ($context instanceof DB) {
+				$domain = Domain::loadFromDomain($context, $dom);
+			} else if ($context instanceof User) {
+				$domain = $context->getDomainByName($dom);
+			} else {
+				$domain = FALSE;
+			}
+			if ($domain !== FALSE) {
+				return $domain;
+			}
+
+			// Remove the first entry from the array so that the next time we check the parent domain.
+			// eg [foo, bar, baz, example, com] => [bar, baz, example, com] and the next check is bar.baz.example.com
+			array_shift($bits);
+		} while (!empty($bits) && $limit-- > 0);
+
+		return FALSE;
 	}
 
 	public function __construct($db) {

@@ -19,39 +19,6 @@
 			return true;
 		}
 
-		protected function findDomain($domain) {
-			$domains = [];
-
-			// Remove trailing .
-			$domain = rtrim($domain, '.');
-
-			// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
-			$bits = explode('.', $domain);
-
-			// Domains can have at most 255 characters,
-			// subdomains require a . between them leaving a maximum sub-domain count of ~128 levels deep.
-			// If someone tries to look for more than this then just ignore them.
-			$limit = 128;
-			do {
-				// Get the domain to look for ([foo, bar, baz, example, com] => foo.bar.baz.example.com)
-				$dom = implode('.', $bits);
-
-				// If we have an exact match for this domain, then only return it in the output.
-				// There may be a nicer way to do this than asking the DB every time.
-				$domain = $this->getContextKey('user')->getDomainByName($dom);
-				if ($domain !== FALSE) {
-					$domains[] = $domain;
-					break;
-				}
-
-				// Remove the first entry from the array so that the next time we check the parent domain.
-				// eg [foo, bar, baz, example, com] => [bar, baz, example, com] and the next check is bar.baz.example.com
-				array_shift($bits);
-			} while (!empty($bits) && $limit-- > 0);
-
-			return $domains;
-		}
-
 		public function doRun($deleteOnly) {
 			$user = $this->getContextKey('user');
 			$data = $this->getContextKey('data');
@@ -60,14 +27,10 @@
 
 			$wantedRecordFull = $wantedRecord = $data['fqdn'];
 
-			$domains = $this->findDomain($wantedRecord);
-			if (empty($domains)) {
+			$domain = $this->findDomain($this->getContextKey('user'), $wantedRecord);
+			if ($domain == FALSE) {
 				$this->getContextKey('response')->sendError('No matching domains found for: ' . $wantedRecord);
-			} else if (count($domains) > 1) {
-				$this->getContextKey('response')->sendError('Too many matching domains found for: ' . $wantedRecord);
 			}
-
-			$domain = $domains[0];
 
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 

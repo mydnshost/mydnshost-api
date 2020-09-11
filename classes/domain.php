@@ -492,6 +492,10 @@ class Domain extends DBObject {
 
 		if (!$raw) {
 			// TODO: Maybe allow RRCLONE to reference other RRCLONE records eventually.
+
+			// Used to save us asking the DB for the same thing over and over
+			$rrCloneCache = [];
+
 			foreach ($cloneRecords as $record) {
 				$name = $this->fixRecordName($record, $recordDomain);
 				$content = $this->fixRecordContent($record, $recordDomain);
@@ -504,7 +508,41 @@ class Domain extends DBObject {
 					$importTypes = explode(',', strtoupper($m[1]));
 				}
 
-				foreach ($records->getByName($wantedRecord) as $sourceRecord) {
+				$sourceRecords = $records->getByName($wantedRecord);
+
+				if (empty($sourceRecords)) {
+					if (!isset($rrCloneCache[$wantedRecord])) {
+						$rrCloneCache[$wantedRecord] = [];
+
+						// Record doesn't exist in this domain, so check other
+						// domains.
+						$sourceDom = Record::findDomainForRecord($this->getDB(), $wantedRecord);
+						if ($sourceDom != FALSE) {
+							// Check if we have sufficient access.
+							$hasAccess = false;
+
+							// Is there anyone in our domain who has write access,
+							// who also has read-access to the source domain?
+							foreach ($this->_access as $id => $level) {
+								if (in_array($level, ['owner', 'admin', 'write'])) {
+									if (isset($sourceDom->_access[$id]) && in_array($sourceDom->_access[$id], ['owner', 'admin', 'write', 'read'])) {
+										$hasAccess = true;
+										break;
+									}
+								}
+							}
+
+							if ($hasAccess) {
+								// TODO: This feels inefficient.
+								$sourceRecordsInfo = $sourceDom->getRecordsInfo(false, true)['records'];
+								$rrCloneCache[$wantedRecord] = $sourceRecordsInfo->getByName($wantedRecord);
+							}
+						}
+					}
+					$sourceRecords = $rrCloneCache[$wantedRecord];
+				}
+
+				foreach ($sourceRecords as $sourceRecord) {
 					if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
 						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $sourceRecord['TTL'], $sourceRecord['Priority']);
 						$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
