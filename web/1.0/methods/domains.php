@@ -669,8 +669,10 @@
 			if ($wantedType == 'userdata' && isset($_REQUEST['key'])) {
 				$useValData = true;
 				$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), null, $_REQUEST['key']);
-				foreach ($udcd as $d) {
-					$valData[$d->getDomainID()] = $d->getValue();
+				if (is_array($udcd)) {
+					foreach ($udcd as $d) {
+						$valData[$d->getDomainID()] = $d->getValue();
+					}
 				}
 			}
 

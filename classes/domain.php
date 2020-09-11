@@ -564,8 +564,9 @@ class Domain extends DBObject {
 					}
 					[$sourceDom, $sourceRecords] = $rrCloneCache[$wantedRecord];
 					// Remember this so that we can trigger updates in future.
-					if ($record->getRemoteDomainID() != $sourceDom->getID()) {
-						$record->setRemoteDomainID($sourceDom->getID())->save();
+					$sourceID = ($sourceDom instanceof Domain) ? $sourceDom->getID() : null;
+					if ($record->getRemoteDomainID() != $sourceID) {
+						$record->setRemoteDomainID($sourceID)->save();
 					}
 				}
 
