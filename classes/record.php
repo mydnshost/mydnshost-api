@@ -7,6 +7,7 @@ use shanemcc\phpdb\DB;
 class Record extends DBObject {
 	protected static $_fields = ['id' => NULL,
 	                             'domain_id' => NULL,
+	                             'remote_domain_id' => NULL,
 	                             'name' => NULL,
 	                             'type' => NULL,
 	                             'content' => NULL,
@@ -69,6 +70,10 @@ class Record extends DBObject {
 		return $this->setData('domain_id', $value);
 	}
 
+	public function setRemoteDomainID($value) {
+		return $this->setData('remote_domain_id', $value);
+	}
+
 	public function setName($value) {
 		return $this->setData('name', do_idn_to_ascii($value));
 	}
@@ -122,6 +127,10 @@ class Record extends DBObject {
 
 	public function getDomainID() {
 		return $this->getData('domain_id');
+	}
+
+	public function getRemoteDomainID() {
+		return $this->getData('remote_domain_id');
 	}
 
 	public function getName() {

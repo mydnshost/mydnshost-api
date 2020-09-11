@@ -518,6 +518,11 @@ class Domain extends DBObject {
 						// domains.
 						$sourceDom = Record::findDomainForRecord($this->getDB(), $wantedRecord);
 						if ($sourceDom != FALSE) {
+							// Remember this so that we can trigger updates in future.
+							if ($record->getRemoteDomainID() != $sourceDom->getID()) {
+								$record->setRemoteDomainID($sourceDom->getID())->save();
+							}
+
 							// Check if we have sufficient access.
 							$hasAccess = false;
 
