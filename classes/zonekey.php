@@ -220,23 +220,23 @@ class ZoneKey extends DBObject {
 	}
 
 	public function getRevoke() {
-		return intval($this->getData('revoke'));
+		return intvalOrNull($this->getData('revoke'));
 	}
 
 	public function getInactive() {
-		return intval($this->getData('inactive'));
+		return intvalOrNull($this->getData('inactive'));
 	}
 
 	public function getDelete() {
-		return intval($this->getData('delete'));
+		return intvalOrNull($this->getData('delete'));
 	}
 
 	public function getSyncPublish() {
-		return intval($this->getData('syncPublish'));
+		return intvalOrNull($this->getData('syncPublish'));
 	}
 
 	public function getSyncDelete() {
-		return intval($this->getData('syncDelete'));
+		return intvalOrNull($this->getData('syncDelete'));
 	}
 
 	public function getComment() {

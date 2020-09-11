@@ -154,7 +154,7 @@ class Record extends DBObject {
 	}
 
 	public function getPriority() {
-		return intval($this->getData('priority'));
+		return intvalOrNull($this->getData('priority'));
 	}
 
 	public function getChangedAt() {
@@ -162,7 +162,7 @@ class Record extends DBObject {
 	}
 
 	public function getChangedBy() {
-		return intval($this->getData('changed_by'));
+		return intvalOrNull($this->getData('changed_by'));
 	}
 
 	public function isDisabled() {
