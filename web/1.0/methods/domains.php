@@ -1600,6 +1600,7 @@
 		function run($domain, $type = 'bind') {
 			$this->checkPermissions(['domains_read']);
 
+			$raw = false;
 			if ($type == 'raw') {
 				$raw = true;
 				$type = 'bind';
