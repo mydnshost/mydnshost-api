@@ -523,14 +523,36 @@ class Domain extends DBObject {
 
 							// Is there anyone in our domain who has write access,
 							// who also has read-access to the source domain?
-							foreach ($this->_access as $id => $level) {
+							/* foreach ($this->_access as $id => $level) {
 								if (in_array($level, ['owner', 'admin', 'write'])) {
 									if (isset($sourceDom->_access[$id]) && in_array($sourceDom->_access[$id], ['owner', 'admin', 'write', 'read'])) {
 										$hasAccess = true;
 										break;
 									}
 								}
+							}*/
+
+							// Check that the same people have write access to
+							// both domains.
+							$ourWriters = [];
+							$sourceWriters = [];
+
+							foreach ($this->_access as $id => $level) {
+								if (in_array($level, ['owner', 'admin', 'write'])) {
+									$ourWriters[] = $id;
+								}
 							}
+
+							foreach ($sourceDom->_access as $id => $level) {
+								if (in_array($level, ['owner', 'admin', 'write'])) {
+									$sourceWriters[] = $id;
+								}
+							}
+
+							sort($ourWriters);
+							sort($sourceWriters);
+
+							$hasAccess = ($ourWriters == $sourceWriters);
 
 							if ($hasAccess) {
 								// TODO: This feels inefficient.
