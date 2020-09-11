@@ -147,4 +147,11 @@ class DomainHook extends DBObject {
 
 		return $result;
 	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'domain_id', 'created', 'lastused'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
 }

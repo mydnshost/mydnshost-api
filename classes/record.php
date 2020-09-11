@@ -177,11 +177,11 @@ class Record extends DBObject {
 
 		$result['primaryNS'] = do_idn_to_utf8($bits[0]);
 		$result['adminAddress'] = do_idn_to_utf8($bits[1]);
-		$result['serial'] = $bits[2];
-		$result['refresh'] = $bits[3];
-		$result['retry'] = $bits[4];
-		$result['expire'] = $bits[5];
-		$result['minttl'] = $bits[6];
+		$result['serial'] = intval($bits[2]);
+		$result['refresh'] = intval($bits[3]);
+		$result['retry'] = intval($bits[4]);
+		$result['expire'] = intval($bits[5]);
+		$result['minttl'] = intval($bits[6]);
 
 		return $result;
 	}
@@ -196,6 +196,13 @@ class Record extends DBObject {
 			$content[count($content) - 1] = do_idn_to_utf8($content[count($content) - 1]);
 			$this->setContent(implode(' ', $content));
 		}
+	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'domain_id', 'remote_domain_id', 'ttl', 'priority', 'changed_at', 'changed_by'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
 	}
 
 	public function preSave() {

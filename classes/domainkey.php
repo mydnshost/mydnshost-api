@@ -149,4 +149,11 @@ class DomainKey extends DBObject {
 
 		return TRUE;
 	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['domains_write'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'domain_id', 'created', 'lastused'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
 }

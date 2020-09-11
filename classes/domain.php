@@ -139,6 +139,13 @@ class Domain extends DBObject {
 		}
 	}
 
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'defaultttl', 'aliasof'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
+
 	public function getID() {
 		return $this->getData('id');
 	}
@@ -461,13 +468,13 @@ class Domain extends DBObject {
 		$recordDomain = ($this->getAliasOf() != null) ? $this->getAliasDomain(true) : $this;
 
 		$soa = $recordDomain->getSOARecord()->parseSOA();
-		$bindSOA = array('Nameserver' => $soa['primaryNS'],
-		                 'Email' => $soa['adminAddress'],
-		                 'Serial' => $soa['serial'],
-		                 'Refresh' => $soa['refresh'],
-		                 'Retry' => $soa['retry'],
-		                 'Expire' => $soa['expire'],
-		                 'MinTTL' => $soa['minttl']);
+		$bindSOA = ['Nameserver' => $soa['primaryNS'],
+		            'Email' => $soa['adminAddress'],
+		            'Serial' => $soa['serial'],
+		            'Refresh' => $soa['refresh'],
+		            'Retry' => $soa['retry'],
+		            'Expire' => $soa['expire'],
+		            'MinTTL' => $soa['minttl']];
 
 		$records = new RecordsInfo();
 

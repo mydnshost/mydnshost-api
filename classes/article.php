@@ -88,4 +88,10 @@ class Article extends DBObject {
 
 		return TRUE;
 	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['id', 'created', 'visiblefrom', 'visibleuntil'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
 }

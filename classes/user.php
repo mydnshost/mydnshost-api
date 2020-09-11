@@ -366,7 +366,8 @@ class User extends DBObject {
 	public function toArray() {
 		$result = parent::toArray();
 		$result['permissions'] = $this->_permissions;
-
+		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'acceptterms'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
 		return $result;
 	}
 }

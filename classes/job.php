@@ -194,6 +194,12 @@ class Job extends DBObject {
 		}
 	}
 
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['id', 'created', 'started', 'finished'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
+
 	/**
 	 * Get the logs for this job from the database.
 	 */

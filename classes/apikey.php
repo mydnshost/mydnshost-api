@@ -140,4 +140,11 @@ class APIKey extends DBObject {
 
 		return TRUE;
 	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['domains_read', 'domains_write', 'user_read', 'user_write'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
+		foreach (['id', 'user_id', 'created', 'lastused'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
 }

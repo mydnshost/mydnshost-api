@@ -271,6 +271,13 @@ class ZoneKey extends DBObject {
 		return TRUE;
 	}
 
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['id', 'domain_id', 'key_id', 'flags'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (static::$_dates as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
+
 	/**
 	 * Import key data into this key.
 	 *

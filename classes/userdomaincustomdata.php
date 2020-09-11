@@ -85,4 +85,10 @@ class UserDomainCustomData extends DBObject {
 
 		return TRUE;
 	}
+
+	public function toArray() {
+		$result = parent::toArray();
+		foreach (['id', 'user_id', 'domain_id'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		return $result;
+	}
 }
