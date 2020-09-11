@@ -511,6 +511,7 @@ class Domain extends DBObject {
 				$sourceRecords = $records->getByName($wantedRecord);
 
 				if (empty($sourceRecords)) {
+
 					if (!isset($rrCloneCache[$wantedRecord])) {
 						$rrCloneCache[$wantedRecord] = [];
 
@@ -518,11 +519,6 @@ class Domain extends DBObject {
 						// domains.
 						$sourceDom = Record::findDomainForRecord($this->getDB(), $wantedRecord);
 						if ($sourceDom != FALSE) {
-							// Remember this so that we can trigger updates in future.
-							if ($record->getRemoteDomainID() != $sourceDom->getID()) {
-								$record->setRemoteDomainID($sourceDom->getID())->save();
-							}
-
 							// Check if we have sufficient access.
 							$hasAccess = false;
 
@@ -562,11 +558,15 @@ class Domain extends DBObject {
 							if ($hasAccess) {
 								// TODO: This feels inefficient.
 								$sourceRecordsInfo = $sourceDom->getRecordsInfo(false, true)['records'];
-								$rrCloneCache[$wantedRecord] = $sourceRecordsInfo->getByName($wantedRecord);
+								$rrCloneCache[$wantedRecord] = [$sourceDom, $sourceRecordsInfo->getByName($wantedRecord)];
 							}
 						}
 					}
-					$sourceRecords = $rrCloneCache[$wantedRecord];
+					[$sourceDom, $sourceRecords] = $rrCloneCache[$wantedRecord];
+					// Remember this so that we can trigger updates in future.
+					if ($record->getRemoteDomainID() != $sourceDom->getID()) {
+						$record->setRemoteDomainID($sourceDom->getID())->save();
+					}
 				}
 
 				foreach ($sourceRecords as $sourceRecord) {
