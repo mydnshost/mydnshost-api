@@ -42,7 +42,6 @@ class Record extends DBObject {
 
 			// If we have an exact match for this domain, then only return it in the output.
 			// There may be a nicer way to do this than asking the DB every time.
-			var_dump($context);
 			if ($context instanceof DB) {
 				$domain = Domain::loadFromDomain($context, $dom);
 			} else if ($context instanceof User) {
