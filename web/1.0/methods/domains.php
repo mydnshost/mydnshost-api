@@ -1126,7 +1126,11 @@
 			$result = array();
 			$deletedRecords = [];
 			foreach ($recordsToBeDeleted as $record) {
-				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
+				$r = $record->toArray();
+				unset($r['domain_id']);
+				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', do_idn_to_utf8($r['name']));
+				$r['deleted'] = $record->delete();
+
 				$result[] = $r;
 				if ($r['deleted']) {
 					$deletedRecords[] = $record;
