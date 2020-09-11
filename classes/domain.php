@@ -480,7 +480,7 @@ class Domain extends DBObject {
 			$name = $this->fixRecordName($record, $recordDomain);
 			$content = $this->fixRecordContent($record, $recordDomain);
 
-			$hasNS |= ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain());
+			$hasNS = $hasNS || ($record->getType() == "NS" && $record->getName() == $recordDomain->getDomain());
 
 			if (!$raw && $record->getType() == 'RRCLONE') {
 				$cloneRecords[] = $record;
@@ -574,7 +574,7 @@ class Domain extends DBObject {
 					if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
 						$ttl = $record->getTTL() >= 1 ? $record->getTTL() : $sourceRecord['TTL'];
 						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $ttl, $sourceRecord['Priority']);
-						$hasNS |= ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+						$hasNS = $hasNS || ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
 					}
 				}
 			}

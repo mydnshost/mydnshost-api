@@ -71,7 +71,7 @@
 				} else if ($user != NULL) {
 					$valid = true;
 					foreach ($permissions as $perm) {
-						$valid &= $user->getPermission($perm);
+						$valid = $valid && $user->getPermission($perm);
 					}
 				}
 

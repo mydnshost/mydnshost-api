@@ -81,7 +81,7 @@
 				}
 
 				$ttl = min($record->getTTL(), $ttl);
-				$disabled |= $record->isDisabled();
+				$disabled = $disabled || $record->isDisabled();
 
 				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
 				$result[] = $r;

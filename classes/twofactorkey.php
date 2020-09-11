@@ -271,10 +271,10 @@ class TwoFactorKey extends DBObject {
 		$usable = $this->isActive();
 
 		// Key is not one time or has not been used
-		$usable &= (!$this->isOneTime() || $this->getLastUsed() == 0);
+		$usable = $usable && (!$this->isOneTime() || $this->getLastUsed() == 0);
 
 		// Key does not expire, or expiry has not been reached.
-		$usable &= ($this->getExpires() <= 0 || $this->getExpires() >= time());
+		$usable = $usable && ($this->getExpires() <= 0 || $this->getExpires() >= time());
 
 		// Can we validate the key?
 		if ($this->getType() == 'yubikeyotp' && !self::canUseYubikey()) {
@@ -287,12 +287,12 @@ class TwoFactorKey extends DBObject {
 
 		if ($usable && $user !== FALSE) {
 			// Can we use this type of key.
-			$usable &= (($this->isPush() && $user->getPermission('2fa_push')) || $this->isCode());
+			$usable = $usable && (($this->isPush() && $user->getPermission('2fa_push')) || $this->isCode());
 
 			// Check that the user still has the right permissions for this
 			// key.
 			foreach ($this->getRequiredPermissionsForType() as $perm) {
-				$usable &= $user->getPermission($perm);
+				$usable = $usable && $user->getPermission($perm);
 			}
 		}
 

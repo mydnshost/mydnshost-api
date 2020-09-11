@@ -159,7 +159,7 @@
 				$r['name'] = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', do_idn_to_utf8($r['name']));
 				$list[] = $r;
 
-				$hasNS |= ($r['type'] == 'NS' && !parseBool($r['disabled']) && $r['name'] === '');
+				$hasNS = $hasNS || ($r['type'] == 'NS' && !parseBool($r['disabled']) && $r['name'] === '');
 			}
 			// TODO: hasNS needs to resolve clone records.
 			// This could be done better.
