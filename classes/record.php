@@ -122,15 +122,15 @@ class Record extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getDomainID() {
-		return $this->getData('domain_id');
+		return intval($this->getData('domain_id'));
 	}
 
 	public function getRemoteDomainID() {
-		return $this->getData('remote_domain_id');
+		return intval($this->getData('remote_domain_id'));
 	}
 
 	public function getName() {
@@ -150,19 +150,19 @@ class Record extends DBObject {
 	}
 
 	public function getTTL() {
-		return $this->getData('ttl');
+		return intval($this->getData('ttl'));
 	}
 
 	public function getPriority() {
-		return $this->getData('priority');
+		return intval($this->getData('priority'));
 	}
 
 	public function getChangedAt() {
-		return $this->getData('changed_at');
+		return intval($this->getData('changed_at'));
 	}
 
 	public function getChangedBy() {
-		return $this->getData('changed_by');
+		return intval($this->getData('changed_by'));
 	}
 
 	public function isDisabled() {

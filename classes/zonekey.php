@@ -89,19 +89,19 @@ class ZoneKey extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getDomainID() {
-		return $this->getData('domain_id');
+		return intval($this->getData('domain_id'));
 	}
 
 	public function getKeyID() {
-		return $this->getData('key_id');
+		return intval($this->getData('key_id'));
 	}
 
 	public function getFlags() {
-		return $this->getData('flags');
+		return intval($this->getData('flags'));
 	}
 
 	public function getKeyPrivate() {
@@ -208,35 +208,35 @@ class ZoneKey extends DBObject {
 
 
 	public function getCreated() {
-		return $this->getData('created');
+		return intval($this->getData('created'));
 	}
 
 	public function getPublish() {
-		return $this->getData('publish');
+		return intval($this->getData('publish'));
 	}
 
 	public function getActivate() {
-		return $this->getData('activate');
+		return intval($this->getData('activate'));
 	}
 
 	public function getRevoke() {
-		return $this->getData('revoke');
+		return intval($this->getData('revoke'));
 	}
 
 	public function getInactive() {
-		return $this->getData('inactive');
+		return intval($this->getData('inactive'));
 	}
 
 	public function getDelete() {
-		return $this->getData('delete');
+		return intval($this->getData('delete'));
 	}
 
 	public function getSyncPublish() {
-		return $this->getData('syncPublish');
+		return intval($this->getData('syncPublish'));
 	}
 
 	public function getSyncDelete() {
-		return $this->getData('syncDelete');
+		return intval($this->getData('syncDelete'));
 	}
 
 	public function getComment() {

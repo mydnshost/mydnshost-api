@@ -34,7 +34,7 @@ class UserDomainCustomData extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getKey() {
@@ -42,11 +42,11 @@ class UserDomainCustomData extends DBObject {
 	}
 
 	public function getUserID() {
-		return $this->getData('user_id');
+		return intval($this->getData('user_id'));
 	}
 
 	public function getDomainID() {
-		return $this->getData('domain_id');
+		return intval($this->getData('domain_id'));
 	}
 
 	public function getValue() {

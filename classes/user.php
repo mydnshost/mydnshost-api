@@ -87,7 +87,7 @@ class User extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getEmail() {
@@ -121,7 +121,7 @@ class User extends DBObject {
 	}
 
 	public function getAcceptTerms() {
-		return $this->getData('acceptterms');
+		return intval($this->getData('acceptterms'));
 	}
 
 	public function getAvatar() {

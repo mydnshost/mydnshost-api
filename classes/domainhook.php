@@ -44,7 +44,7 @@ class DomainHook extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getUrl() {
@@ -56,7 +56,7 @@ class DomainHook extends DBObject {
 	}
 
 	public function getDomainID() {
-		return $this->getData('domain_id');
+		return intval($this->getData('domain_id'));
 	}
 
 	public function getDisabled() {
@@ -64,11 +64,11 @@ class DomainHook extends DBObject {
 	}
 
 	public function getLastUsed() {
-		return $this->getData('lastused');
+		return intval($this->getData('lastused'));
 	}
 
 	public function getCreated() {
-		return $this->getData('created');
+		return intval($this->getData('created'));
 	}
 
 	public function getDomain() {

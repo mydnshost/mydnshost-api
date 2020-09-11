@@ -75,7 +75,7 @@ class DomainKey extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getKey($masked = false) {
@@ -107,11 +107,11 @@ class DomainKey extends DBObject {
 	}
 
 	public function getLastUsed() {
-		return $this->getData('lastused');
+		return intval($this->getData('lastused'));
 	}
 
 	public function getCreated() {
-		return $this->getData('created');
+		return intval($this->getData('created'));
 	}
 
 	public function getDomainKeyUser() {

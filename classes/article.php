@@ -44,7 +44,7 @@ class Article extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getTitle() {
@@ -60,15 +60,15 @@ class Article extends DBObject {
 	}
 
 	public function getCreated() {
-		return $this->getData('created');
+		return intval($this->getData('created'));
 	}
 
 	public function getVisibleFrom() {
-		return $this->getData('visiblefrom');
+		return intval($this->getData('visiblefrom'));
 	}
 
 	public function getVisibleUntil() {
-		return $this->getData('visibleuntil');
+		return intval($this->getData('visibleuntil'));
 	}
 
 	public function isVisible() {

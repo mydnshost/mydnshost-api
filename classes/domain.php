@@ -147,7 +147,7 @@ class Domain extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getDomain() {
@@ -163,7 +163,7 @@ class Domain extends DBObject {
 	}
 
 	public function getDefaultTTL() {
-		return $this->getData('defaultttl');
+		return intval($this->getData('defaultttl'));
 	}
 
 	public function getNSEC3Params() {
@@ -171,7 +171,7 @@ class Domain extends DBObject {
 	}
 
 	public function getAliasOf() {
-		return $this->getData('aliasof');
+		return intval($this->getData('aliasof'));
 	}
 
 	/**

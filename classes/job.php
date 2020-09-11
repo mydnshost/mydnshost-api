@@ -51,7 +51,7 @@ class Job extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getName() {
@@ -63,15 +63,15 @@ class Job extends DBObject {
 	}
 
 	public function getCreated() {
-		return $this->getData('created');
+		return intval($this->getData('created'));
 	}
 
 	public function getStarted() {
-		return $this->getData('started');
+		return intval($this->getData('started'));
 	}
 
 	public function getFinished() {
-		return $this->getData('finished');
+		return intval($this->getData('finished'));
 	}
 
 	public function getState() {

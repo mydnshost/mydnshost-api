@@ -29,7 +29,7 @@ class UserCustomData extends DBObject {
 	}
 
 	public function getID() {
-		return $this->getData('id');
+		return intval($this->getData('id'));
 	}
 
 	public function getKey() {
@@ -37,7 +37,7 @@ class UserCustomData extends DBObject {
 	}
 
 	public function getUserID() {
-		return $this->getData('user_id');
+		return intval($this->getData('user_id'));
 	}
 
 	public function getValue() {
