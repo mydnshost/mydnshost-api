@@ -1260,12 +1260,13 @@
 			$this->getContextKey('response')->set('deleted', $deleted ? 'true' : 'false');
 			if ($deleted) {
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
-			}
-			$serial = $domain->updateSerial();
-			EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
-			EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
-			EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
+				$serial = $domain->updateSerial();
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
+
+				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
+			}
 
 			$this->getContextKey('response')->set('serial', $serial);
 			return true;
@@ -1296,11 +1297,14 @@
 				}
 			}
 			$this->getContextKey('response')->set('deleted', $count);
-			$serial = $domain->updateSerial();
-			EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
-			EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
+			if ($count > 0) {
+				$serial = $domain->updateSerial();
 
-			EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
+
+				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
+			}
 
 			$this->getContextKey('response')->set('serial', $serial);
 
