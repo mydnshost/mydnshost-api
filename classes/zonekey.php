@@ -274,7 +274,7 @@ class ZoneKey extends DBObject {
 	public function toArray() {
 		$result = parent::toArray();
 		foreach (['id', 'domain_id', 'key_id', 'flags'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
-		foreach (static::$_dates as $k) { if (!isset($result[$k])) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
+		foreach (static::$_dates as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 

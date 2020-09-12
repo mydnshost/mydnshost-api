@@ -131,7 +131,7 @@
 			$domainInfo = $this->domainInfo;
 			for ($i = 0; $i < count($file); $i++) {
 				$testline = trim($file[$i]);
-				if (empty($testline) || $testline{0} == ';' || $testline == ')') { continue; }
+				if (empty($testline) || $testline[0] == ';' || $testline == ')') { continue; }
 				$line = rtrim($file[$i]);
 
 				$pos = 0;
@@ -220,7 +220,7 @@
 									$line = trim($file[++$i]);
 									$bits = preg_split('/\s+/', $line);
 									foreach ($bits as $bit) {
-										if (trim($bit) == '' || $bit{0} == ';') { break; }
+										if (trim($bit) == '' || $bit[0] == ';') { break; }
 										$soabits[] = $bit;
 									}
 								} else {

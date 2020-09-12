@@ -116,7 +116,7 @@ class DomainHook extends DBObject {
 			}
 		}
 
-		if (filter_var($this->getUrl(), FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED) === FALSE) {
+		if (filter_var($this->getUrl(), FILTER_VALIDATE_URL) === FALSE) {
 			throw new ValidationFailed('URL must be a valid url.');
 		}
 
