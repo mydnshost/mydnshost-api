@@ -34,6 +34,11 @@
 	// We have our method!
 	$resp->method($method);
 
+	if (empty($method)) {
+		$resp->setErrorCode('404', 'Not Found');
+		$resp->sendError('Method required.');
+	}
+
 	// Request Method
 	$requestMethod = $_SERVER['REQUEST_METHOD'];
 	// Allow request method hacks for things that can't do it right.
