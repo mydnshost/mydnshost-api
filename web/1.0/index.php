@@ -36,6 +36,13 @@
 
 	if (empty($method)) {
 		$resp->setErrorCode('404', 'Not Found');
+
+		if (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'text/html') !== false && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') === false) {
+			// Probably a browser, redirect somewhere useful.
+			$resp->setErrorCode('303', 'See Other');
+			header('Location: ./docs');
+		}
+
 		$resp->sendError('Method required.');
 	}
 

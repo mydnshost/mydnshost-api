@@ -8,7 +8,7 @@ RewriteRule ^/?(.*)$ /experimental/%1/$1 [L]
 RewriteRule ^.well-known/.*$ - [L]
 
 # Latest Docs
-RewriteRule ^(?:help|docs)/?(.*)$ /1.0/docs/$1 [R=301,L]
+RewriteRule ^(?:help|docs)/?(.*)$ /1.0/docs/$1 [R=303,L]
 
 # Allowed
 RewriteRule ^(1.0)/.*$ - [L]
