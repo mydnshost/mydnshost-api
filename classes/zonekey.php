@@ -89,15 +89,15 @@ class ZoneKey extends DBObject {
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getDomainID() {
-		return intval($this->getData('domain_id'));
+		return intvalOrNull($this->getData('domain_id'));
 	}
 
 	public function getKeyID() {
-		return intval($this->getData('key_id'));
+		return intvalOrNull($this->getData('key_id'));
 	}
 
 	public function getFlags() {
@@ -208,15 +208,15 @@ class ZoneKey extends DBObject {
 
 
 	public function getCreated() {
-		return intval($this->getData('created'));
+		return intvalOrNull($this->getData('created'));
 	}
 
 	public function getPublish() {
-		return intval($this->getData('publish'));
+		return intvalOrNull($this->getData('publish'));
 	}
 
 	public function getActivate() {
-		return intval($this->getData('activate'));
+		return intvalOrNull($this->getData('activate'));
 	}
 
 	public function getRevoke() {
@@ -273,8 +273,8 @@ class ZoneKey extends DBObject {
 
 	public function toArray() {
 		$result = parent::toArray();
-		foreach (['id', 'domain_id', 'key_id', 'flags'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
-		foreach (static::$_dates as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'domain_id', 'key_id', 'flags'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
+		foreach (static::$_dates as $k) { if (!isset($result[$k])) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 

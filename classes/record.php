@@ -122,15 +122,15 @@ class Record extends DBObject {
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getDomainID() {
-		return intval($this->getData('domain_id'));
+		return intvalOrNull($this->getData('domain_id'));
 	}
 
 	public function getRemoteDomainID() {
-		return intval($this->getData('remote_domain_id'));
+		return intvalOrNull($this->getData('remote_domain_id'));
 	}
 
 	public function getName() {
@@ -201,7 +201,7 @@ class Record extends DBObject {
 	public function toArray() {
 		$result = parent::toArray();
 		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
-		foreach (['id', 'domain_id', 'remote_domain_id', 'ttl', 'priority', 'changed_at', 'changed_by'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'domain_id', 'remote_domain_id', 'ttl', 'priority', 'changed_at', 'changed_by'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 

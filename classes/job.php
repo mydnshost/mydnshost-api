@@ -51,7 +51,7 @@ class Job extends DBObject {
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getName() {
@@ -63,15 +63,15 @@ class Job extends DBObject {
 	}
 
 	public function getCreated() {
-		return intval($this->getData('created'));
+		return intvalOrNull($this->getData('created'));
 	}
 
 	public function getStarted() {
-		return intval($this->getData('started'));
+		return intvalOrNull($this->getData('started'));
 	}
 
 	public function getFinished() {
-		return intval($this->getData('finished'));
+		return intvalOrNull($this->getData('finished'));
 	}
 
 	public function getState() {
@@ -196,7 +196,7 @@ class Job extends DBObject {
 
 	public function toArray() {
 		$result = parent::toArray();
-		foreach (['id', 'created', 'started', 'finished'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'created', 'started', 'finished'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 

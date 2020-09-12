@@ -142,12 +142,12 @@ class Domain extends DBObject {
 	public function toArray() {
 		$result = parent::toArray();
 		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
-		foreach (['id', 'defaultttl', 'aliasof'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'defaultttl', 'aliasof'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getDomain() {
@@ -171,7 +171,7 @@ class Domain extends DBObject {
 	}
 
 	public function getAliasOf() {
-		return intval($this->getData('aliasof'));
+		return intvalOrNull($this->getData('aliasof'));
 	}
 
 	/**

@@ -87,7 +87,7 @@ class User extends DBObject {
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getEmail() {
@@ -367,7 +367,7 @@ class User extends DBObject {
 		$result = parent::toArray();
 		$result['permissions'] = $this->_permissions;
 		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
-		foreach (['id', 'acceptterms'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'acceptterms'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 }

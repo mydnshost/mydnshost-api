@@ -62,7 +62,7 @@ class APIKey extends DBObject {
 	}
 
 	public function getID() {
-		return intval($this->getData('id'));
+		return intvalOrNull($this->getData('id'));
 	}
 
 	public function getKey($masked = false) {
@@ -82,7 +82,7 @@ class APIKey extends DBObject {
 	}
 
 	public function getUserID() {
-		return intval($this->getData('user_id'));
+		return intvalOrNull($this->getData('user_id'));
 	}
 
 	public function getDescription() {
@@ -144,7 +144,7 @@ class APIKey extends DBObject {
 	public function toArray() {
 		$result = parent::toArray();
 		foreach (['domains_read', 'domains_write', 'user_read', 'user_write'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
-		foreach (['id', 'user_id', 'created', 'lastused'] as $k) { if (!isset($result[$k])) { continue; }; $v = $this->getData($k); $result[$k] = ($v == null) ? $v : intval($v); }
+		foreach (['id', 'user_id', 'created', 'lastused'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
 	}
 }
