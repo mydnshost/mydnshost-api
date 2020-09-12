@@ -1266,6 +1266,8 @@
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
+			} else {
+				$serial = $domain->getSOARecord()->parseSOA()['serial'];
 			}
 
 			$this->getContextKey('response')->set('serial', $serial);
@@ -1304,6 +1306,8 @@
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
+			} else {
+				$serial = $domain->getSOARecord()->parseSOA()['serial'];
 			}
 
 			$this->getContextKey('response')->set('serial', $serial);
