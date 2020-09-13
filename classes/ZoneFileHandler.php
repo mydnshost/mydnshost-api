@@ -60,6 +60,19 @@
 			$this->records[$rrtype][$rrname][] = $value;
 		}
 
+		public function mergeFrom(RecordsInfo $recordsInfo) {
+			foreach ($recordsInfo->records as $rrtype => $entries) {
+				foreach ($entries as $rrname => $records) {
+					if (!isset($this->records[$rrtype])) { $this->records[$rrtype] = []; }
+					if (!isset($this->records[$rrtype][$rrname])) { $this->records[$rrtype][$rrname] = []; }
+
+					foreach ($records as $record) {
+						$this->records[$rrtype][$rrname][] = $record;
+					}
+				}
+			}
+		}
+
 		public function getByName($name) {
 			$result = [];
 			foreach ($this->records as $type => $entries) {

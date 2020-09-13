@@ -1041,6 +1041,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function updateRecordID($domain, $record) {
+			$errorData = [];
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
@@ -1050,12 +1051,21 @@
 				return $this->deleteRecordID($domain, $record);
 			}
 
+			$this->getContextKey('db')->beginTransaction();
 			$record = $this->doUpdateRecord($domain, $record, $data['data']);
 			$serial = -1;
 			try {
 				if ($record->hasChanged()) {
 					$record->validate();
 					if ($record->save()) {
+						$validity = $domain->checkZoneValidity();
+
+						if ($validity[0] != TRUE) {
+							$errorData['checkzone'] = $validity[1];
+							throw new ValidationFailed('Zone check failed.');
+						}
+						$this->getContextKey('db')->commit();
+
 						EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID()]);
 
 						$serial = $domain->updateSerial();
@@ -1064,7 +1074,8 @@
 					}
 				}
 			} catch (ValidationFailed $ex) {
-				$this->getContextKey('response')->sendError('Error updating record.', $ex->getMessage());
+				$this->getContextKey('db')->rollback();
+				$this->getContextKey('response')->sendError('Error updating record.', $ex->getMessage(), $errorData);
 			}
 
 			$r = $record->toArray();
@@ -1092,6 +1103,7 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			$zonecheck = [];
 			$errors = array();
 			$recordsToBeSaved = array();
 			$recordsToBeDeleted = array();
@@ -1166,6 +1178,16 @@
 				}
 			}
 
+			if (empty($errors)) {
+				$validity = $domain->checkZoneValidity();
+
+				if ($validity[0] != TRUE) {
+					$errors['checkzone'] = $validity[1];
+				} else {
+					$zonecheck = $validity[1];
+				}
+			}
+
 			if (count($errors) > 0) {
 				$this->getContextKey('db')->rollback();
 				$this->getContextKey('response')->sendError('There was errors with the records provided.', $errors);
@@ -1196,7 +1218,10 @@
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			}
 
-			$this->getContextKey('response')->data(['serial' => $serial, 'changed' => $result]);
+			$res = ['serial' => $serial, 'changed' => $result];
+			if (!empty($zonecheck)) { $res['zonecheck'] = $zonecheck; }
+
+			$this->getContextKey('response')->data($res);
 			return true;
 		}
 

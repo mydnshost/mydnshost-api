@@ -477,10 +477,10 @@ class Domain extends DBObject {
 		            'MinTTL' => $soa['minttl']];
 
 		$records = new RecordsInfo();
-
 		$cloneRecords = [];
-
 		$hasNS = false;
+		$warnings = [];
+
 		foreach ($recordDomain->getRecords() as $record) {
 			if ($record->isDisabled()) { continue; }
 
@@ -503,6 +503,10 @@ class Domain extends DBObject {
 			// Used to save us asking the DB for the same thing over and over
 			$rrCloneCache = [];
 
+			// Use a new RecordsInfo to stop RRCLONEs being able to point
+			// at RRCLONEs before them alphabetically.
+			$clonedRecordsInfo = new RecordsInfo();
+
 			foreach ($cloneRecords as $record) {
 				$name = $this->fixRecordName($record, $recordDomain);
 				$content = $this->fixRecordContent($record, $recordDomain);
@@ -520,25 +524,14 @@ class Domain extends DBObject {
 				if (empty($sourceRecords)) {
 
 					if (!isset($rrCloneCache[$wantedRecord])) {
-						$rrCloneCache[$wantedRecord] = [];
+						$rrCloneCache[$wantedRecord] = [null, []];
 
 						// Record doesn't exist in this domain, so check other
 						// domains.
 						$sourceDom = Record::findDomainForRecord($this->getDB(), $wantedRecord);
-						if ($sourceDom != FALSE) {
+						if ($sourceDom != FALSE && $sourceDom->getID() != $this->getID()) {
 							// Check if we have sufficient access.
 							$hasAccess = false;
-
-							// Is there anyone in our domain who has write access,
-							// who also has read-access to the source domain?
-							/* foreach ($this->_access as $id => $level) {
-								if (in_array($level, ['owner', 'admin', 'write'])) {
-									if (isset($sourceDom->_access[$id]) && in_array($sourceDom->_access[$id], ['owner', 'admin', 'write', 'read'])) {
-										$hasAccess = true;
-										break;
-									}
-								}
-							}*/
 
 							// Check that the same people have write access to
 							// both domains.
@@ -569,6 +562,7 @@ class Domain extends DBObject {
 							}
 						}
 					}
+
 					[$sourceDom, $sourceRecords] = $rrCloneCache[$wantedRecord];
 					// Remember this so that we can trigger updates in future.
 					$sourceID = ($sourceDom instanceof Domain) ? $sourceDom->getID() : null;
@@ -577,17 +571,21 @@ class Domain extends DBObject {
 					}
 				}
 
+				$validRecordCount = 0;
+
 				foreach ($sourceRecords as $sourceRecord) {
 					if (empty($importTypes) || in_array($sourceRecord['Type'], $importTypes) || in_array('*', $importTypes)) {
-						if ($sourceRecord['Type'] == 'RRCLONE') {
-							// TODO: Raise an error somewhere.
-							continue;
-						}
+						if ($sourceRecord['Type'] == 'RRCLONE') { continue; }
 
 						$ttl = $record->getTTL() >= 1 ? $record->getTTL() : $sourceRecord['TTL'];
-						$records->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $ttl, $sourceRecord['Priority']);
+						$clonedRecordsInfo->addRecord($name, $sourceRecord['Type'], $sourceRecord['Address'], $ttl, $sourceRecord['Priority']);
 						$hasNS = $hasNS || ($sourceRecord['Type'] == "NS" && $record->getName() == $recordDomain->getDomain());
+						$validRecordCount++;
 					}
+				}
+
+				if ($validRecordCount == 0) {
+					$warnings[] = $record->getName() . ' inherits no valid target records.';
 				}
 			}
 
@@ -599,11 +597,57 @@ class Domain extends DBObject {
 					}
 				}
 			}
+
+			// Merge cloned records into main records.
+			$records->mergeFrom($clonedRecordsInfo);
 		}
 
 		if ($expandRecordsInfo) { $records = $records->get(); }
 
-		return ['soa' => $bindSOA, 'hasNS' => $hasNS, 'records' => $records];
+		$res = ['soa' => $bindSOA, 'hasNS' => $hasNS, 'records' => $records];
+		if (!empty($warnings)) { $res['warnings'] = $warnings; }
+		return $res;
+	}
+
+	public function checkZoneValidity() {
+		$zfh = ZoneFileHandler::get('bind');
+		$ri = $this->getRecordsInfo(true, false);
+		$output = $zfh->generateZoneFile($this->getDomain(), $ri);
+
+		$tempFile = tempnam("/tmp", "chk-" . $this->getDomain() . '-');
+		if ($tempFile === FALSE) { return [FALSE, ['Unable to check zone.']]; }
+
+		file_put_contents($tempFile, $output);
+
+		$cmd = '/usr/sbin/named-checkzone';
+		$cmd .= ' -f text'; // Input format
+		$cmd .= ' -i local'; // Zone-integrity checks - only check local records
+		$cmd .= ' -k warn'; // "check-names" checks
+		$cmd .= ' -m fail'; // check MX records are addresses
+		$cmd .= ' -M warn'; // Warn for MX records to point at CNAMEs
+		$cmd .= ' -n fail'; // Check NS records are addresses
+		$cmd .= ' -r fail'; // Fail for records that are different under DNSSEC
+		$cmd .= ' -S warn'; // Warn for SRV pointing at CNAME
+		$cmd .= ' -W warn'; // Warn for non-terminal wildcards
+		$cmd .= ' ' . escapeshellarg($this->getDomainRaw());
+		$cmd .= ' ' . escapeshellarg($tempFile);
+		$result = exec($cmd, $output);
+		array_pop($output); // Remove the last "OK" or "FAIL" or whatever
+		unlink($tempFile);
+
+		// Fix output a bit.
+		$finalOutput = [];
+		if (isset($ri['warnings'])) {
+			foreach ($ri['warnings'] as $line) {
+				$finalOutput[] = $line;
+			}
+		}
+		foreach ($output as $line) {
+			if (preg_match('#loaded serial [0-9]+#', $line)) { continue; } // Don't care for this line.
+			$finalOutput[] = str_replace($tempFile, '<FILE>', $line);
+		}
+
+		return [$result === 'OK', $finalOutput];
 	}
 
 	public static function validDomainName($name) {
