@@ -27,7 +27,7 @@
 
 			$wantedRecordFull = $wantedRecord = $data['fqdn'];
 
-			$domain = $this->findDomain($this->getContextKey('user'), $wantedRecord);
+			$domain = Record::findDomain($this->getContextKey('user'), $wantedRecord);
 			if ($domain == FALSE) {
 				$this->getContextKey('response')->sendError('No matching domains found for: ' . $wantedRecord);
 			}
