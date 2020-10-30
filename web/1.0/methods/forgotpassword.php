@@ -10,9 +10,12 @@
 				$this->getContextKey('response')->sendError('Missing data: email');
 			}
 
+			$successMessage = ['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.'];
+
 			$user = User::loadFromEmail($this->getContextKey('db'), $data['data']['email']);
 			if ($user == FALSE || $user->isDisabled()) {
-				$this->getContextKey('response')->data(['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.']);
+				$this->getContextKey('response')->data($successMessage);
+				return TRUE;
 				// $this->getContextKey('response')->sendError('Invalid user');
 			}
 
@@ -29,7 +32,7 @@
 			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
 
 
-			$this->getContextKey('response')->data(['success' => 'Password reset was submitted. If the email address you entered matched a valid account then you will get an email with further instructions.']);
+			$this->getContextKey('response')->data($successMessage);
 
 			return TRUE;
 		}
