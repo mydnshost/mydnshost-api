@@ -26,7 +26,7 @@
         "ext-pcntl": "^7.3",
         "ext-redis": "^5.0",
         "php-amqplib/php-amqplib": "^2.9",
-        "mongodb/mongodb": "1.6.1"
+        "mongodb/mongodb": "1.8.0"
     },
     "autoload": {
         "classmap": [
