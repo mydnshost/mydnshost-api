@@ -10,6 +10,12 @@
             "homepage": "http://www.dataforce.org.uk/"
         }
     ],
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/axxapy/php-amqplib.git"
+    }
+  ],
     "require": {
         "php": ">=7.1",
         "jeremykendall/php-domain-parser": "~5.4",
@@ -25,7 +31,7 @@
         "rbdwllr/reallysimplejwt": "^2.0",
         "ext-pcntl": ">=7.3",
         "ext-redis": "^5.0",
-        "php-amqplib/php-amqplib": "^2.9",
+        "php-amqplib/php-amqplib": "dev-php8_fixes",
         "mongodb/mongodb": "1.8.0"
     },
     "autoload": {
