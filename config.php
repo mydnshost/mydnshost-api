@@ -98,7 +98,7 @@
 			if (empty($w)) { continue; }
 
 			$includeWorker = true;
-			if ($w{0} == '-') { $w = substr($w, 1); $includeWorker = false; }
+			if ($w[0] == '-') { $w = substr($w, 1); $includeWorker = false; }
 
 			if ($w == '*') {
 				foreach (recursiveFindFiles(__DIR__ . '/workers/workers') as $file) {
