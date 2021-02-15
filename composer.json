@@ -23,7 +23,7 @@
         "enygma/yubikey": "^3.3",
         "authy/php": "^3.0",
         "rbdwllr/reallysimplejwt": "^2.0",
-        "ext-pcntl": "^7.3",
+        "ext-pcntl": ">=7.3",
         "ext-redis": "^5.0",
         "php-amqplib/php-amqplib": "^2.9",
         "mongodb/mongodb": "1.8.0"
