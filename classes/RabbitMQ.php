@@ -34,10 +34,18 @@
 		private function connect() {
 			if ($this->connection !== null) { return; }
 
-			$this->connection = new AMQPStreamConnection($this->rabbitmq['host'], $this->rabbitmq['port'], $this->rabbitmq['user'], $this->rabbitmq['pass']);
-			$this->channel = $this->connection->channel();
+			try {
+				$this->connection = new AMQPStreamConnection($this->rabbitmq['host'], $this->rabbitmq['port'], $this->rabbitmq['user'], $this->rabbitmq['pass']);
+				$this->channel = $this->connection->channel();
 
-			list($this->myqueue, ,) = $this->channel->queue_declare("", false, false, true, false);
+				list($this->myqueue, ,) = $this->channel->queue_declare("", false, false, true, false);
+			} catch (Exception $ex) {
+				$this->connection = null;
+				$this->channel = null;
+				$this->myqueue = null;
+
+				throw $ex;
+			}
 		}
 
 		/**

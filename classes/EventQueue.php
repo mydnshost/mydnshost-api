@@ -29,11 +29,16 @@
 		 * @param $args Event Arguments
 		 */
 		public function publish($event, $args) {
-			RabbitMQ::get()->getChannel()->exchange_declare('events', 'topic', false, false, false);
+			try {
+				RabbitMQ::get()->getChannel()->exchange_declare('events', 'topic', false, false, false);
 
-			$event = strtolower($event);
-			$msg = new AMQPMessage(json_encode(['event' => $event, 'args' => $args]));
-			RabbitMQ::get()->getChannel()->basic_publish($msg, 'events', 'event.' . $event);
+				$event = strtolower($event);
+				$msg = new AMQPMessage(json_encode(['event' => $event, 'args' => $args]));
+				RabbitMQ::get()->getChannel()->basic_publish($msg, 'events', 'event.' . $event);
+				return true;
+			} catch (Exception $ex) {
+				return false;
+			}
 		}
 
 		/**
