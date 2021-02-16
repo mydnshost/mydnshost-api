@@ -566,7 +566,7 @@ MYSQLQUERY
 			// ------------------------------------------------------------------------
 			$dataChanges[38] = new DBChange(<<<MYSQLQUERY
 ALTER TABLE `records` ADD COLUMN `remote_domain_id` int(11) DEFAULT NULL AFTER `domain_id`;
-ALTER TABLE `records` ADD CONSTRAINT `records_remote_domain_id` FOREIGN KEY (`domain_id`) REFERENCES `domains` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+ALTER TABLE `records` ADD CONSTRAINT `records_remote_domain_id` FOREIGN KEY (`remote_domain_id`) REFERENCES `domains` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 MYSQLQUERY
 );
 
