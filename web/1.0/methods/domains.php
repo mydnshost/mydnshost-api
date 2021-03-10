@@ -1351,7 +1351,7 @@
 			$oldSOA = $domain->getSOARecord()->parseSOA();
 
 			$deleted = $domain->delete();
-			$this->getContextKey('response')->data(['deleted', $deleted ? 'true' : 'false']);
+			$this->getContextKey('response')->data(['deleted' => $deleted ? 'true' : 'false']);
 			if ($deleted) {
 				EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 				// The domain will be gone, the hooks won't exist, so we can't call them... Annoying.

@@ -94,9 +94,9 @@ Deleting a user will disassociate them with any domains, but will not remove the
             {
                 "respid": "58bcbde798d3a",
                 "method": "users/2",
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## Confirm delete the current user [/users/{userid}/confirm/{confirmcode}]
@@ -118,9 +118,9 @@ Deleting a user will disassociate them with any domains, but will not remove the
             {
                 "respid": "58bcbde798d3a",
                 "method": "users/2/confirm/c00696d9",
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## Confirm delete the current user with 2FA [/users/{userid}/confirm/{confirmcode}/{twofactorcode}]
@@ -143,9 +143,9 @@ Deleting a user will disassociate them with any domains, but will not remove the
             {
                 "respid": "58bcbde798d3a",
                 "method": "users/2/confirm/c00696d9/123456",
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## Create a user [/users/create]
@@ -393,9 +393,9 @@ This takes the same parameters as create, but will update an existing key.
             {
                 "respid": "58bf2602687cc",
                 "method": "users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176",
-                "response":[
-                   "deleted": "true"
-                ]
+                "response":{
+                    "deleted": "true"
+                }
             }
 
 ## 2FA Keys [/users/{userid}/2fa]
@@ -539,9 +539,9 @@ This takes the same parameters as create, but will update an existing key.
             {
                 "respid": "591e456fdb62f",
                 "method": "users/self/2fa/6",
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## Verify 2FA Key [/users/{userid}/2fa/{keyid}/verify]
@@ -628,9 +628,9 @@ Returns the list of known 2FA Devices and information about them.
             {
                 "respid": "5a1afd4852d97",
                 "method": "users/self/2fadevices/6",
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## User custom data {DEPRECATED} [/users/{userid}/customdata]
@@ -709,9 +709,9 @@ Returns the list of known Custom-Data Key/Value pairs.
             {
                 "respid": "59c7bb2d0cfd5",
                 "method": "users/self/customdata/test.ing"
-                "response":[
+                "response":{
                     "deleted": "true"
-                ]
+                }
             }
 
 ## User Domain Statistics [/users/{userid}/stats/{stattype}{?type}]
