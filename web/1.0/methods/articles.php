@@ -102,7 +102,7 @@
 
 		protected function deleteArticle($article) {
 			if ($article !== FALSE) {
-				$this->getContextKey('response')->data(['deleted' => $article->delete() ? true : false]);
+				$this->getContextKey('response')->data(['deleted' => $article->delete()]);
 				return TRUE;
 			}
 

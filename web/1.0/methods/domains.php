@@ -1282,7 +1282,7 @@
 		 */
 		protected function deleteRecordID($domain, $record) {
 			$deleted = $record->delete();
-			$this->getContextKey('response')->set('deleted' => $deleted ? true : false);
+			$this->getContextKey('response')->set('deleted' => $deleted);
 			if ($deleted) {
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 
@@ -1351,7 +1351,7 @@
 			$oldSOA = $domain->getSOARecord()->parseSOA();
 
 			$deleted = $domain->delete();
-			$this->getContextKey('response')->data(['deleted' => $deleted ? true : false]);
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 			if ($deleted) {
 				EventQueue::get()->publish('domain.delete', [$domain->getID(), $domain->getDomainRaw()]);
 				// The domain will be gone, the hooks won't exist, so we can't call them... Annoying.
@@ -1461,7 +1461,7 @@
 		}
 
 		protected function deleteDomainKey($domain, $key) {
-			$this->getContextKey('response')->data(['deleted' => $key->delete() ? true : false]);
+			$this->getContextKey('response')->data(['deleted' => $key->delete()]);
 			return TRUE;
 		}
 
@@ -1550,7 +1550,7 @@
 		}
 
 		protected function deleteDomainHook($domain, $hook) {
-			$this->getContextKey('response')->data(['deleted' => $hook->delete() ? true : false]);
+			$this->getContextKey('response')->data(['deleted' => $hook->delete()]);
 			return TRUE;
 		}
 	}
