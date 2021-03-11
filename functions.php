@@ -163,8 +163,8 @@
 		if ($force || !file_exists($psl) || (time() - filemtime($psl)) > $maxAge) {
 			$data = file_get_contents('https://publicsuffix.org/list/public_suffix_list.dat');
 			if (!empty($data)) {
-				file_put_contents($psl, $data);
-
+				$r = Pdp\Rules::fromString($data);
+				file_put_contents($psl, serialize($r));
 				return TRUE;
 			} else {
 				// Make the cached file last another hour.
@@ -178,8 +178,14 @@
 	function getPublicSuffixListRules() {
 		global $_publicSuffixListRules;
 
+		$psl = '/tmp/public_suffix_list.dat';
+
 		if (updatePublicSuffixes() || !isset($_publicSuffixListRules)) {
-			$_publicSuffixListRules = Pdp\Rules::fromPath('/tmp/public_suffix_list.dat');
+			$_publicSuffixListRules = @unserialize(file_get_contents($psl));
+			if ($_publicSuffixListRules == NULL) {
+				updatePublicSuffixes(true);
+				$_publicSuffixListRules = @unserialize(file_get_contents($psl));
+			}
 		}
 
 		return $_publicSuffixListRules;
