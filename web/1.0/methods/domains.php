@@ -1282,7 +1282,7 @@
 		 */
 		protected function deleteRecordID($domain, $record) {
 			$deleted = $record->delete();
-			$this->getContextKey('response')->set('deleted' => $deleted);
+			$this->getContextKey('response')->set('deleted', $deleted);
 			if ($deleted) {
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 
