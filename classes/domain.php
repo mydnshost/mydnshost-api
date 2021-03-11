@@ -652,6 +652,7 @@ class Domain extends DBObject {
 
 	public static function validDomainName($name) {
 		// https://www.safaribooksonline.com/library/view/regular-expressions-cookbook/9781449327453/ch08s15.html
-		return preg_match('#^((?=[_a-z0-9-]{1,63}\.)(xn--)?[_a-z0-9]+(-[_a-z0-9]+)*\.)+(xn--)?[a-z]{2,63}$#i', do_idn_to_ascii($name));
+		// https://github.com/mydnshost/mydnshost-api/issues/126
+		return preg_match('#^((?=[_a-z0-9-]{1,63}\.)(xn--)?[_a-z0-9]+(-[_a-z0-9]+)*\.)+(xn--)?[a-z0-9]{2,63}$#i', do_idn_to_ascii($name));
 	}
 }
