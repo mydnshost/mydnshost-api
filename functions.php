@@ -192,8 +192,6 @@
 	}
 
 	function isPublicSuffix($domain) {
-		$domain = do_idn_to_ascii($domain);
-
 		$publicSuffixList = getPublicSuffixListRules();
 		$parser = $publicSuffixList->resolve('test-domain.' . $domain);
 
@@ -201,7 +199,6 @@
 	}
 
 	function hasValidPublicSuffix($domain) {
-		$domain = do_idn_to_ascii($domain);
 		$publicSuffixList = getPublicSuffixListRules();
 		$parser = $publicSuffixList->resolve($domain);
 
