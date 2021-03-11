@@ -18,7 +18,7 @@
   ],
     "require": {
         "php": ">=7.1",
-        "jeremykendall/php-domain-parser": "~5.4",
+        "jeremykendall/php-domain-parser": "^6.0",
         "twig/twig": "~2.0",
         "phpmailer/phpmailer": "^6.0",
         "phpgangsta/googleauthenticator": "dev-master",

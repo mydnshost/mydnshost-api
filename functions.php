@@ -156,28 +156,37 @@
 	}
 
 	function updatePublicSuffixes() {
-		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
-		$manager->refreshRules();
-		$manager->refreshTLDs();
+		// TODO: Put this in Redis or Mongo?
+		// TODO: Update periodically automatically.
+		file_put_contents('/tmp/public_suffix_list.dat', file_get_contents('https://publicsuffix.org/list/public_suffix_list.dat'));
+	}
+
+	function getPublicSuffixListRules() {
+		global $_publicSuffixListRules;
+
+		if (!isset($_publicSuffixListRules)) {
+			if (!file_exists('/tmp/public_suffix_list.dat')) { updatePublicSuffixes(); }
+			$_publicSuffixListRules = Pdp\Rules::fromPath('/tmp/public_suffix_list.dat');
+		}
+
+		return $_publicSuffixListRules;
 	}
 
 	function isPublicSuffix($domain) {
 		$domain = do_idn_to_ascii($domain);
 
-		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
-		$rules = $manager->getRules();
-		$parser = $rules->resolve($domain);
+		$publicSuffixList = getPublicSuffixListRules();
+		$parser = $publicSuffixList->resolve('test-domain.' . $domain);
 
-		return $parser->getPublicSuffix() == NULL;
+		return $parser->suffix()->isKnown() && $parser->suffix()->toString() == $domain;
 	}
 
 	function hasValidPublicSuffix($domain) {
 		$domain = do_idn_to_ascii($domain);
-		$manager = new Pdp\Manager(new Pdp\Cache(), new Pdp\CurlHttpClient());
-		$rules = $manager->getRules();
-		$parser = $rules->resolve($domain);
+		$publicSuffixList = getPublicSuffixListRules();
+		$parser = $publicSuffixList->resolve($domain);
 
-		return $parser->getPublicSuffix() != NULL;
+		return $parser->suffix()->isKnown();
 	}
 
 	function checkSessionHandler() {
