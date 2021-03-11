@@ -155,17 +155,30 @@
 		return [$subject, $message, $htmlmessage];
 	}
 
-	function updatePublicSuffixes() {
+	function updatePublicSuffixes($force = false) {
 		// TODO: Put this in Redis or Mongo?
-		// TODO: Update periodically automatically.
-		file_put_contents('/tmp/public_suffix_list.dat', file_get_contents('https://publicsuffix.org/list/public_suffix_list.dat'));
+		$psl = '/tmp/public_suffix_list.dat';
+		$maxAge = (7 * 86400);
+
+		if ($force || !file_exists($psl) || (time() - filemtime($psl)) > $maxAge) {
+			$data = file_get_contents('https://publicsuffix.org/list/public_suffix_list.dat');
+			if (!empty($data)) {
+				file_put_contents($psl, $data);
+
+				return TRUE;
+			} else {
+				// Make the cached file last another hour.
+				touch($psl, $time - $maxAge + 3600);
+			}
+		}
+
+		return FALSE;
 	}
 
 	function getPublicSuffixListRules() {
 		global $_publicSuffixListRules;
 
-		if (!isset($_publicSuffixListRules)) {
-			if (!file_exists('/tmp/public_suffix_list.dat')) { updatePublicSuffixes(); }
+		if (updatePublicSuffixes() || !isset($_publicSuffixListRules)) {
 			$_publicSuffixListRules = Pdp\Rules::fromPath('/tmp/public_suffix_list.dat');
 		}
 
