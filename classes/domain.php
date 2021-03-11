@@ -614,7 +614,7 @@ class Domain extends DBObject {
 		$ri = $this->getRecordsInfo(true, false);
 		$output = $zfh->generateZoneFile($this->getDomain(), $ri);
 
-		$tempFile = tempnam("/tmp", "chk-" . $this->getDomain() . '-');
+		$tempFile = tempnam("/tmp", "chk-" . $this->getDomainRaw() . '-');
 		if ($tempFile === FALSE) { return [FALSE, ['Unable to check zone.']]; }
 
 		file_put_contents($tempFile, $output);
