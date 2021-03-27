@@ -355,7 +355,7 @@ Create a new API Key. The key itself will be randomly generated and returned.
 ### Update key [POST]
 This takes the same parameters as create, but will update an existing key.
 
-+ Request (application/json)
++ Request Update a key (application/json)
     + Body
 
             {
@@ -451,7 +451,7 @@ If no 'onetime' data parameter is provided, then 'false' is assumed, otherwise t
                 "data": {
                     "description": "Third Key",
                     "type": "rfc6238",
-                    "onetime": false,
+                    "onetime": false
                 }
             }
 
@@ -503,7 +503,7 @@ If no 'onetime' data parameter is provided, then 'false' is assumed, otherwise t
 ### Update key [POST]
 This takes the same parameters as create, but will update an existing key.
 
-+ Request (application/json)
++ Request Update a key (application/json)
     + Body
 
             {
@@ -553,7 +553,7 @@ This takes the same parameters as create, but will update an existing key.
 
 ### Verify 2FA Key [POST]
 
-+ Request (application/json)
++ Request Verify a key (application/json)
     + Body
 
             {
@@ -678,7 +678,7 @@ Returns the list of known Custom-Data Key/Value pairs.
 
 ### Create/Update custom data for key {DEPRECATED} [POST]
 
-+ Request (application/json)
++ Request Update custom data (application/json)
     + Body
 
             {

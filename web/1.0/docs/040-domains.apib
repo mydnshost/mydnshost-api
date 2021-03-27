@@ -32,7 +32,7 @@ If the user has the `domains_create` permission, they can use this to create a n
 
             {
                 "data": {
-                    "domain": "example.net",
+                    "domain": "example.net"
                 }
             }
 
@@ -336,7 +336,7 @@ Create a new Domain Key. The key itself will be randomly generated and returned.
 ### Update key [POST]
 This takes the same parameters as create, but will update an existing key.
 
-+ Request (application/json)
++ Request Update a key (application/json)
     + Body
 
             {
@@ -440,7 +440,6 @@ Create a new Domain Hook.
                         "created": 1511718962,
                         "lastused": 0,
                         "updated": true
-                        }
                     }
                 }
             }
@@ -471,7 +470,7 @@ Create a new Domain Hook.
 ### Update Hook [POST]
 This takes the same parameters as create, but will update an existing hook.
 
-+ Request (application/json)
++ Request Update a hook (application/json)
     + Body
 
             {
@@ -826,7 +825,7 @@ Get recent logs related to this domain.
     + type: `bind` (optional, string) - Zone file format to import from (Valid types: bind)
 
 ### Export zone as bind zone file [POST]
-+ Request import from zone file(application/json)
++ Request import from zone file (application/json)
     + Body
 
             {
@@ -875,7 +874,7 @@ If the import is successful, the zone serial will be returned.
             }
 
 ### Update a specific record [POST]
-+ Request Update content(application/json)
++ Request Update content (application/json)
     + Body
 
             {
