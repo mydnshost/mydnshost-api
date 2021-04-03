@@ -44,6 +44,9 @@ class User extends DBObject {
 	// Permissions levels for unknown objects.
 	protected $_permissions = [];
 
+	// Access counts for unknown objects.
+	protected $_accessCounts = [];
+
 	public function __construct($db) {
 		parent::__construct($db);
 	}
@@ -189,6 +192,10 @@ class User extends DBObject {
 
 	public function getPasswordNonce() {
 		return crc32($this->getID() . '-' . $this->getRawPassword() /* . '-' . json_encode($this->getPermissions()) */);
+	}
+
+	public function getAccessCounts() {
+		return $this->_accessCounts;
 	}
 
 	/**
@@ -362,11 +369,23 @@ class User extends DBObject {
 		foreach ($result as $row) {
 			$this->setPermission($row['permission'], true);
 		}
+
+		// Get a count of known domains.
+		$query = 'SELECT `level`, count(`domain_id`) AS `count` FROM domain_access WHERE `user_id` = :user GROUP BY `level`';
+		$params = [':user' => $this->getID()];
+		$statement = $this->getDB()->getPDO()->prepare($query);
+		$statement->execute($params);
+		$result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+		foreach ($result as $row) {
+			$this->_accessCounts[$row['level']] = $row['count'];
+		}
 	}
 
 	public function toArray() {
 		$result = parent::toArray();
 		$result['permissions'] = $this->_permissions;
+		$result['accesscount'] = $this->_accessCounts;
 		foreach (['disabled'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = parseBool($this->getData($k)); }
 		foreach (['id', 'acceptterms'] as $k) { if (!isset($result[$k])) { continue; }; $result[$k] = intvalOrNull($this->getData($k)); }
 		return $result;
