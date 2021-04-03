@@ -570,6 +570,24 @@ ALTER TABLE `records` ADD CONSTRAINT `records_remote_domain_id` FOREIGN KEY (`re
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Block Regexes
+			// ------------------------------------------------------------------------
+			$dataChanges[39] = new DBChange(<<<MYSQLQUERY
+CREATE TABLE `blockregexes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `regex` VARCHAR(250) NOT NULL,
+  `comment` VARCHAR(250),
+  `created` int(11) NOT NULL,
+  `signup_name` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  `signup_email` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  `domain_name` ENUM('false', 'true') NOT NULL DEFAULT 'false',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+MYSQLQUERY
+);
+
+
 			return $dataChanges;
 		}
 	}

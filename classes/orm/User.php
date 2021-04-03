@@ -31,6 +31,7 @@ class User extends DBObject {
 	                                       'manage_articles',
 	                                       '2fa_push',
 	                                       'admin_managed_user',
+	                                       'manage_blocks',
 	                                      ];
 
     // Permissions that should not be disabled if the user has not accepted the
