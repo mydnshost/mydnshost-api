@@ -552,15 +552,37 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function updateDomainAccess($domain) {
-			$this->checkAccess($domain, ['admin', 'owner']);
+			$hasDomainAdminAccess = $this->checkAccess($domain, ['admin', 'owner'], true);
 
 			$data = $this->getContextKey('data');
-			if (!isset($data['data']) || !is_array($data['data'])) {
+			if (!isset($data['data']['access']) || !is_array($data['data']['access']) || empty($data['data']['access'])) {
+				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			$self = $this->getContextKey('user');
+
+			// If we're not an admin/owner, then we can still make minor
+			// access changes, but we need to check these specifcally here.
+			if (!$hasDomainAdminAccess) {
+				// Remove all attempted changes, and add back in the allowed
+				// ones.
+				$oldData = $data['data'];
+				$data['data'] = ['access' => []]
+
+				foreach ($oldData['access'] as $email => $access) {
+					// Only permit removing self.
+					if ($email == $self->getEmail() && $access == 'none') {
+						$data['data']['access'][$email] = 'none';
+					}
+				}
+			}
+
+			// Check that we still have valid data.
+			if (!isset($data['data']['access']) || !is_array($data['data']['access']) || empty($data['data']['access'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
 			$users = User::findByAddress($this->getContextKey('db'), array_keys($data['data']['access']));
-			$self = $this->getContextKey('user');
 
 			foreach ($data['data']['access'] as $email => $access) {
 				if (!array_key_exists($email, $users)) {
@@ -608,7 +630,10 @@
 			$targetAccess = $domain->getAccess($targetUser);
 			$levels = ['none', 'read', 'write', 'admin', 'owner'];
 
-			if ($targetUser->getID() == $self->getID() && $access != 'none') {
+			if ($targetUser->getID() == $self->getID() && $access == 'none') {
+				return true;
+			}
+			if ($targetUser->getID() == $self->getID()) {
 				$this->getContextKey('response')->sendError('You can\'t change your own access level');
 			}
 			if (array_search($access, $levels) >= array_search($selfAccess, $levels)) {
@@ -1621,7 +1646,11 @@
 			$this->checkPermissions(['domains_write']);
 			$domain = $this->getDomainFromParam($domain);
 
-			$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			// This allows 'read' users because they need to be able to
+			// remove themselves.
+			//
+			// updateDomainAccess does more checks itself.
+			$this->checkAccess($domain, ['read', 'write', 'admin', 'owner']);
 			return $this->updateDomainAccess($domain);
 		}
 	});
