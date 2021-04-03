@@ -12,7 +12,7 @@
 			$this->checkPermissions(['manage_blocks']);
 		}
 
-		protected function getBlockRegexFromId($id) {
+		protected function getBlockRegexFromParam($id) {
 			$blockRegex = BlockRegex::load($this->getContextKey('db'), $id);
 			if ($blockRegex === FALSE) {
 				$this->getContextKey('response')->sendError('Unknown blockregex id: ' . $id);
