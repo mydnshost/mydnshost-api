@@ -1,0 +1,145 @@
+# Group BlockRegexes
+Endpoints for dealing with blockregexes.
+
+These are used to block names/emails/domains that match a given regex.
+
+## BlockRegexes Admin [/admin/blockregexes]
+### Get all blockregexes [GET]
+This will allow a user with the `manage_blocks` permission to see all the blockregexes.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid":"5be8f02eaa91d",
+                "method":"/admin/blockregexes",
+                "response":{
+                    "1":{
+                        "id": "1",
+                        "regex": "/.*mydnshost\.co\.uk$/",
+                        "comment": "Block attempts at pretending to be us",
+                        "created": "1617430589",
+                        "signup_email": true,
+                        "signup_name": false,
+                        "domain_name": true
+                    }
+                }
+            }
+
+### Create an blockregex [POST]
+This allows a user with the `manage_blockregexes` permission to create new blockregexes.
+
+This behaves similarly to updating an blockregex, except that "title", "content", "visiblefrom" and "visibleuntil" are all required.
+
++ Request Create blockregex (application/json)
+    + Body
+
+            {
+                "data": {
+                    "regex": "/.*mydnshost\.co\.uk$/",
+                    "comment": "Block attempts at pretending to be us",
+                    "signup_email": true,
+                    "signup_name": false,
+                    "domain_name": true
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "admin/blockregexes",
+                "response":{
+                    "id": "1",
+                    "regex": "/.*mydnshost\.co\.uk$/",
+                    "comment": "Block attempts at pretending to be us",
+                    "created": "1617430589",
+                    "signup_email": true,
+                    "signup_name": false,
+                    "domain_name": true
+                    "updated": true
+                }
+            }
+
+## Manipulate BlockRegexes [/admin/blockregexes/{blockregexid}]
++ Parameters
+
+    + blockregexid: `1` (required) - The blockregex ID.
+
+
+### Get information about a specific blockregex [GET]
+Returns complete information about the requested blockregex.
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcba77c1505",
+                "method": "admin/blockregexes/1",
+                "response": {
+                    "id": "1",
+                    "regex": "/.*mydnshost\.co\.uk$/",
+                    "comment": "Block attempts at pretending to be us",
+                    "created": "1617430589",
+                    "signup_email": true,
+                    "signup_name": false,
+                    "domain_name": true
+                }
+            }
+
+### Update information about a specific blockregex [POST]
+Allows updating a specific blockregex. Any fields that are passed in will be updated, fields not passed will be unchanged.
+
++ Request Change blockregex data (application/json)
+    + Body
+
+            {
+                "data": {
+                    "comment": "Block people pretending to be us"
+                }
+            }
+
++ Response 200 (application/json)
+    The response on success will show the user account as it exists after the change.
+    + Body
+
+            {
+                "respid": "58bcbc34234e3",
+                "method": "admin/blockregexes/1",
+                "response":{
+                    "id": "1",
+                    "regex": "/.*mydnshost\.co\.uk$/",
+                    "comment": "Block people pretending to be us"
+                    "created": "1617430589",
+                    "signup_email": true,
+                    "signup_name": false,
+                    "domain_name": true
+                    "updated": true
+                }
+            }
+
++ Response 400 (application/json)
+    If there is an error you will get an `error` key rather than a `response` key in the output
+    + Body
+
+            {
+                "respid": "58bcbcc7dc8d1",
+                "method": "admin/blockregexes/1",
+                "error": "Error updating blockregex: 1"
+            }
+
+### Delete a specific BlockRegex [DELETE]
+This will allow a user with the `manage_blockregexes` permission to delete the blockregex specified.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "58bcbde798d3a",
+                "method": "admin/blockregexes/1",
+                "response":{
+                    "deleted": "true"
+                }
+            }
+
+
