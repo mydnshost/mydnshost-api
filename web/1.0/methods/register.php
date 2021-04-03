@@ -40,6 +40,18 @@
 			$user->setDisabled(true);
 			$user->setDisabledReason("Email address has not yet been verified.");
 
+			foreach (BlockRegex::find($this->getContextKey('db'), ['signup_name' => 'true']) as $br) {
+				if ($br->matches($user->getRealName())) {
+					$this->getContextKey('response')->sendError('This name has been blocked from being used.');
+				}
+			}
+
+			foreach (BlockRegex::find($this->getContextKey('db'), ['signup_email' => 'true']) as $br) {
+				if ($br->matches($user->getEmail())) {
+					$this->getContextKey('response')->sendError('This email address has been blocked from being used.');
+				}
+			}
+
 			// Set default permissions.
 			foreach (getSystemRegisterPermissions() as $permission) {
 				$permission = trim($permission);

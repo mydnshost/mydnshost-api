@@ -790,6 +790,14 @@
 					$this->getContextKey('response')->sendError('Invalid domain: ' . $data['data']['domain']);
 				}
 
+				if (!$this->isAdminMethod()) {
+					foreach (BlockRegex::find($this->getContextKey('db'), ['domain_name' => 'true']) as $br) {
+						if ($br->matches($data['data']['domain'])) {
+							$this->getContextKey('response')->sendError('This domain name has been blocked from being added.');
+						}
+					}
+				}
+
 				$domain->setDomain($data['data']['domain']);
 			} else {
 				$this->getContextKey('response')->sendError('No domain name provided for create.');

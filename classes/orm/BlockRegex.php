@@ -71,6 +71,10 @@ class BlockRegex extends DBObject {
 		return parseBool($this->getData('domain_name'));
 	}
 
+	public function matches($input) {
+		return @preg_match($this->getData('regex'), $input);
+	}
+
 	public function validate() {
 		$required = ['regex', 'created'];
 		foreach ($required as $r) {

@@ -159,9 +159,32 @@
 			if ($user !== FALSE) {
 				$oldPass = $user->getRawPassword();
 				$oldEmail = $user->getEmail();
+				$oldName = $user->getRealName();
 				$this->doUpdateUser($user, $data['data']);
 				$newPass = $user->getRawPassword();
 				$newEmail = $user->getEmail();
+				$newName = $user->getRealName();
+
+				// Admins can bypass the blocks.
+				$isAdminEdit = $this->hasContextKey('impersonator') || $this->checkPermissions(['manage_users'], true);
+
+				if (!$isAdminEdit) {
+					if ($newName != $oldName) {
+						foreach (BlockRegex::find($this->getContextKey('db'), ['signup_name' => 'true']) as $br) {
+							if ($br->matches($user->getRealName())) {
+								$this->getContextKey('response')->sendError('This name has been blocked from being used.');
+							}
+						}
+					}
+
+					if ($newEmail != $oldEmail) {
+						foreach (BlockRegex::find($this->getContextKey('db'), ['signup_email' => 'true']) as $br) {
+							if ($br->matches($user->getEmail())) {
+								$this->getContextKey('response')->sendError('This email address has been blocked from being used.');
+							}
+						}
+					}
+				}
 
 				$sendWelcome = false;
 				if ($isCreate) {
