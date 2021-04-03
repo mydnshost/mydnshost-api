@@ -377,8 +377,16 @@ class User extends DBObject {
 		$statement->execute($params);
 		$result = $statement->fetchAll(PDO::FETCH_ASSOC);
 
+		foreach (['owner', 'admin', 'write', 'read'] as $a) {
+			$this->_accessCounts[$a] = 0;
+		}
 		foreach ($result as $row) {
 			$this->_accessCounts[$row['level']] = $row['count'];
+		}
+		foreach (['owner', 'admin', 'write', 'read'] as $a) {
+			if ($this->_accessCounts[$a] == 0) {
+				unset($this->_accessCounts[$a]);
+			}
 		}
 	}
 
