@@ -567,7 +567,7 @@
 				// Remove all attempted changes, and add back in the allowed
 				// ones.
 				$oldData = $data['data'];
-				$data['data'] = ['access' => []]
+				$data['data'] = ['access' => []];
 
 				foreach ($oldData['access'] as $email => $access) {
 					// Only permit removing self.
