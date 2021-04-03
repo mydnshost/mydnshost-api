@@ -533,27 +533,38 @@ class Domain extends DBObject {
 							// Check if we have sufficient access.
 							$hasAccess = false;
 
-							// Check that the same people have write access to
-							// both domains.
-							$ourWriters = [];
-							$sourceWriters = [];
+							if ($wantedRecord[0] != '$') {
+								// DNS records are public, anyone could manually
+								// do this by enumerating all the RRTYPES for
+								// the requested record and setting them themselves
+								// and updating periodically.
+								//
+								// So no point not allowing it.
+								$hasAccess = true;
+							} else {
+								// Dollar-Records are non-public, so check that
+								// the same people have write access to both
+								// domains.
+								$ourWriters = [];
+								$sourceWriters = [];
 
-							foreach ($this->_access as $id => $level) {
-								if (in_array($level, ['owner', 'admin', 'write'])) {
-									$ourWriters[] = $id;
+								foreach ($this->_access as $id => $level) {
+									if (in_array($level, ['owner', 'admin', 'write'])) {
+										$ourWriters[] = $id;
+									}
 								}
-							}
 
-							foreach ($sourceDom->_access as $id => $level) {
-								if (in_array($level, ['owner', 'admin', 'write'])) {
-									$sourceWriters[] = $id;
+								foreach ($sourceDom->_access as $id => $level) {
+									if (in_array($level, ['owner', 'admin', 'write'])) {
+										$sourceWriters[] = $id;
+									}
 								}
+
+								sort($ourWriters);
+								sort($sourceWriters);
+
+								$hasAccess = ($ourWriters == $sourceWriters);
 							}
-
-							sort($ourWriters);
-							sort($sourceWriters);
-
-							$hasAccess = ($ourWriters == $sourceWriters);
 
 							if ($hasAccess) {
 								// TODO: This feels inefficient.
