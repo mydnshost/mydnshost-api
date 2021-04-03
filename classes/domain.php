@@ -533,13 +533,17 @@ class Domain extends DBObject {
 							// Check if we have sufficient access.
 							$hasAccess = false;
 
-							if ($wantedRecord[0] != '$') {
+							if (!startsWith($wantedRecord, '$')) {
 								// DNS records are public, anyone could manually
 								// do this by enumerating all the RRTYPES for
 								// the requested record and setting them themselves
 								// and updating periodically.
 								//
 								// So no point not allowing it.
+								$hasAccess = true;
+							} else if (startsWith($wantedRecord, '$public-')) {
+								// We specifically allow $public-<thing> as
+								// an exception to the below.
 								$hasAccess = true;
 							} else {
 								// Dollar-Records are non-public, so check that
