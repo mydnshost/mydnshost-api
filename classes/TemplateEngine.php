@@ -1,5 +1,11 @@
 <?php
 
+	use Twig\Loader\FilesystemLoader as TwigFilesystemLoader;
+	use Twig\Environment as TwigEnvironment;
+	use Twig\Extension\DebugExtension as TwigDebugExtension;
+	use Twig\TwigFunction;
+	use Twig\TwigFilter;
+
 	class TemplateEngine {
 		private $twig;
 		private $directories = [];
@@ -8,7 +14,7 @@
 		public function __construct() { }
 
 		public function setConfig($config) {
-			$loader = new Twig_Loader_Filesystem();
+			$loader = new TwigFilesystemLoader();
 			$themes = [];
 			if (isset($config['theme'])) {
 				$themes = is_array($config['theme']) ? $config['theme'] : [$config['theme']];
@@ -22,23 +28,23 @@
 				}
 			}
 
-			$twig = new Twig_Environment($loader, array(
+			$twig = new TwigEnvironment($loader, array(
 				'cache' => $config['cache'],
 				'auto_reload' => true,
 				'debug' => true,
 				'autoescape' => 'html',
 			));
 
-			$twig->addExtension(new Twig_Extension_Debug());
+			$twig->addExtension(new TwigDebugExtension());
 
-			$twig->addFunction(new Twig_Function('url', function ($path) { return $this->getURL($path); }));
-			$twig->addFunction(new Twig_Function('getVar', function ($var) { return $this->getVar($var); }));
+			$twig->addFunction(new TwigFunction('url', function ($path) { return $this->getURL($path); }));
+			$twig->addFunction(new TwigFunction('getVar', function ($var) { return $this->getVar($var); }));
 
-			$twig->addFilter(new Twig_Filter('yesno', function($input) {
+			$twig->addFilter(new TwigFilter('yesno', function($input) {
 				return parseBool($input) ? "Yes" : "No";
 			}));
 
-			$twig->addFilter(new Twig_Filter('date', function($input) {
+			$twig->addFilter(new TwigFilter('date', function($input) {
 				return date('r', $input);
 			}));
 
