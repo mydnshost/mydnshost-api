@@ -179,9 +179,9 @@
 					$end = substr($name, strlen($name) - $len);
 
 					if ($type == 'SOA') {
-						if ($name == $origin || $name.'.' == $origin) {
+						// if ($name == $origin) {
 							$name = $this->domain . '.';
-						}
+						// }
 					} else {
 						if ($end == $this->domain.'.') {
 							if ($name != $end) {
