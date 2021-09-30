@@ -695,7 +695,7 @@
 				foreach ($allDomains as $d) { $domains[$d->getID()] = $d; }
 				unset($allDomains);
 
-				$search = new Search($this->getContextKey('db')->getPDO(), 'records', ['id', 'domain_id', 'name', 'type', 'content', 'disabled']);
+				$search = new Search($this->getContextKey('db')->getPDO(), 'records', ['id', 'domain_id', 'name', 'type', 'content', 'ttl', 'priority', 'disabled']);
 				$search->where('domain_id', array_keys($domains));
 
 				if (isset($_REQUEST['content'])) {
