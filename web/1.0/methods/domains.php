@@ -687,29 +687,64 @@
 				$domains = $this->getContextKey('user')->getDomains();
 			}
 
-			$wantedType = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
+			$list = [];
 
-			$valData = [];
-			$useValData = false;
-			if ($wantedType == 'userdata' && isset($_REQUEST['key'])) {
-				$useValData = true;
-				$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), null, $_REQUEST['key']);
-				if (is_array($udcd)) {
-					foreach ($udcd as $d) {
-						$valData[$d->getDomainID()] = $d->getValue();
+			if (isset($_REQUEST['search'])) {
+				$allDomains = $domains;
+				$domains = [];
+				foreach ($allDomains as $d) { $domains[$d->getID()] = $d; }
+				unset($allDomains);
+
+				$search = new Search($this->getContextKey('db')->getPDO(), 'records', ['id', 'domain_id', 'name', 'type', 'content', 'disabled']);
+				$search->where('domain_id', array_keys($domains));
+
+				if (isset($_REQUEST['content'])) {
+					$search->where('content', $_REQUEST['content']);
+				} else {
+					$this->getContextKey('response')->sendError('No data provided for search content.');
+				}
+
+				if (isset($_REQUEST['type'])) {
+					$search->where('type', $_REQUEST['type']);
+				}
+
+				$search->order('domain_id');
+				foreach ($search->getRows() as $r) {
+					$domain = $domains[$r['domain_id']];
+
+					if (!isset($list[$domain->getDomain()])) {
+						$list[$domain->getDomain()] = ['records' => []];
+					}
+
+					unset($r['domain_id']);
+					foreach (['disabled'] as $k) { if (!isset($r[$k])) { continue; }; $r[$k] = parseBool($r[$k]); }
+					foreach (['id', 'domain_id', 'remote_domain_id', 'ttl', 'priority', 'changed_at', 'changed_by'] as $k) { if (!isset($r[$k])) { continue; }; $r[$k] = intvalOrNull($r[$k]); }
+					$list[$domain->getDomain()]['records'][] = $r;
+				}
+			} else {
+				$wantedType = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
+
+				$valData = [];
+				$useValData = false;
+				if ($wantedType == 'userdata' && isset($_REQUEST['key'])) {
+					$useValData = true;
+					$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), null, $_REQUEST['key']);
+					if (is_array($udcd)) {
+						foreach ($udcd as $d) {
+							$valData[$d->getDomainID()] = $d->getValue();
+						}
 					}
 				}
-			}
 
-			$list = [];
-			foreach ($domains as $domain) {
-				if ($useValData) {
-					$value = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
-				} else {
-					$value = $domain->getAccess($this->getContextKey('user'));
+				foreach ($domains as $domain) {
+					if ($useValData) {
+						$value = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
+					} else {
+						$value = $domain->getAccess($this->getContextKey('user'));
+					}
+
+					$list[$domain->getDomain()] = $value;
 				}
-
-				$list[$domain->getDomain()] = $value;
 			}
 
 			$this->getContextKey('response')->data($list);
