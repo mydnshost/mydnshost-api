@@ -651,10 +651,10 @@
 		 */
 		protected function getDomainList() {
 			if ($this->isAdminMethod()) {
-				return $this->getDomainListAdmin();
+				if (!isset($_REQUEST['contains']) && !isset($_REQUEST['search'])) {
+					return $this->getDomainListAdmin();
+				}
 			}
-
-			$domains = [];
 
 			if (isset($_REQUEST['contains'])) {
 				// Convert the requested domain into an array (eg foo.bar.baz.example.com => [foo, bar, baz, example, com])
@@ -670,7 +670,11 @@
 
 					// If we have an exact match for this domain, then only return it in the output.
 					// There may be a nicer way to do this than asking the DB every time.
-					$domain = $this->getContextKey('user')->getDomainByName($dom);
+					if ($this->isAdminMethod()) {
+						$domain = Domain::loadFromDomain($this->getContextKey('db'), $dom);
+					} else {
+						$domain = $this->getContextKey('user')->getDomainByName($dom);
+					}
 					if ($domain !== FALSE) {
 						$domains[] = $domain;
 						break;
@@ -684,7 +688,13 @@
 				$this->getContextKey('response')->setHeader('contains', $_REQUEST['contains']);
 			} else {
 				// Just get them all.
-				$domains = $this->getContextKey('user')->getDomains();
+				if ($this->isAdminMethod()) {
+					$domainSearch = Domain::getSearch($this->getContextKey('db'));
+					$domainSearch->order('domain');
+					$domains = $domainSearch->find();
+				} else {
+					$domains = $this->getContextKey('user')->getDomains();
+				}
 			}
 
 			$list = [];
@@ -722,6 +732,11 @@
 					$list[$domain->getDomain()]['records'][] = $r;
 				}
 			} else {
+				if ($this->isAdminMethod()) {
+					// Shouldn't get here. Abort if we do somehow.
+					$this->getContextKey('response')->sendError('Invalid Request.');
+				}
+
 				$wantedType = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 
 				$valData = [];
