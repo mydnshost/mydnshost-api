@@ -28,6 +28,15 @@
 	"value": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM"
 }
 			</pre>
+or
+			<pre>
+{
+	"domain": "example1.org",
+	"token": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM",
+	"keyAuth": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM.dO1Pl622P384UR9DFQ1wJLxfUfoldDh4nsedCZtnbdc"
+}
+			</pre>
+			(<pre style="display: inline">keyAuth</pre> can either include the token prepended, or not, we'll figure it out.)
 			<br>
 			Calling either endpoint will delete all TXT records with the given record name. The <pre style="display: inline">/present</pre> endpoint will then create a new TXT record with value given (or do nothing if no value is given.)
 			<br><br>

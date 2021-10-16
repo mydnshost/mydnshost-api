@@ -23,6 +23,18 @@
 			$user = $this->getContextKey('user');
 			$data = $this->getContextKey('data');
 
+			// Handle raw mode.
+			if (isset($data['keyAuth'])) {
+				$info = $data;
+				$data = ['fqdn' => '_acme-challenge.' . $info['domain'] . '.', 'value' => ''];
+
+				if (!startsWith($info['keyAuth'], $info['token'] . '.')) {
+					$info['keyAuth'] = $info['token'] . '.' . $info['keyAuth'];
+				}
+
+				$data['value'] = rtrim(base64_encode(hash("sha256", $keyAuth, true)), '=');
+			}
+
 			$data['fqdn'] = rtrim($data['fqdn'], '.');
 
 			$wantedRecordFull = $wantedRecord = $data['fqdn'];
