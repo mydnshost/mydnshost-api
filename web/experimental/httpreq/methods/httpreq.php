@@ -45,7 +45,7 @@
 
 			$existing = $domain->getRecords($wantedRecord, 'TXT');
 			foreach ($existing as $record) {
-				$r = ['id' => $record->getID(), 'deleted' => $record->delete()];
+				$r = ['id' => $record->getID(), 'content' => $record->getContent(), 'deleted' => $record->delete()];
 				$result[] = $r;
 
 				if ($r['deleted']) {
