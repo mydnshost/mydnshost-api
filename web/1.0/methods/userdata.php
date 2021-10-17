@@ -19,25 +19,28 @@
 
 				$this->getContextKey('response')->set('domainkey', $keyinfo);
 			} else {
+				$key = $this->getContextKey('key');
 				$userinfo = ['id' => $user->getId(),
 				             'email' => $user->getEmail(),
 				             'realname' => $user->getRealName(),
 				             'avatar' => $user->getAvatar(),
 				            ];
 
+				if ($key != null) {
+					$userinfo['key'] = $key->getkey();
+				}
+
 				if (getSystemRegisterRequireTerms()) {
 					$userinfo['termstime'] = $user->getAcceptTerms();
 					$userinfo['acceptterms'] = $user->getAcceptTerms() > getSystemMinimumTermsTime();
 				}
 
-				if (!($user instanceof DomainKeyUser)) {
-					$userinfo['customdata'] = [];
+				$userinfo['customdata'] = [];
 
-					$ui = UserCustomData::loadFromUserKey($this->getContextKey('db'), $user->getID());
-					if ($ui !== false) {
-						foreach ($ui as $d) {
-							$userinfo['customdata'][$d->getKey()] = $d->getValue();
-						}
+				$ui = UserCustomData::loadFromUserKey($this->getContextKey('db'), $user->getID());
+				if ($ui !== false) {
+					foreach ($ui as $d) {
+						$userinfo['customdata'][$d->getKey()] = $d->getValue();
 					}
 				}
 
