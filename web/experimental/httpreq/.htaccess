@@ -8,7 +8,6 @@ RewriteRule ^(.*)$ - [E=BASE:%1]
 RewriteRule ^help/?(.*)$ %{ENV:BASE}docs/$1 [R,L]
 
 # Allowed
-RewriteRule ^(docs)/index.apib$ - [L]
 RewriteRule ^(docs)/index.html$ - [L]
 RewriteRule ^(docs)/$ - [L]
 

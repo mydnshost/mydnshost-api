@@ -7,9 +7,10 @@
 	require_once(dirname(__FILE__) . '/functions.php');
 	require_once(dirname(__FILE__) . '/response.php');
 
-	$router = new MethodRouter();
-
-	foreach (recursiveFindFiles(__DIR__ . '/methods') as $file) { include_once($file); }
+	if (!isset($router)) { $router = new MethodRouter(); }
+	if (!defined('AUTOLOAD_METHODS') || !AUTOLOAD_METHODS) {
+		foreach (recursiveFindFiles(__DIR__ . '/methods') as $file) { include_once($file); }
+	}
 
 	// Set the session handler.
 	checkSessionHandler();
@@ -110,6 +111,27 @@
 	$bearerToken = getBearerToken();
 	$hasBearer = $bearerToken != NULL;
 	$hasSessionID = isset($_SERVER['HTTP_X_SESSION_ID']);
+	$keyRegex = '/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/';
+
+	// If the provided password looks like an API Key, then we can consider it to be one.
+	if (!$hasBearer && !$hasSessionKey && isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW']) && preg_match($keyRegex, $_SERVER['PHP_AUTH_PW'])) {
+		$isEmail = strpos($_SERVER['PHP_AUTH_USER'], '@') !== FALSE;
+		if ($isEmail) {
+			// Treat this the same as providing HTTP_X_API_USER and HTTP_X_API_KEY
+			// unless the password provided is actually the right password...
+			$user = User::loadFromEmail($context['db'], $_SERVER['PHP_AUTH_USER']);
+			if ($user !== FALSE && !$user->checkPassword($_SERVER['PHP_AUTH_PW'])) {
+				$_SERVER['HTTP_X_API_USER'] = $_SERVER['PHP_AUTH_USER'];
+				$_SERVER['HTTP_X_API_KEY'] = $_SERVER['PHP_AUTH_PW'];
+			}
+			unset($user);
+		} else {
+			// Treat this the same as providing HTTP_X_DOMAIN and HTTP_X_DOMAIN_KEY
+			$_SERVER['HTTP_X_DOMAIN'] = $_SERVER['PHP_AUTH_USER'];
+			$_SERVER['HTTP_X_DOMAIN_KEY'] = $_SERVER['PHP_AUTH_PW'];
+		}
+	}
+
 
 	if ($hasBearer || $hasSessionID) {
 		$authPayload = [];

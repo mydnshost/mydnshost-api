@@ -24,7 +24,7 @@
 			$data = $this->getContextKey('data');
 
 			// Handle raw mode.
-			if (isset($data['keyAuth'])) {
+			if (isset($data['keyAuth']) && !empty($data['keyAuth'])) {
 				$info = $data;
 				$data = ['fqdn' => '_acme-challenge.' . $info['domain'] . '.', 'value' => ''];
 
@@ -32,7 +32,7 @@
 					$info['keyAuth'] = $info['token'] . '.' . $info['keyAuth'];
 				}
 
-				$data['value'] = rtrim(base64_encode(hash("sha256", $keyAuth, true)), '=');
+				$data['value'] = rtrim(base64_encode(hash("sha256", $info['keyAuth'], true)), '=');
 			}
 
 			$data['fqdn'] = rtrim($data['fqdn'], '.');
@@ -67,7 +67,7 @@
 				}
 			}
 
-			if (isset($data['value']) && !$deleteOnly) {
+			if (isset($data['value']) && !empty($data['value']) && !$deleteOnly) {
 				$value = $data['value'];
 				$record = (new Record($domain->getDB()))->setDomainID($domain->getID());
 				$record->setName($wantedRecordFull);
@@ -124,6 +124,24 @@
 		}
 	};
 
-	$router->post('/present', new class extends HTTPReq { function run() { return $this->doRun(false); } });
-	$router->post('/cleanup', new class extends HTTPReq { function run() { return $this->doRun(true); } });
+	$router->post('/external/httpreq/present', new class extends HTTPReq {
+		function run() {
+			return $this->doRun(false);
+		}
+	});
 
+	$router->post('/external/httpreq/cleanup', new class extends HTTPReq {
+		function run() {
+			return $this->doRun(true);
+		}
+	});
+
+	$router->get('/external/httpreq/ping(?:/(.+))?', new class extends RouterMethod {
+		function run($time = null) {
+			if ($time != null) {
+				$this->getContext()['response']->set('time', $time);
+			}
+
+			return TRUE;
+		}
+	});

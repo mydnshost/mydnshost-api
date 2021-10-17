@@ -1,0 +1,126 @@
+# Group HTTPREQ
+
+Endpoints for supporting HTTPREQ based ACME requests, as supported by <a href="https://github.com/go-acme/lego/tree/master/providers/dns/httpreq">lego</a> and <a href="https://github.com/acmesh-official/acme.sh/wiki/dnsapi#78-use-acmeproxy-dns-api">acme.sh</a> (as acmeproxy)
+
+## Publish Records [/external/httpreq/present]
+
+### Present new ACME Challenge [POST]
+If the user has the `domains_write` permission, they can use this to submit the records for a new challenge.
+
+We support normal mode or raw mode for this, and in raw mode we will accept the `keyAuth` with the token prepended already or not.
+
+This will delete ALL `TXT` records on the domain that match the `fqdn` value (or `_acme-challenge.<domain>` in raw more) and then create a new one with the appropriate value (unless value is blank)
+
++ Request Normal Mode (application/json)
+    + Body
+
+                {
+                    "fqdn": "_acme-challenge.example1.org",
+                    "value": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM"
+                }
+
++ Request Raw Mode (application/json)
+    + Body
+
+                {
+                    "domain": "example1.org",
+                    "token": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM",
+                    "keyAuth": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM.dO1Pl622P384UR9DFQ1wJLxfUfoldDh4nsedCZtnbdc"
+                }
+
+
++ Response 200 (application/json)
+    A successful response will display any created/removed records
+    + Body
+
+                {
+                    "respid": "616b6577cfbb5",
+                    "method": "httpreq/present",
+                    "response":{
+                        "serial": 2021101601,
+                        "changed":[
+                            {
+                                "id": 705,
+                                "content": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM",
+                                "deleted": true
+                            },
+                            {
+                                "id": 706,
+                                "remote_domain_id": null,
+                                "name": "_acme-challenge.example1.org",
+                                "type": "TXT",
+                                "content": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM",
+                                "ttl": 60,
+                                "priority": null,
+                                "changed_at": 1634428279,
+                                "changed_by": 1,
+                                "disabled": false,
+                                "updated": true
+                            }
+                        ]
+                    }
+                }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "616b650485610",
+                "method": "httpreq/present",
+                "error": "No matching domains found for: _acme-challenge.example1.org"
+            }
+
+
+## Cleanup Records [/external/httpreq/cleanup]
+
+### Cleanup ACME Challenge [POST]
+
+This behaves exactly the same (and takes exactly the same parameters) as `/external/httpreq/present` but stops after clearing up the records and does not go on to create new ones.
+
++ Request Normal Mode (application/json)
+    + Body
+
+                {
+                    "fqdn": "_acme-challenge.example1.org",
+                    "value": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM"
+                }
+
++ Request Raw Mode (application/json)
+    + Body
+
+                {
+                    "domain": "example1.org",
+                    "token": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM",
+                    "keyAuth": "ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM.dO1Pl622P384UR9DFQ1wJLxfUfoldDh4nsedCZtnbdc"
+                }
+
+
++ Response 200 (application/json)
+    A successful response will display any created/removed records
+    + Body
+
+                {
+                    "respid": "616b6577cfbb5",
+                    "method": "httpreq/cleanup",
+                    "response":{
+                        "serial": 2021101601,
+                        "changed":[
+                            {
+                                "id": 705,
+                                "content": "LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM",
+                                "deleted": true
+                            }
+                        ]
+                    }
+                }
+
++ Response 400 (application/json)
+    An error will include an `error` and possibly `errorData` information.
+    + Body
+
+            {
+                "respid": "616b650485610",
+                "method": "httpreq/present",
+                "error": "No matching domains found for: _acme-challenge.example1.org"
+            }
