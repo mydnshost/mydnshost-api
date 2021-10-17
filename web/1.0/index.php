@@ -32,6 +32,8 @@
 	$method = preg_replace('#\?.*$#', '', $method);
 	// Remove leading /
 	$method = preg_replace('#^/+#', '', $method);
+	// remove multiple / in a row
+	$method = preg_replace('#/+#', '/', $method);
 	// We have our method!
 	$resp->method($method);
 
