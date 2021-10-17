@@ -1,11 +1,3 @@
 config.local.php
-admin/test.php
 test.php
-hooks/*
-vendor/
 templates_c/
-test/
-workers/
-joblogger/
-dispatcher/
-containerlogger/

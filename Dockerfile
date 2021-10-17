@@ -1,7 +1,11 @@
+FROM mydnshost/mydnshost-api-base AS api-base
+
 FROM mydnshost/mydnshost-api-docker-base:latest
 MAINTAINER Shane Mc Cormack <dataforce@dataforce.org.uk>
 
-COPY . /dnsapi
+COPY --from=api /dnsapi /dnsapi
+
+COPY ./web ./templates ./docker /dnsapi/
 
 RUN \
   rm -Rfv /var/www/html && \
