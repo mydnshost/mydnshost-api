@@ -1,6 +1,6 @@
-FROM mydnshost/mydnshost-api-base AS api-base
+FROM registry.shanemcc.net/mydnshost-public/mydnshost-api-base AS api-base
 
-FROM mydnshost/mydnshost-api-docker-base:latest
+FROM registry.shanemcc.net/mydnshost-public/mydnshost-api-docker-base:latest
 MAINTAINER Shane Mc Cormack <dataforce@dataforce.org.uk>
 
 COPY --from=api-base /dnsapi /dnsapi
