@@ -1,6 +1,6 @@
 {% autoescape false %}
 {% block subject %}
-New API Key Updated: {{ apikey.getDescription() }}
+API Key Updated: {{ apikey.getDescription() }}
 {% endblock %}
 
 {% block body %}
@@ -13,6 +13,7 @@ An API Key has been changed on your account on {{ sitename }}.
     Permissions:
         Domain Read: {{ apikey.getDomainRead() | yesno }}
         Domain Write: {{ apikey.getDomainWrite() | yesno }}
+        Record Regex: {{ apikey.getRecordRegex() }}
         User Read: {{ apikey.getUserRead() | yesno }}
         User Write:  {{ apikey.getUserWrite() | yesno }}
 

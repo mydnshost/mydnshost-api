@@ -13,6 +13,7 @@ An API Key has been removed from your account on {{ sitename }}.
     Permissions:
         Domain Read: {{ apikey.getDomainRead() | yesno }}
         Domain Write: {{ apikey.getDomainWrite() | yesno }}
+        Record Regex: {{ apikey.getRecordRegex() }}
         User Read: {{ apikey.getUserRead() | yesno }}
         User Write:  {{ apikey.getUserWrite() | yesno }}
 
