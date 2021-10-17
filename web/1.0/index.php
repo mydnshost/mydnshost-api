@@ -180,6 +180,9 @@
 				}
 				$context['user'] = $user;
 				$context['access'] = getAccessPermissions($user, ($key == false ? null : $key), false);
+				if ($key != false) {
+					$context['key'] = $key;
+				}
 			}
 		} else if (isset($authPayload['domainkey']) && isset($authPayload['access'])) {
 			$key = DomainKey::load($context['db'], $authPayload['domainkey']);
