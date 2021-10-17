@@ -1,7 +1,12 @@
 ## User Authentication
-Authentication is done using HTTP Basic Auth. Unless otherwise documented, all end-points require authentication.
+There are multiple ways that you can authenticate to the API.
 
-Authentication via Basic Auth gives you full access to the account (Same as an API Key with all permissions set to true).
+Unless otherwise documented, all end-points require authentication.
+
+### Basic Auth
+Authentication with the account username/password can be done using HTTP Basic Auth.
+
+Authentication in this manner gives you full access to the account (Similar to as an API Key with all permissions set to true).
 
 If a 2FA Key is required for the account, this must be passed as a HTTP Header:
 
@@ -25,7 +30,7 @@ X-2FA-DEVICE-ID: 84FDBE2B-0FB2-461C-9E7B-31A2AF5E52F6
 
 If a `X-2FA-DEVICE-ID` is passed alongside the `X-2FA-SAVE-DEVICE` header then that device ID will be used to remember the device, otherwise the API will generate a new one for you.
 
-## API Key Authentication
+### API Key Authentication
 If you have a valid API Key, this can be used instead of Basic Auth and offers greater control over what end points can be accessed.
 
 API Keys can be limited as to what they can see/do.
@@ -49,25 +54,27 @@ X-Domain: example.org
 X-Domain-Key: 9426F536-2559-4FA0-BA50-644C90B5FAE4
 ```
 
-## Session Authentication
+These can also be used with basic auth (provide the key as the password and the username/domain as the username) and will behave as if they were passed in via the appropriate HTTP Headers.
 
-You can obtain a session token from the `/session` end point, and then use it for future requests by passing the X-SESSION-ID header instead of any other authentication headers.
+### Session Authentication
+
+After logging in with one of the above methods, You can obtain a session token from the `/session` end point, and then use it for future requests by passing the X-SESSION-ID header instead of any other authentication headers.
 
 ```http
 X-SESSION-ID: 9pbobqkbiqvhll2ngia8bg0ijd
 ```
 
-Session tokens will expire approximately 15 minutes after they were last used.
+Session tokens will expire approximately 15 minutes after they were last used, or if the method used to acquire it becomes invalid.
 
-## JWT Authentication
+### JWT Authentication
 
-You can obtain a jwt token from the `/session/jwt` end point, and then use it for future requests by passing the it as a bearer token within the 'Authorization' HTTP Header instead of any other authentication headers.
+After logging in with one of the above methods, You can obtain a jwt token from the `/session/jwt` end point, and then use it for future requests by passing the it as a bearer token within the 'Authorization' HTTP Header instead of any other authentication headers.
 
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8
 ```
 
-JWT tokens will expire approximately 1 hour after they were issued, or if the user password is changed.
+JWT tokens will expire approximately 1 hour after they were issued, or if the method used to acquire it becomes invalid.
 
 ## Request-ID
 For any of the requests, you can pass a X-Request-ID header:
@@ -76,7 +83,7 @@ For any of the requests, you can pass a X-Request-ID header:
 X-Request-ID: SomeUniqueID
 ```
 
-Which will be returned in the body of any reponse as a `reqid` field.
+Which will be returned in the body of any response as a `reqid` field, this can be useful if performing async requests to the API. If no specific Request-ID is specified, one will be generated.
 
 ## Rate Limiting
 Requests to the API may be subject to rate limiting. The API uses standard rate-limiting headers to denote the rate limit information, for examples:
