@@ -37,6 +37,7 @@ class DomainKey extends DBObject {
 	                             'domain_id' => NULL,
 	                             'description' => NULL,
 	                             'domains_write' => false,
+	                             'recordregex' => NULL,
 	                             'created' => 0,
 	                             'lastused' => 0,
 	                            ];
@@ -64,6 +65,10 @@ class DomainKey extends DBObject {
 
 	public function setDomainWrite($value) {
 		return $this->setData('domains_write', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setRecordRegex($value) {
+		return $this->setData('recordregex', trim($value));
 	}
 
 	public function setLastUsed($value) {
@@ -106,6 +111,16 @@ class DomainKey extends DBObject {
 		return parseBool($this->getData('domains_write'));
 	}
 
+	public function getRecordRegex() {
+		return trim(ltrim(rtrim($this->getData('recordregex'), '$/'), '/^'));
+	}
+
+	public function hasRecordRegex() {
+		$rr = $this->getRecordRegex();
+		$allRecordsRegexes = ['', '.*', '.* .*'];
+		return !empty($rr) && !in_array($rr, $allRecordsRegexes);
+	}
+
 	public function getLastUsed() {
 		return intval($this->getData('lastused'));
 	}
@@ -120,6 +135,15 @@ class DomainKey extends DBObject {
 
 	public function getDomain() {
 		 return Domain::load($this->getDB(), $this->getDomainID());
+	}
+
+	public function canEditRecord($rrtype, $name) {
+		if (!$this->hasRecordRegex()) { return TRUE; }
+
+		$regex = '/^' . $this->getRecordRegex() . '$/i';
+		$test = $rrtype . ' ' . $name;
+
+		return preg_match($regex, $test);
 	}
 
 	/**

@@ -12,8 +12,8 @@
 		}
 
 		private function checkUserCanEditRecord($rrtype, $name) {
-			$key = $this->getContextKey('key');
-			if ($key instanceof APIKey) {
+			$key = $this->hasContextKey('domainkey') ? $this->getContextKey('domainkey') : $this->getContextKey('key');
+			if ($key instanceof APIKey || $key instanceof DomainKey) {
 				if (!$key->canEditRecord($rrtype, $name)) {
 					$this->getContextKey('response')->sendError('This API Key is not permitted to make changes to: "' . $rrtype . ' ' . $name . '" only to: "/^' . $key->getRecordRegex() . '$/i"');
 				}

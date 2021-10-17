@@ -35,7 +35,9 @@
 		public function run($domainName, $domainKey, $rrname, $rrtype) {
 			$domain = Domain::loadFromDomain($this->getContextKey('db'), $domainName);
 
-			// TODO: Check for domain key recordregex when we add it.
+			if (!$domainKey->canEditRecord($rrtype, $rrname)) {
+				$this->getContextKey('response')->sendError('This API Key is not permitted to make changes to: "' . $rrtype . ' ' . $rrname . '" only to: "/^' . $domainKey->getRecordRegex() . '$/i"');
+			}
 
 			if (isset($_REQUEST['dynamiccontent'])) {
 				if (in_array($_REQUEST['dynamiccontent'], ['myip', 'myip4', 'myip6'])) {

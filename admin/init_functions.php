@@ -595,6 +595,14 @@ ALTER TABLE `apikeys` ADD COLUMN `recordregex` TEXT AFTER `domains_write`;
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// Domain-KEY validation Regex
+			// ------------------------------------------------------------------------
+			$dataChanges[41] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `domainkeys` ADD COLUMN `recordregex` TEXT AFTER `domains_write`;
+MYSQLQUERY
+);
+
 			return $dataChanges;
 		}
 	}
