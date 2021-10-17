@@ -68,7 +68,7 @@ use one of the pre-written API libraries:</p>
 <span class="hljs-attribute">X-RateLimit-Remaining</span>: <span class="hljs-string">512</span>
 <span class="hljs-attribute">X-RateLimit-Reset</span>: <span class="hljs-string">1508738400</span></code></pre>
 <p>These will show your total request limit amount for this window, how many requests you have remaining in the window, and the time that the limit resets.</p>
-<p>If you have exceeded your limit you will recieve a HTTP Error 429 message instead of the usual API response.</p>
+<p>If you have exceeded your limit you will receive a HTTP Error 429 message instead of the usual API response.</p>
 <p>Different keys/users may have different limits. If you need a greater limit, please get in touch.</p>
 <section id="general" class="resource-group"><h2 class="group-heading">General <a href="#general" class="permalink">&para;</a></h2><p>General API Endpoints.</p>
 <div id="general-api-ping" class="resource"><h3 class="resource-heading">API Ping <a href="#general-api-ping" class="permalink">&nbsp;&para;</a></h3><div id="general-api-ping-get" class="action get"><h4 class="action-heading"><div class="name">Ping the API</div><a href="#general-api-ping-get" class="method get">GET</a><code class="uri">/ping/{time}</code></h4><p>This tests that the API is up and running. The API will respond with a non-error and include the time if provided, this does not require authentication.</p>
