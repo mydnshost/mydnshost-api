@@ -10,6 +10,7 @@ class APIKey extends DBObject {
 	                             'description' => NULL,
 	                             'domains_read' => false,
 	                             'domains_write' => false,
+	                             'recordregex' => NULL,
 	                             'user_read' => false,
 	                             'user_write' => false,
 	                             'created' => 0,
@@ -43,6 +44,10 @@ class APIKey extends DBObject {
 
 	public function setDomainWrite($value) {
 		return $this->setData('domains_write', parseBool($value) ? 'true' : 'false');
+	}
+
+	public function setRecordRegex($value) {
+		return $this->setData('recordregex', trim($value));
 	}
 
 	public function setUserRead($value) {
@@ -97,6 +102,16 @@ class APIKey extends DBObject {
 		return parseBool($this->getData('domains_write'));
 	}
 
+	public function getRecordRegex() {
+		return trim(ltrim(rtrim($this->getData('recordregex'), '$/'), '/^'));
+	}
+
+	public function hasRecordRegex() {
+		$rr = $this->getRecordRegex();
+		$allRecordsRegexes = ['', '.*', '.* .*'];
+		return !empty($rr) && !in_array($rr, $allRecordsRegexes);
+	}
+
 	public function getUserRead() {
 		return parseBool($this->getData('user_read'));
 	}
@@ -111,6 +126,15 @@ class APIKey extends DBObject {
 
 	public function getCreated() {
 		return intval($this->getData('created'));
+	}
+
+	public function canEditRecord($rrtype, $name) {
+		if (!$this->hasRecordRegex()) { return TRUE; }
+
+		$regex = '/^' . $this->getRecordRegex() . '$/i';
+		$test = $rrtype . ' ' . $name;
+
+		return preg_match($regex, $test);
 	}
 
 	/**

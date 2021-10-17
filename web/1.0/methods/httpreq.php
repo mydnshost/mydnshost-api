@@ -11,6 +11,15 @@
 			$this->checkPermissions(['domains_write']);
 		}
 
+		private function checkUserCanEditRecord($rrtype, $name) {
+			$key = $this->getContextKey('key');
+			if ($key instanceof APIKey) {
+				if (!$key->canEditRecord($rrtype, $name)) {
+					$this->getContextKey('response')->sendError('This API Key is not permitted to make changes to: "' . $rrtype . ' ' . $name . '" only to: "/^' . $key->getRecordRegex() . '$/i"');
+				}
+			}
+		}
+
 		protected function checkAccess($domain, $required) {
 			if ($domain !== FALSE && !in_array($domain->getAccess($this->getContextKey('user')), $required)) {
 				$this->getContextKey('response')->sendError('You do not have the required access to the domain: ' . $domain->getDomain());
@@ -38,6 +47,8 @@
 			$data['fqdn'] = rtrim($data['fqdn'], '.');
 
 			$wantedRecordFull = $wantedRecord = $data['fqdn'];
+
+			$this->checkUserCanEditRecord('TXT', $data['fqdn']);
 
 			$domain = Record::findDomainForRecord($this->getContextKey('user'), $wantedRecord);
 			if ($domain == FALSE) {

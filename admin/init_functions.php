@@ -587,6 +587,13 @@ CREATE TABLE `blockregexes` (
 MYSQLQUERY
 );
 
+			// ------------------------------------------------------------------------
+			// API-KEY validation Regex
+			// ------------------------------------------------------------------------
+			$dataChanges[40] = new DBChange(<<<MYSQLQUERY
+ALTER TABLE `apikeys` ADD COLUMN `recordregex` TEXT AFTER `domains_write`;
+MYSQLQUERY
+);
 
 			return $dataChanges;
 		}

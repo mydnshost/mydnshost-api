@@ -79,6 +79,24 @@
 			return $record;
 		}
 
+		private function checkUserHasRecordRegex() {
+			$key = $this->getContextKey('key');
+			if ($key instanceof APIKey) {
+				return $key->hasRecordRegex();
+			}
+
+			return false;
+		}
+
+		private function checkUserCanEditRecord($rrtype, $name) {
+			$key = $this->getContextKey('key');
+			if ($key instanceof APIKey) {
+				if (!$key->canEditRecord($rrtype, $name)) {
+					$this->getContextKey('response')->sendError('This API Key is not permitted to make changes to: "' . $rrtype . ' ' . $name . '" only to: "/^' . $key->getRecordRegex() . '$/i"');
+				}
+			}
+		}
+
 		/**
 		 * Check if the current user has sufficient access to this domain.
 		 * This will throw an API error if the user does not have access, else
@@ -373,6 +391,10 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to overwrite zone data.');
+			}
+
 			// Delete old records.
 			$this->getContextKey('db')->beginTransaction();
 			$deletedRecords = [];
@@ -553,6 +575,10 @@
 		 */
 		protected function updateDomainAccess($domain) {
 			$hasDomainAdminAccess = $this->checkAccess($domain, ['admin', 'owner'], true);
+
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to change domain data.');
+			}
 
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']['access']) || !is_array($data['data']['access']) || empty($data['data']['access'])) {
@@ -820,6 +846,10 @@
 				$this->getContextKey('response')->sendError('No data provided for create.');
 			}
 
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to create domains.');
+			}
+
 			$domain = new Domain($this->getContextKey('user')->getDB());
 			if (isset($data['data']['owner']) && $this->canSetOwner()) {
 				if (!empty($data['data']['owner'])) {
@@ -871,6 +901,9 @@
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to update domains.');
 			}
 
 			$oldName = $domain->getDomain();
@@ -1120,7 +1153,7 @@
 		 * Update an individual record.
 		 *
 		 * @param $domain Domain object based on the 'domain' parameter.
-		 * @param $record Record object based on the 'domain' parameter.
+		 * @param $record Record object based on the 'record' parameter.
 		 * @return TRUE if we handled this method.
 		 */
 		protected function updateRecordID($domain, $record) {
@@ -1130,12 +1163,18 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			// Check if we can edit this record.
+			$this->checkUserCanEditRecord($record->getType(), $record->getName());
+
 			if (isset($data['delete']) && parseBool($data['delete'])) {
 				return $this->deleteRecordID($domain, $record);
 			}
 
 			$this->getContextKey('db')->beginTransaction();
 			$record = $this->doUpdateRecord($domain, $record, $data['data']);
+
+			// Check again incase the name changed, key must be able to edit both.
+			$this->checkUserCanEditRecord($record->getType(), $record->getName());
 			$serial = -1;
 			try {
 				if ($record->hasChanged()) {
@@ -1206,7 +1245,14 @@
 							$recordsToBeDeleted[] = $record;
 						}
 					} else {
+						if ($record->isKnown()) {
+							// Check if we can edit this record.
+							$this->checkUserCanEditRecord($record->getType(), $record->getName());
+						}
 						$this->doUpdateRecord($domain, $record, $r);
+						// Check again incase the name changed, key must be able to edit both.
+						$this->checkUserCanEditRecord($record->getType(), $record->getName());
+
 						if ($record->hasChanged()) {
 							$recordsToBeSaved[$i] = $record;
 						}
@@ -1364,6 +1410,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function deleteRecordID($domain, $record) {
+			$this->checkUserCanEditRecord($record->getType(), $record->getName());
 			$deleted = $record->delete();
 			$this->getContextKey('response')->set('deleted', $deleted);
 			if ($deleted) {
@@ -1400,6 +1447,11 @@
 
 			$records = $domain->getRecords($nameFilter, $typeFilter);
 			$count = 0;
+			// Check we can delete *all* the records before we delete any of them.
+			foreach ($records as $record) {
+				$this->checkUserCanEditRecord($record->getType(), $record->getName());
+			}
+
 			foreach ($records as $record) {
 				if ($record->delete()) {
 					$count++;
@@ -1432,6 +1484,10 @@
 		protected function deleteDomain($domain) {
 			$aliases = $domain->getAliases();
 			$oldSOA = $domain->getSOARecord()->parseSOA();
+
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to delete domains.');
+			}
 
 			$deleted = $domain->delete();
 			$this->getContextKey('response')->data(['deleted' => $deleted]);
@@ -1490,6 +1546,10 @@
 			$data = $this->getContextKey('data');
 			if (!isset($data['data']) || !is_array($data['data'])) {
 				$this->getContextKey('response')->sendError('No data provided for update.');
+			}
+
+			if ($this->checkUserHasRecordRegex()) {
+				$this->getContextKey('response')->sendError('This session is not permitted to modify domain keys.');
 			}
 
 			if ($key !== FALSE) {

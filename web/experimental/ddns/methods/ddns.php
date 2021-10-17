@@ -35,6 +35,8 @@
 		public function run($domainName, $domainKey, $rrname, $rrtype) {
 			$domain = Domain::loadFromDomain($this->getContextKey('db'), $domainName);
 
+			// TODO: Check for domain key recordregex when we add it.
+
 			if (isset($_REQUEST['dynamiccontent'])) {
 				if (in_array($_REQUEST['dynamiccontent'], ['myip', 'myip4', 'myip6'])) {
 					if (isset($_SERVER['HTTP_X_REAL_IP'])) { $remoteHost = $_SERVER['HTTP_X_REAL_IP']; }

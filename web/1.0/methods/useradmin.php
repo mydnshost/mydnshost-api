@@ -435,6 +435,10 @@
 				$this->getContextKey('response')->sendError('No data provided for update.');
 			}
 
+			if ($this->getContextKey('key') instanceof APIKey && $key->getID() == $this->getContextKey('key')->getID()) {
+				$this->getContextKey('response')->sendError('API Keys can not modify themselves.');
+			}
+
 			if ($key !== FALSE) {
 				$this->doUpdateKey($key, $data['data']);
 
@@ -487,6 +491,7 @@
 			$keys = array('description' => 'setDescription',
 			              'domains_read' => 'setDomainRead',
 			              'domains_write' => 'setDomainWrite',
+			              'recordregex' => 'setRecordRegex',
 			              'user_read' => 'setUserRead',
 			              'user_write' => 'setUserWrite',
 			             );
