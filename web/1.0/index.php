@@ -369,6 +369,10 @@
 			if ($impersonating !== FALSE) {
 				// All the API Methods only look for user, so change it.
 				$context['user'] = $impersonating;
+				if (isset($context['key'])) {
+					$context['impersonatorkey'] = $context['key'];
+					unset($context['key']);
+				}
 				$context['impersonator'] = $user;
 
 				// Reset access to that of the user.
