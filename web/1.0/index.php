@@ -358,6 +358,10 @@
 	// Handle impersonation.
 	if ($user != FALSE && array_key_exists('user', $context) && isset($postdata['impersonate'])) {
 		if (isset($context['access']['impersonate_users']) && parseBool($context['access']['impersonate_users'])) {
+			if (isset($context['key']) && !$context['key']->getAdminFeatures()) {
+				$resp->sendError('Impersonation is not permitted with this key.');
+			}
+
 			if ($postdata['impersonate'][0] == 'id') {
 				$impersonating = User::load($context['db'], $postdata['impersonate'][1]);
 			} else if ($postdata['impersonate'][0] == 'email') {

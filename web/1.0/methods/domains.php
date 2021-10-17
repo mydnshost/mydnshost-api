@@ -13,8 +13,14 @@
 				throw new RouterMethod_NeedsAuthentication();
 			}
 
-			if ($this->isAdminMethod() && !$this->checkPermissions(['manage_domains'], true)) {
-				throw new RouterMethod_AccessDenied();
+			if ($this->isAdminMethod()) {
+				if (!$this->checkPermissions(['manage_domains'], true)) {
+					throw new RouterMethod_AccessDenied();
+				}
+
+				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+					throw new RouterMethod_AccessDenied();
+				}
 			}
 		}
 

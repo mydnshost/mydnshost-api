@@ -8,6 +8,10 @@
 			}
 
 			$this->checkPermissions(['system_job_mgmt']);
+
+			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				throw new RouterMethod_AccessDenied();
+			}
 		}
 	}
 

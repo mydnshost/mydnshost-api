@@ -27,6 +27,10 @@
 			}
 
 			$this->checkPermissions(['manage_articles']);
+
+			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				throw new RouterMethod_AccessDenied();
+			}
 		}
 
 		protected function getArticleFromParam($articleid) {

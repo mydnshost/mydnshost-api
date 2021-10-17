@@ -97,6 +97,9 @@
 
 		protected function listUsers() {
 			if ($this->checkPermissions(['manage_users'], true)) {
+				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+				}
 				$users = User::find($this->getContextKey('db'), []);
 			} else {
 				$users = [$this->getContextKey('user')];
@@ -169,6 +172,10 @@
 				$isAdminEdit = $this->hasContextKey('impersonator') || $this->checkPermissions(['manage_users'], true);
 
 				if (!$isAdminEdit) {
+					if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+						$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+					}
+
 					if ($newName != $oldName) {
 						foreach (BlockRegex::find($this->getContextKey('db'), ['signup_name' => 'true']) as $br) {
 							if ($br->matches($user->getRealName())) {
@@ -290,6 +297,10 @@
 
 			// Can this user disable/enable user accounts?
 			if ($this->checkPermissions(['manage_users'], true)) {
+				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+				}
+
 				// Don't allow disabling own account.
 				if ($this->getContextKey('user')->getID() !== $user->getID()) {
 					$keys['disabled'] = 'setDisabled';
@@ -494,6 +505,7 @@
 			              'recordregex' => 'setRecordRegex',
 			              'user_read' => 'setUserRead',
 			              'user_write' => 'setUserWrite',
+			              'admin_features' => 'setAdminFeatures',
 			             );
 
 			foreach ($keys as $k => $f) {
@@ -839,6 +851,10 @@
 
 			if ($userid != 'self' && $userid != $user->getID()) {
 				$this->checkPermissions(['manage_users']);
+
+				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+				}
 			}
 		}
 	}
@@ -854,6 +870,10 @@
 	$router->addRoute('(POST)', '/users/([0-9]+)/resendwelcome', new class extends UserAdmin {
 		function post($userid) {
 			$this->checkPermissions(['manage_users']);
+			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+			}
+
 			$user = $this->getUserFromParam($userid);
 
 			if (!$user->isUnVerified()) {
@@ -1099,6 +1119,9 @@
 	$router->post('/users/create', new class extends UserAdmin {
 		function run() {
 			$this->checkPermissions(['manage_users', 'user_write']);
+			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
+			}
 
 			return $this->createUser();
 		}
