@@ -116,7 +116,7 @@
 	$keyRegex = '/^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i';
 
 	// If the provided password looks like an API Key, then we can consider it to be one.
-	if (!$hasBearer && !$hasSessionKey && isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW']) && preg_match($keyRegex, $_SERVER['PHP_AUTH_PW'])) {
+	if (!$hasBearer && !$hasSessionID && isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW']) && preg_match($keyRegex, $_SERVER['PHP_AUTH_PW'])) {
 		$isEmail = strpos($_SERVER['PHP_AUTH_USER'], '@') !== FALSE;
 		if ($isEmail) {
 			// Treat this the same as providing HTTP_X_API_USER and HTTP_X_API_KEY
