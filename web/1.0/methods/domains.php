@@ -503,6 +503,9 @@
 							if ($type == 'MX' || $type == 'SRV' || $type == 'SVCB' || $type == 'HTTPS') {
 								$r->setPriority($record['Priority']);
 							}
+							if (isset($record['Comment']) && !empty($record['Comment'])) {
+								$r->setComment(implode("\n", $record['Comment']));
+							}
 							$r->setChangedAt(time());
 							$r->setChangedBy($this->getContextKey('user')->getID());
 
