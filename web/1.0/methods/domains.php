@@ -500,7 +500,7 @@
 							$r->setType($type);
 							$r->setTTL($record['TTL']);
 							$r->setContent($record['Address']);
-							if ($type == 'MX' || $type == 'SRV') {
+							if ($type == 'MX' || $type == 'SRV' || $type == 'SVCB' || $type == 'HTTPS') {
 								$r->setPriority($record['Priority']);
 							}
 							$r->setChangedAt(time());
@@ -1374,6 +1374,7 @@
 			              'content' => 'setContent',
 			              'ttl' => 'setTTL',
 			              'priority' => 'setPriority',
+			              'comment' => 'setComment',
 			              'disabled' => 'setDisabled',
 			             );
 
