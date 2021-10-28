@@ -1,0 +1,18 @@
+# Group Custom Extensions
+In addition to standard DNS features, MyDNSHost also supports some custom record types, their behaviour is defined below.
+
+## Template Records
+Record names prefixed with a `$` (such as `$server1`) are considered to be template records.
+
+They will not be exported into the public zone file but are otherwise validated as normal.
+
+They are primarily intended for use with `RRCLONE` records.
+
+
+## RRCLONE
+
+`RRCLONE` records are special records that are replaced at zone-compile time with all active (not disabled) records matching the target provided (eg `$server1.example.com`).
+
+By default, *all* rrtypes are inserted, but this behaviour can be changed by adding a rrtype specifier to the start of the target, for example: `(A,AAAA) $server1.example.com` will only insert `A` and `AAAA` records from `$server1.example.com`
+
+`RRCLONE` records can point at any other non-`RRCLONE` record, and are not limited to just template records. If pointed at a template record from another zone file, the 2 zone files must both have a matching set of owner/admin/write users. This check can be passed by naming the record with `$public-` rather than just `$` to allow any user to reference it. Non-Template records are considered to be public records and can be referenced as such without a matching set of users.
