@@ -9,7 +9,9 @@ If the user has the `domains_write` permission, they can use this to submit the 
 
 We support normal mode or raw mode for this, and in raw mode we will accept the `keyAuth` with the token prepended already or not.
 
-This will delete ALL `TXT` records on the domain that match the `fqdn` value (or `_acme-challenge.<domain>` in raw more) and then create a new one with the appropriate value (unless value is blank)
+In raw mode, we will calculate the desired `fqdn` (`_acme-challenge.<domain>`) and `value` (`base64(sha256(<token>.<keyAuth>))`) based on the provided `domain` and `token` + `keyAuth` parameters, then proceed as per normal mode.
+
+This will then delete any `TXT` records on the domain that match both the `fqdn` and the given `value` (or all if `value` is blank) and then create a new one with the new value (unless `value` is blank)
 
 + Request Normal Mode (application/json)
     + Body
