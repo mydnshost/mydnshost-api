@@ -33,15 +33,24 @@
 			$data = $this->getContextKey('data');
 
 			// Handle raw mode.
-			if (isset($data['keyAuth']) && !empty($data['keyAuth'])) {
+			if (isset($data['domain'])) {
 				$info = $data;
 				$data = ['fqdn' => '_acme-challenge.' . $info['domain'] . '.', 'value' => ''];
 
-				if (!startsWith($info['keyAuth'], $info['token'] . '.')) {
-					$info['keyAuth'] = $info['token'] . '.' . $info['keyAuth'];
-				}
+				if (isset($data['keyAuth']) && !empty($data['keyAuth'])) {
+					if (!startsWith($info['keyAuth'], $info['token'] . '.')) {
+						$info['keyAuth'] = $info['token'] . '.' . $info['keyAuth'];
+					}
 
-				$data['value'] = rtrim(base64_encode(hash("sha256", $info['keyAuth'], true)), '=');
+					$data['value'] = rtrim(base64_encode(hash("sha256", $info['keyAuth'], true)), '=');
+				}
+			}
+
+			if (!isset($data['fqdn'])) {
+				$this->getContextKey('response')->sendError('Invalid data provided.');
+			}
+			if (!isset($data['value'])) {
+				$data['value'] = '';
 			}
 
 			$data['fqdn'] = rtrim($data['fqdn'], '.');
@@ -68,13 +77,15 @@
 
 			$existing = $domain->getRecords($wantedRecord, 'TXT');
 			foreach ($existing as $record) {
-				$r = ['id' => $record->getID(), 'content' => $record->getContent(), 'deleted' => $record->delete()];
-				$result[] = $r;
+				if ($record->getContent() == $data['value'] || empty($data['value'])) {
+					$r = ['id' => $record->getID(), 'content' => $record->getContent(), 'deleted' => $record->delete()];
+					$result[] = $r;
 
-				if ($r['deleted']) {
-					$deleted[] = $record;
-				} else {
-					$error = TRUE;
+					if ($r['deleted']) {
+						$deleted[] = $record;
+					} else {
+						$error = TRUE;
+					}
 				}
 			}
 
