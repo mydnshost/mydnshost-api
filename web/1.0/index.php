@@ -4,6 +4,18 @@
 	// We only output json.
 	header('Content-Type: application/json');
 
+	// Allow access from anywhere.
+	foreach (['Origin', 'Method', 'Headers'] as $h) {
+		$requestHeader = 'Access-Control-Request-' . $h;
+		$requestHeader = str_replace('Access-Control-Request-Origin', 'Origin', $h); // Origin is special.
+		$requestHeader = 'HTTP_' . str_replace('-', '_', strtoupper($h));
+
+		header('Access-Control-Allow-' . $h . ': ' . (isset($_SERVER[$requestHeader]) ? $_SERVER[$requestHeader] : '*'));
+	}
+	if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+		die();
+	}
+
 	require_once(dirname(__FILE__) . '/functions.php');
 	require_once(dirname(__FILE__) . '/response.php');
 
