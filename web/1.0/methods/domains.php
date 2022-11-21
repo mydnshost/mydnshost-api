@@ -772,10 +772,12 @@
 					$this->getContextKey('response')->sendError('Invalid Request.');
 				}
 
+				$includeExtra = isset($_REQUEST['extra']);
 				$wantedType = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 
 				$valData = [];
 				$useValData = false;
+				$valDataName = $wantedType;
 				if ($wantedType == 'userdata' && isset($_REQUEST['key'])) {
 					$useValData = true;
 					$udcd = UserDomainCustomData::loadFromUserDomainKey($this->getContextKey('db'), $this->getContextKey('user')->getID(), null, $_REQUEST['key']);
@@ -787,10 +789,19 @@
 				}
 
 				foreach ($domains as $domain) {
-					if ($useValData) {
-						$value = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
+					if ($includeExtra) {
+						$value = [];
+						$value['access'] = $domain->getAccess($this->getContextKey('user'));
+						$value['verification'] = ['state' => $domain->getVerificationState(), 'time' => $domain->getVerificationStateTime()];
+						if ($useValData && !empty($valDataName)) {
+							$value[$valDataName] = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
+						}
 					} else {
-						$value = $domain->getAccess($this->getContextKey('user'));
+						if ($useValData) {
+							$value = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
+						} else {
+							$value = $domain->getAccess($this->getContextKey('user'));
+						}
 					}
 
 					$list[$domain->getDomain()] = $value;
@@ -808,7 +819,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainListAdmin() {
-			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled']);
+			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled', 'verificationstate', 'verificationstatetime']);
 			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
 			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
 			$s->select('users', 'email', 'user');
@@ -826,6 +837,7 @@
 
 				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
 				$domains[$row['domain']]['userinfo'][$row['user']] = ['avatar' => $row['avatar']];
+				$domains[$row['domain']]['verification'] = ['state' => $row['verificationstate'], 'time' => $row['verificationstatetime']];
 			}
 
 			$this->getContextKey('response')->data($domains);
