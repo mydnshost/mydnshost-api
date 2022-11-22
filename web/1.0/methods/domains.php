@@ -1805,6 +1805,16 @@
 		}
 	});
 
+	$router->get('/domains/([^/]+)/verify', new class extends Domains {
+		function run($domain) {
+			$this->checkPermissions(['domains_verify']);
+
+			$domain = $this->getDomainFromParam($domain);
+			EventQueue::get()->publish('domain.verify', [$domain->getID()]);
+			return true;
+		}
+	});
+
 	$router->get('/domains/([^/]+)/export(?:/([^/]+))?', new class extends Domains {
 		function run($domain, $type = 'bind') {
 			$this->checkPermissions(['domains_read']);

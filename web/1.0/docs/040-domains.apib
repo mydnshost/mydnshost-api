@@ -1006,3 +1006,20 @@ This can be used to force the server backend to refresh its copy of the domain w
                 "method": "domains/example.org/sync"
             }
 
+## Scheduled domain verification [/domains/{domain}/verify]
+
++ Parameters
+    + domain: `example.org` (required, string) - The domain name
+
+### Force backend sync [GET]
+Schedule a re-verification of the domain.
+
++ Response 200 (application/json)
+    This will always show a successful response, it only fires the verification hook.
+    + Body
+
+            {
+                "respid": "637c6e5bae81a",
+                "method": "domains/example.org/verify"
+            }
+
