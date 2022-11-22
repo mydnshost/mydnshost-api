@@ -31,7 +31,13 @@
 			Mongo::get()->connect();
 
 			$logs = Mongo::get()->getCollection('dockerlogs')->find(['docker.hostname' => $service], ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'limit' => 100])->toArray();
-			$this->getContextKey('response')->data(array_reverse($logs));
+			$logs = array_reverse($logs);
+			foreach ($logs as &$log) {
+				if ($log['timestamp'] instanceof \MongoDB\BSON\UTCDateTime) {
+					$log['timestamp'] = $log['timestamp']->toDateTime()->format('r');
+				}
+			}
+			$this->getContextKey('response')->data($logs);
 
 			return TRUE;
 		}
