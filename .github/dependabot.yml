@@ -5,7 +5,3 @@ updates:
   schedule:
     interval: daily
   open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: rbdwllr/reallysimplejwt
-    versions:
-    - ">= 2.0.5.a, < 2.0.6"
