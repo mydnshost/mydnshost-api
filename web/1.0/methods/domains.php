@@ -237,13 +237,17 @@
 				$r['DNSSEC'] = [];
 				$r['DNSSEC']['parsed'] = [];
 
+				// https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml
 				$digestTypes = [];
 				$digestTypes[1] = 'SHA-1';
 				$digestTypes[2] = 'SHA-256';
 				$digestTypes[3] = 'GOST R 34.11-94';
 				$digestTypes[4] = 'SHA-384';
 
+				// https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml
 				$algorithmTypes = [];
+				$algorithmTypes[1] = 'RSA/MD5 (Deprecated)';
+				$algorithmTypes[2] = 'Diffie-Hellman';
 				$algorithmTypes[3] = 'DSA/SHA1';
 				$algorithmTypes[5] = 'RSA/SHA-1';
 				$algorithmTypes[6] = 'DSA-NSEC3-SHA1';
