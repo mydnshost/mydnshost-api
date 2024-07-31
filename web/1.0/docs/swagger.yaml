@@ -1,0 +1,5528 @@
+openapi: 3.0.3
+info:
+  title: MyDNSHost API
+  version: 1.0.0
+  description: >-
+    This document describes the current API (Version 1.0) for MyDNSHost.
+
+
+    You can use this guide to learn how to interact with the API yourself, or
+    you can
+
+    use one of the pre-written API libraries:
+
+
+    - PHP: https://github.com/mydnshost/mydnshost-php-api (This is what the
+    default frontend uses to interact with the api)
+
+
+    - Python: https://github.com/mydnshost/mydnshost-python-api
+
+
+    - Go: https://github.com/mydnshost/mydnshost-go-api
+
+
+    ## User Authentication
+
+
+    There are multiple ways that you can authenticate to the API.
+
+
+    Unless otherwise documented, all end-points require authentication.
+
+
+    ### Basic Auth
+
+
+    Authentication with the account username/password can be done using HTTP
+    Basic Auth.
+
+
+    Authentication in this manner gives you full access to the account (Similar
+    to as an API Key with all permissions set to true).
+
+
+    If a 2FA Key is required for the account, this must be passed as a HTTP
+    Header:
+
+
+    ```http
+
+    X-2FA-Key: 123456
+
+    ```
+
+
+    Devices can be saved as Trusted Devices to allow them to bypass the need to
+    enter the 2FA key every time.
+
+
+    This can be done by passing a `X-2FA-SAVE-DEVICE` header when logging in
+    with a valid 2FA Key:
+
+
+    ```http
+
+    X-2FA-SAVE-DEVICE: Some Device Name
+
+    ```
+
+
+    The API Response will then include a device_id item that can be stored and
+    used for future logins in place of the 2FA Key:
+
+
+    ```http
+
+    X-2FA-DEVICE-ID: 84FDBE2B-0FB2-461C-9E7B-31A2AF5E52F6
+
+    ```
+
+
+    If a `X-2FA-DEVICE-ID` is passed alongside the `X-2FA-SAVE-DEVICE` header
+    then that device ID will be used to remember the device, otherwise the API
+    will generate a new one for you.
+
+
+    ### API Key Authentication
+
+
+    If you have a valid API Key, this can be used instead of Basic Auth and
+    offers greater control over what end points can be accessed.
+
+
+    API Keys can be limited as to what they can see/do.
+
+
+    - **domains_read**: Has access to `GET` on `/domains` end-points
+
+
+    - **domains_write**: Has access to `POST` or `DELETE` on `/domains`
+    end-points
+
+
+    - **user_read**: Has access to `GET` on `/users` end-points
+
+
+    - **user_write**: Has access to `POST` or `DELETE` on `/users` end-points
+
+
+    You can log in using an API Key by adding the following headers:
+
+
+    ```http
+
+    X-API-User: SomeUser@example.org
+
+    X-API-Key: ede99f46-198a-411a-b066-5f1c92a6d26d
+
+    ```
+
+
+    You can also use a domain-key, which behaves like an API key that has no
+    `user_read` or `user_write` permissions, and can only interact with a single
+    domain. Domain keys are linked to domains not users.
+
+
+    ```http
+
+    X-Domain: example.org
+
+    X-Domain-Key: 9426F536-2559-4FA0-BA50-644C90B5FAE4
+
+    ```
+
+
+    These can also be used with basic auth (provide the key as the password and
+    the username/domain as the username) and will behave as if they were passed
+    in via the appropriate HTTP Headers.
+
+
+    ### Session Authentication
+
+
+    After logging in with one of the above methods, You can obtain a session
+    token from the `/session` end point, and then use it for future requests by
+    passing the X-SESSION-ID header instead of any other authentication headers.
+
+
+    ```http
+
+    X-SESSION-ID: 9pbobqkbiqvhll2ngia8bg0ijd
+
+    ```
+
+
+    Session tokens will expire approximately 15 minutes after they were last
+    used, or if the method used to acquire it becomes invalid.
+
+
+    ### JWT Authentication
+
+
+    After logging in with one of the above methods, You can obtain a jwt token
+    from the `/session/jwt` end point, and then use it for future requests by
+    passing the it as a bearer token within the 'Authorization' HTTP Header
+    instead of any other authentication headers.
+
+
+    ```http
+
+    Authorization: Bearer
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8
+
+    ```
+
+
+    JWT tokens will expire approximately 1 hour after they were issued, or if
+    the method used to acquire it becomes invalid.
+
+
+    ## Request-ID
+
+
+    For any of the requests, you can pass a X-Request-ID header:
+
+
+    ```http
+
+    X-Request-ID: SomeUniqueID
+
+    ```
+
+
+    Which will be returned in the body of any response as a `reqid` field, this
+    can be useful if performing async requests to the API. If no specific
+    Request-ID is specified, one will be generated.
+
+
+    ## Rate Limiting
+
+
+    Requests to the API may be subject to rate limiting. The API uses standard
+    rate-limiting headers to denote the rate limit information, for examples:
+
+
+    ```http
+
+    X-RateLimit-Limit: 1024
+
+    X-RateLimit-Remaining: 512
+
+    X-RateLimit-Reset: 1508738400
+
+    ```
+
+
+    These will show your total request limit amount for this window, how many
+    requests you have remaining in the window, and the time that the limit
+    resets.
+
+
+    If you have exceeded your limit you will receive a HTTP Error 429 message
+    instead of the usual API response.
+
+
+    Different keys/users may have different limits. If you need a greater limit,
+    please get in touch.
+servers:
+  - url: /1.0
+paths:
+  /ping/{time}:
+    get:
+      responses:
+        '200':
+          description: >-
+            If the time is not provided, then the response field is ommited
+            entirely.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      time:
+                        type: string
+              example:
+                respid: 58bcb5e953b5d
+                method: ping/123456
+                response:
+                  time: '123456'
+      summary: Ping the API
+      operationId: Ping the API
+      description: >-
+        This tests that the API is up and running. The API will respond with a
+        non-error and include the time if provided, this does not require
+        authentication.
+      tags:
+        - General
+      parameters:
+        - name: time
+          in: path
+          description: The current time, will be echoed back.
+          example: '123456'
+          schema:
+            type: number
+  /userdata:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          email:
+                            type: string
+                          realname:
+                            type: string
+                      access:
+                        type: object
+                        properties:
+                          domains_read:
+                            type: boolean
+                          domains_write:
+                            type: boolean
+                          user_read:
+                            type: boolean
+                          user_write:
+                            type: boolean
+              example:
+                respid: 58bcb98d67ba3
+                method: userdata
+                response:
+                  user:
+                    id: '2'
+                    email: user@example.org
+                    realname: Some User
+                  access:
+                    domains_read: true
+                    domains_write: false
+                    user_read: false
+                    user_write: false
+      summary: Get User information
+      operationId: Get User information
+      description: >-
+        This lets you see what user you are authenticated as and your current
+        access level based on your authentication.
+      tags:
+        - General
+      parameters: []
+  /version:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      version:
+                        type: string
+              example:
+                respid: 58bcb9e378fd6
+                method: version
+                response:
+                  version: '1.0'
+      summary: Get version information
+      operationId: Get version information
+      description: >-
+        This is used to see what version of the API you are accessing, this does
+        not require authentication.
+      tags:
+        - General
+      parameters: []
+  /session:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      session:
+                        type: string
+              example:
+                respid: 58c33b3ec880c
+                method: session
+                response:
+                  session: rgmc55ghpbhjmv1qg7ub6q3879
+      summary: Open a new session and get a session token
+      operationId: Open a new session and get a session token
+      description: This will obtain a new session token for use in future requests.
+      tags:
+        - General
+      parameters: []
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      session:
+                        type: string
+              example:
+                respid: 58c33b714169b
+                method: session
+                response:
+                  session: ''
+      summary: Close the current session
+      operationId: Close the current session
+      description: This will close the current session to prevent any future requests.
+      tags:
+        - General
+      parameters: []
+  /session/jwt:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+              example:
+                respid: 5d0ffabae9bc6
+                method: session/jwt
+                response:
+                  token: >-
+                    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzMTQsImV4cCI6MTU2MTMzMTkxNCwiaXNzIjoiTXlETlNIb3N0X2xvY2FsIiwiYWNjZXNzIjpbXSwidXNlcmlkIjoiMSIsIm5vbmNlIjo2MTg2MjYxNjZ9.azz80sLue0OtRCFZS9X5A5r2Lw-k21Shdih7U5NjGk8
+      summary: Get a JWT Token
+      operationId: Get a JWT Token
+      description: This will obtain a new JWT token for use in future requests.
+      tags:
+        - General
+      parameters: []
+  /forgotpassword:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: string
+              example:
+                respid: 5934bda4bb50c
+                method: forgotpassword
+                response:
+                  success: >-
+                    Password reset was submitted, please check your email for
+                    further instructions.
+      summary: Initiate a Forgot Password request
+      operationId: Initiate a Forgot Password request
+      description: >-
+        This will cause an email to be sent to the user with a link to click on
+        to reset their password.
+      tags:
+        - General
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                email: admin@example.org
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+  /forgotpassword/confirm/{userid}:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: string
+              example:
+                respid: 5934be2091a0a
+                method: forgotpassword/confirm/1
+                response:
+                  success: Password was changed, you can now login.
+        '400':
+          description: If there is an error with the request you will get an error reply
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 5934be3c48047
+                method: forgotpassword/confirm/1
+                error: User does not require password reset.
+      summary: Confirm a Forgot Password request
+      operationId: Confirm a Forgot Password request
+      description: >-
+        This will confirm a forgot-password request for the given user, a
+        successful confirmation will send the user an email to confirm the
+        password was chagned.
+      tags:
+        - General
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID.
+          required: true
+          example: '1'
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                code: >-
+                  BcEBEQAxCAMwSQPaKyCH8fNv4RNnS1EiD7rNfIiMHuHmfZvPv8VWTdgJ0egBzx8
+                password: n3w_p@55w0rd
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    password:
+                      type: string
+  /register:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      realname:
+                        type: string
+              example:
+                respid: 5934bea6b4a1c
+                method: register
+                response:
+                  id: '56'
+                  email: user10@example.org
+                  realname: User Ten
+      summary: Initiate a registration request
+      operationId: Initiate a registration request
+      description: >-
+        This will cause an email to be sent to the user with a link to click on
+        to confirm their registration.
+      tags:
+        - General
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                email: user10@example.org
+                realname: User Ten
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    realname:
+                      type: string
+  /register/confirm/{userid}:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: string
+              example:
+                respid: 5934bf2bc9a5d
+                method: register/confirm/56
+                response:
+                  success: Registration was successful, you can now log in.
+        '400':
+          description: If there is an error with the request you will get an error reply
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 5934bf4001861
+                method: register/confirm/56
+                error: User does not require verification.
+      summary: Confirm a Forgot Password request
+      operationId: Confirm a Forgot Password request
+      description: This will confirm a registration request for the given user.
+      tags:
+        - General
+      parameters:
+        - name: userid
+          in: path
+          description: The new user ID.
+          required: true
+          example: '56'
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                code: C28E68B6-17A9-4F43-8F03-3CFF519FC3DA
+                password: n3w_p@55w0rd
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                    password:
+                      type: string
+  /users:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get the list of known users
+      operationId: Get the list of known users
+      description: >-
+        For a user with the `manage_users` permission, this will return all the
+        known users. Users without this permission will just see themselves.
+      tags:
+        - Users
+      parameters: []
+  /users/{userid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get information about a specific user
+      operationId: Get information about a specific user
+      description: >-
+        Returns complete information about the requested user if the user has
+        permission to see the requested user.
+      tags:
+        - Users
+      parameters:
+        - &ref_0
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the user account as it exists
+            after the change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      realname:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 58bcbc34234e3
+                method: users/2
+                response:
+                  id: '2'
+                  email: user@example.org
+                  realname: Some Real Name
+                  updated: true
+        '400':
+          description: >-
+            If there is an error you will get an `error` key rather than a
+            `response` key in the output
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcbcc7dc8d1
+                method: users/2
+                error: 'Error updating user: 2'
+      summary: Update information about a specific user
+      operationId: Update information about a specific user
+      description: >-
+        Allows updating user information on a user account that you have
+        permission to modify. Any fields that are passed in will be updated,
+        fields not passed will be unchanged.
+
+
+        If you have `manage_permissions` you can also pass a map of permissions
+        where the key is the permission, and the value is `true` or `false` to
+        grant/revoke the permission. Permissions not given will be left
+        unchanged. The meta-permission of `all` can be used to set the value of
+        all permissions.
+      tags:
+        - Users
+      parameters:
+        - *ref_0
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                realname: Some Real User
+                password: NewPassword
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    realname:
+                      type: string
+                    password:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcbde798d3a
+                method: users/2
+                response:
+                  deleted: 'true'
+      summary: Delete a specific user
+      operationId: Delete a specific user
+      description: >-
+        This will allow a user with the `manage_users` permission to delete the
+        user specified, or allow a user to delete themselves. If self-deleting
+        is enabled and you try to delete the current user, the API will give you
+        a confirm code that you need to use to perform a confirmed delete.
+
+
+        Deleting a user will disassociate them with any domains, but will not
+        remove the domains.
+      tags:
+        - Users
+      parameters:
+        - *ref_0
+  /users/{userid}/confirm/{confirmcode}:
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcbde798d3a
+                method: users/2/confirm/c00696d9
+                response:
+                  deleted: 'true'
+      summary: Confirm delete the current user
+      operationId: Confirm delete the current user
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+        - name: confirmcode
+          in: path
+          description: The confirm code provided by the initial delete attempt.
+          required: true
+          example: c00696d9
+          schema:
+            type: string
+  /users/{userid}/confirm/{confirmcode}/{twofactorcode}:
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcbde798d3a
+                method: users/2/confirm/c00696d9/123456
+                response:
+                  deleted: 'true'
+      summary: Confirm delete the current user with 2FA
+      operationId: Confirm delete the current user with 2FA
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+        - name: confirmcode
+          in: path
+          description: The confirm code provided by the initial delete attempt.
+          required: true
+          example: c00696d9
+          schema:
+            type: string
+        - name: twofactorcode
+          in: path
+          description: A valid 2FA code for this user.
+          required: true
+          example: '123456'
+          schema:
+            type: string
+  /users/create:
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the user account as it exists
+            after creation.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                      realname:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 58bcbe6b76cee
+                method: users/create
+                response:
+                  id: '6'
+                  email: newuser@example.org
+                  realname: Some new User
+                  updated: true
+        '400':
+          description: On error, you will get an `error` rather than a `response`
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcbe8c7ac06
+                method: users/create
+                error: Error creating user.
+      summary: Create a user
+      operationId: Create a user
+      description: >-
+        This allows a user with the `manage_users` permission to create new
+        users.
+
+
+        This behaves similarly to update user except that you must pass in the
+        `email` and `realname` fields.
+
+
+        You can also either pass in a `password` field to set the password, or
+        to simulate a user registration you can pass in `sendWelcome` with a
+        value of `true`
+      tags:
+        - Users
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                email: newuser@example.org
+                realname: Some new User
+                password: NewPassword
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    realname:
+                      type: string
+                    password:
+                      type: string
+  /users/{userid}/resendwelcome:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: string
+              example:
+                respid: 5934c0a6e5bf3
+                method: users/56/resendwelcome
+                response:
+                  success: Registration email resent.
+        '400':
+          description: If there is an error with the request you will get an error reply
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 5934c05e6b420
+                method: users/56/resendwelcome
+                error: User has already completed registration.
+      summary: Request a welcome email be resent to a user.
+      operationId: Request a welcome email be resent to a user.
+      description: >-
+        If a user is still pending verification, we can re-send the welcome
+        email to them. (This requires the `manage_users` permission)
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID.
+          required: true
+          example: '1'
+          schema:
+            type: string
+  /users/{userid}/acceptterms:
+    post:
+      responses:
+        '200':
+          description: The response on success will show a message of success.
+          headers: {}
+          content: {}
+        '400':
+          description: If there is an error with the request you will get an error reply
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 5b1df1e976654
+                method: users/self/resendwelcome
+                error: There was an error accepting the terms of service.
+      summary: Accept terms of service.
+      operationId: Accept terms of service.
+      description: >-
+        If a user has not accepted the terms of service this allows them to do
+        so. (This requires the `user_write` permission)
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID (must be own user account or "self").
+          required: true
+          example: self
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                acceptterms: 'true'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    acceptterms:
+                      type: string
+  /users/{userid}/keys:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      F4C108DA-4070-45A4-8223-8C5DDFB96A51:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_read:
+                            type: string
+                          domains_write:
+                            type: string
+                          user_read:
+                            type: string
+                          user_write:
+                            type: string
+                      60B56841-508D-4037-9A16-B234B9E849A0:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_read:
+                            type: string
+                          domains_write:
+                            type: string
+                          user_read:
+                            type: string
+                          user_write:
+                            type: string
+              example:
+                respid: 58bf2439319ea
+                method: users/self/keys
+                response:
+                  F4C108DA-4070-45A4-8223-8C5DDFB96A51:
+                    description: Test Key
+                    domains_read: 'true'
+                    domains_write: 'true'
+                    user_read: 'true'
+                    user_write: 'true'
+                  60B56841-508D-4037-9A16-B234B9E849A0:
+                    description: Domains Read-Only Key
+                    domains_read: 'true'
+                    domains_write: 'false'
+                    user_read: 'false'
+                    user_write: 'false'
+      summary: Get known API Keys
+      operationId: Get known API Keys
+      description: Returns the list of known API Keys and their description/permissions.
+      tags:
+        - Users
+      parameters:
+        - &ref_1
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: The response on success will show the newly created key
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      60B56841-508D-4037-9A16-B234B9E849A0:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_read:
+                            type: string
+                          domains_write:
+                            type: boolean
+                          user_read:
+                            type: boolean
+                          user_write:
+                            type: boolean
+                          updated:
+                            type: boolean
+              example:
+                respid: 58bf24e7d5638
+                method: users/self/keys
+                response:
+                  60B56841-508D-4037-9A16-B234B9E849A0:
+                    description: Domains Read-Only Key
+                    domains_read: 'true'
+                    domains_write: false
+                    user_read: false
+                    user_write: false
+                    updated: true
+      summary: Create a new Key
+      operationId: Create a new Key
+      description: >-
+        Create a new API Key. The key itself will be randomly generated and
+        returned.
+      tags:
+        - Users
+      parameters:
+        - *ref_1
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Domains Read-Only Key
+                domains_read: 'true'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+                    domains_read:
+                      type: string
+  /users/{userid}/keys/{keyid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      domains_read:
+                        type: string
+                      domains_write:
+                        type: string
+                      user_read:
+                        type: string
+                      user_write:
+                        type: string
+              example:
+                respid: 58bf257073446
+                method: users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176
+                response:
+                  description: Domains Read-Only Key
+                  domains_read: 'true'
+                  domains_write: 'false'
+                  user_read: 'false'
+                  user_write: 'false'
+      summary: Get key description/permissions
+      operationId: Get key description/permissions
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - &ref_2
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: self
+          schema:
+            type: string
+        - &ref_3
+          name: keyid
+          in: path
+          description: The key ID.
+          required: true
+          example: 00413A9B-E086-4AD7-AC82-FF061B28D176
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the key as it exists after the
+            change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      domains_read:
+                        type: string
+                      domains_write:
+                        type: string
+                      user_read:
+                        type: string
+                      user_write:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 58bf24e7d5638
+                method: users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176
+                response:
+                  description: Full-Access Key
+                  domains_read: 'true'
+                  domains_write: 'true'
+                  user_read: 'true'
+                  user_write: 'true'
+                  updated: true
+      summary: Update key
+      operationId: Update key
+      description: >-
+        This takes the same parameters as create, but will update an existing
+        key.
+      tags:
+        - Users
+      parameters:
+        - *ref_2
+        - *ref_3
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Full-Access Key
+                domains_read: 'true'
+                domains_write: 'true'
+                user_read: 'true'
+                user_write: 'true'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+                    domains_read:
+                      type: string
+                    domains_write:
+                      type: string
+                    user_read:
+                      type: string
+                    user_write:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bf2602687cc
+                method: users/self/keys/00413A9B-E086-4AD7-AC82-FF061B28D176
+                response:
+                  deleted: 'true'
+      summary: Delete key
+      operationId: Delete key
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - *ref_2
+        - *ref_3
+  /users/{userid}/2fa:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      '1':
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+                          active:
+                            type: string
+                      '2':
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          description:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+                          active:
+                            type: string
+              example:
+                respid: 591e43446c4b7
+                method: users/self/2fa
+                response:
+                  '1':
+                    description: Test Key
+                    created: '1495151997'
+                    lastused: '1495153158'
+                    active: 'true'
+                  '2':
+                    key: MCOERRKFPJ7Z2Q2U
+                    description: Second Key
+                    created: '1495151997'
+                    lastused: '0'
+                    active: 'false'
+      summary: Get known 2FA Keys
+      operationId: Get known 2FA Keys
+      description: >-
+        Returns the list of known 2FA Key-IDs and information about them.
+
+
+        Keys that have not yet been verified will also include the secret to
+        allow a QR Code to be displayed if appropriate.
+      tags:
+        - Users
+      parameters:
+        - &ref_4
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: The response on success will show the newly created key
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      key:
+                        type: string
+                      description:
+                        type: string
+                      created:
+                        type: number
+                      lastused:
+                        type: number
+                      active:
+                        type: boolean
+                      type:
+                        type: string
+                      onetime:
+                        type: boolean
+                      updated:
+                        type: boolean
+              example:
+                respid: 591e43b1d0df7
+                method: users/self/2fa
+                response:
+                  id: '6'
+                  key: 7QEAT6ARPO4TKVUC
+                  description: Third Key
+                  created: 1495155633
+                  lastused: 0
+                  active: false
+                  type: rfc6238
+                  onetime: false
+                  updated: true
+      summary: Create a new Key
+      operationId: Create a new Key
+      description: >-
+        Create a new 2FA Key.
+
+
+        We support multiple types of code, 'rfc6238' (Default), 'plain' and
+        'yubikeyotp'.
+
+
+        If no 'type' data parameter is provided, then 'rfc6238' is assumed.
+
+
+        For 'rfc6238' and 'plain', the secret will be randomly generated.
+
+
+        For 'yubikeyotp' an OTP must be provided that validates against yubico
+        cloud.
+
+
+        If no 'onetime' data parameter is provided, then 'false' is assumed,
+        otherwise the key will only be valid for a single use.
+      tags:
+        - Users
+      parameters:
+        - *ref_4
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Third Key
+                type: rfc6238
+                onetime: false
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+                    type:
+                      type: string
+                    onetime:
+                      type: boolean
+  /users/{userid}/2fa/{keyid}:
+    get:
+      responses:
+        '200':
+          description: >-
+            The "key" parameter will only be returned if the key is not yet
+            active.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      key:
+                        type: string
+                      description:
+                        type: string
+                      created:
+                        type: string
+                      lastused:
+                        type: string
+                      active:
+                        type: string
+              example:
+                respid: 591e43f5ce743
+                method: users/self/2fa/6
+                response:
+                  id: '6'
+                  key: 7QEAT6ARPO4TKVUC
+                  description: Third Key
+                  created: '1495155633'
+                  lastused: '0'
+                  active: 'false'
+      summary: Get key description/permissions
+      operationId: Get key description/permissions
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - &ref_5
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: self
+          schema:
+            type: string
+        - &ref_6
+          name: keyid
+          in: path
+          description: The key ID.
+          required: true
+          example: '6'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the key as it exists after the
+            change.
+
+            The "key" parameter will only be returned if the key is not yet
+            active.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      key:
+                        type: string
+                      description:
+                        type: string
+                      created:
+                        type: string
+                      lastused:
+                        type: string
+                      active:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 591e444c2868c
+                method: users/self/2fa/6
+                response:
+                  id: '6'
+                  key: 7QEAT6ARPO4TKVUC
+                  description: Third Device
+                  created: '1495155633'
+                  lastused: '0'
+                  active: 'false'
+                  updated: true
+      summary: Update key
+      operationId: Update key
+      description: >-
+        This takes the same parameters as create, but will update an existing
+        key.
+      tags:
+        - Users
+      parameters:
+        - *ref_5
+        - *ref_6
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Third Device
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 591e456fdb62f
+                method: users/self/2fa/6
+                response:
+                  deleted: 'true'
+      summary: Delete key
+      operationId: Delete key
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - *ref_5
+        - *ref_6
+  /users/{userid}/2fa/{keyid}/verify:
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: string
+              example:
+                respid: 591e453d08ac9
+                method: users/self/2fa/6/verify
+                response:
+                  success: Valid code provided.
+        40 01:
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: '591e455409613'
+                method: users/self/2fa/6/verify
+                error: Invalid code provided for verification.
+      summary: Verify 2FA Key
+      operationId: Verify 2FA Key
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: self
+          schema:
+            type: string
+        - name: keyid
+          in: path
+          description: The key ID.
+          required: true
+          example: '6'
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                code: '123456'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+  /users/{userid}/2fadevices:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get known 2FA Devices
+      operationId: Get known 2FA Devices
+      description: Returns the list of known 2FA Devices and information about them.
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+  /users/{userid}/2fadevices/{deviceid}:
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 5a1afd4852d97
+                method: users/self/2fadevices/6
+                response:
+                  deleted: 'true'
+      summary: Delete key
+      operationId: Delete key
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: self
+          schema:
+            type: string
+        - name: deviceid
+          in: path
+          description: The Device ID.
+          required: true
+          example: '6'
+          schema:
+            type: string
+  /users/{userid}/customdata:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      test.ing:
+                        type: string
+                      test.ing3:
+                        type: string
+                      uk.co.mydnshost.www/domain/defaultpage:
+                        type: string
+              example:
+                respid: 59c7bac0c46e5
+                method: users/self/customdata
+                response:
+                  test.ing: testValue 2
+                  test.ing3: testValue 3
+                  uk.co.mydnshost.www/domain/defaultpage: records
+      summary: Get known custom data {DEPRECATED}
+      operationId: Get known custom data {DEPRECATED}
+      description: Returns the list of known Custom-Data Key/Value pairs.
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+  /users/{userid}/customdata/{key}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        type: string
+              example:
+                respid: 59c7baf524aac
+                method: users/self/customdata/test.ing
+                response:
+                  key: test.ing
+                  value: testValue 2
+      summary: Get key value {DEPRECATED}
+      operationId: Get key value {DEPRECATED}
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - &ref_7
+          name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: self
+          schema:
+            type: string
+        - &ref_8
+          name: key
+          in: path
+          description: The custom data key.
+          required: true
+          example: test.ing
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the data as it exists after the
+            change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 59c7bb169ac68
+                method: users/self/customdata/test.ing
+                response:
+                  key: test.ing
+                  value: Some Value
+                  updated: true
+      summary: Create/Update custom data for key {DEPRECATED}
+      operationId: Create/Update custom data for key {DEPRECATED}
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - *ref_7
+        - *ref_8
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                value: Some Value
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    value:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Delete key {DEPRECATED}
+      operationId: Delete key {DEPRECATED}
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - *ref_7
+        - *ref_8
+  /users/{userid}/stats/{stattype}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get statistics for all our domains
+      operationId: Get statistics for all our domains
+      description: ''
+      tags:
+        - Users
+      parameters:
+        - name: userid
+          in: path
+          description: The user ID. This can also be "self" for the current user.
+          required: true
+          example: '2'
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Type of stats (raw or derivative)
+          example: raw
+          schema:
+            type: string
+        - name: stattype
+          in: path
+          description: ''
+          required: true
+          example: domains
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: ''
+          required: true
+          example: raw
+          schema:
+            type: string
+  /domains:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      example.org:
+                        type: string
+                      test2.com:
+                        type: string
+                      example1.org:
+                        type: string
+                      example2.org:
+                        type: string
+              example:
+                respid: 58bcc0357e7eb
+                method: domains
+                response:
+                  example.org: owner
+                  test2.com: owner
+                  example1.org: write
+                  example2.org: read
+      summary: Get list of known domains
+      operationId: Get list of known domains
+      description: See what domains you have access to, and what level of access to each.
+      tags:
+        - Domains
+      parameters:
+        - name: contains
+          in: query
+          description: Only return the domain that would contain this record
+          example: foo.bar.baz.example.com
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: A successful response will display the newly-created domain.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      defaultttl:
+                        type: number
+                      disabled:
+                        type: boolean
+                      SOA:
+                        type: object
+                        properties:
+                          primaryNS:
+                            type: string
+                          adminAddress:
+                            type: string
+                          serial:
+                            type: string
+                          refresh:
+                            type: string
+                          retry:
+                            type: string
+                          expire:
+                            type: string
+                          minttl:
+                            type: string
+              example:
+                respid: 58bcc0c377913
+                method: domains
+                response:
+                  id: '9'
+                  domain: example.net
+                  defaultttl: 86400
+                  disabled: false
+                  SOA:
+                    primaryNS: ns1.example.net.
+                    adminAddress: dnsadmin.example.net.
+                    serial: '0'
+                    refresh: '86400'
+                    retry: '7200'
+                    expire: '2419200'
+                    minttl: '60'
+        '400':
+          description: >-
+            An error will include an `error` and possibly `errorData`
+            information.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+                  errorData:
+                    type: string
+              example:
+                respid: 58bcc115b3601
+                method: domains
+                error: Error updating domain.
+                errorData: Domain already exists.
+      summary: Create a new domain
+      operationId: Create a new domain
+      description: >-
+        If the user has the `domains_create` permission, they can use this to
+        create a new domain owned by themselves.
+      tags:
+        - Domains
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                domain: example.net
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    domain:
+                      type: string
+  /domains/{domain}:
+    get:
+      responses:
+        '200':
+          description: A successful response will display information about the domain.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      defaultttl:
+                        type: number
+                      disabled:
+                        type: string
+                      SOA:
+                        type: object
+                        properties:
+                          primaryNS:
+                            type: string
+                          adminAddress:
+                            type: string
+                          serial:
+                            type: string
+                          refresh:
+                            type: string
+                          retry:
+                            type: string
+                          expire:
+                            type: string
+                          minttl:
+                            type: string
+              example:
+                respid: 58bcc18455fac
+                method: domains/example.org
+                response:
+                  id: '3'
+                  domain: example.org
+                  defaultttl: 86400
+                  disabled: 'false'
+                  SOA:
+                    primaryNS: ns1.mydnshost.co.uk.
+                    adminAddress: dnsadmin.dataforce.org.uk.
+                    serial: '2017030500'
+                    refresh: '86400'
+                    retry: '7200'
+                    expire: '2419200'
+                    minttl: '60'
+        '400':
+          description: An error will include an `error` rather than the `response`
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcc1a902ddd
+                method: domains/example.example
+                error: 'Unknown domain: example.example'
+      summary: Get information about a domain
+      operationId: Get information about a domain
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_9
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: A successful response will display the newly-updated domain.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      defaultttl:
+                        type: number
+                      disabled:
+                        type: string
+                      SOA:
+                        type: object
+                        properties:
+                          primaryNS:
+                            type: string
+                          adminAddress:
+                            type: string
+                          serial:
+                            type: string
+                          refresh:
+                            type: string
+                          retry:
+                            type: string
+                          expire:
+                            type: string
+                          minttl:
+                            type: string
+              example:
+                respid: 58bcc2a9b4b77
+                method: domains/example.org
+                response:
+                  id: '3'
+                  domain: example.org
+                  defaultttl: 86400
+                  disabled: 'true'
+                  SOA:
+                    primaryNS: ns1.mydnshost.co.uk.
+                    adminAddress: dnsadmin.dataforce.org.uk.
+                    serial: '999'
+                    refresh: '86400'
+                    retry: '7200'
+                    expire: '2419200'
+                    minttl: '60'
+      summary: Update information about a domain
+      operationId: Update information about a domain
+      description: >-
+        This allows changing the domain enabled/disabled status or updating the
+        SOA fields.
+
+
+        As with other update methods, only fields that are provided will be
+        changed, you do not need to provide a complete object.
+
+
+        Changes made with this end point do not automatically increment the
+        domain serial.
+      tags:
+        - Domains
+      parameters:
+        - *ref_9
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                disabled: 'true'
+                SOA:
+                  serial: '999'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    disabled:
+                      type: string
+                    SOA:
+                      type: object
+                      properties:
+                        serial:
+                          type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcc2d6e7515
+                method: domains/example.org
+                response:
+                  deleted: 'true'
+      summary: Delete a domain
+      operationId: Delete a domain
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_9
+  /domains/{domain}/access:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      defaultttl:
+                        type: number
+                      disabled:
+                        type: string
+                      access:
+                        type: object
+                        properties:
+                          admin@example.org:
+                            type: string
+                          user2@example.org:
+                            type: string
+              example:
+                respid: 58bdf7472d255
+                method: domains/example2.org/access
+                response:
+                  id: '7'
+                  domain: example2.org
+                  defaultttl: 86400
+                  disabled: 'false'
+                  access:
+                    admin@example.org: write
+                    user2@example.org: owner
+      summary: Get all users with access to the domain
+      operationId: Get all users with access to the domain
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_10
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: A successful response will display the newly-updated access list.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      defaultttl:
+                        type: number
+                      disabled:
+                        type: string
+                      access:
+                        type: object
+                        properties:
+                          admin@example.org:
+                            type: string
+                          user2@example.org:
+                            type: string
+                          user1@example.org:
+                            type: string
+              example:
+                respid: 58bdf89ebc587
+                method: domains/example2.org/access
+                response:
+                  id: '7'
+                  domain: example2.org
+                  defaultttl: 86400
+                  disabled: 'false'
+                  access:
+                    admin@example.org: write
+                    user2@example.org: owner
+                    user1@example.org: write
+        '400':
+          description: >-
+            If there is an error changing any of the requested access, the whole
+            change will be aborted with an error message explaining why.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bdf83ed6cd5
+                method: domains/example2.org/access
+                error: >-
+                  You do not have the required access to the domain:
+                  example2.org
+      summary: Update domain access
+      operationId: Update domain access
+      description: >-
+        This allows changing user access levels on the domain.
+
+
+        As a general rule of thumb, you can not edit your own access level, and
+        you can not set people to have an access level equal or above your own
+        (Thus only users with the `manage_domains` permission can set domain
+        owners.)
+
+
+        There are 5 levels of access (each level has all the access of those
+        below it):
+
+
+        - owner - Owner has full control over the domain, there can only be 1.
+        Only the owner can delete the domain.
+
+
+        - admin - Domain admins can grant other users write access to the
+        domain.
+
+
+        - write - Write allows changing domain records
+
+
+        - read - Read allows reading domain records but not changing
+
+
+        - none - No access to the domain (Default)
+      tags:
+        - Domains
+      parameters:
+        - *ref_10
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                access:
+                  user1@example.org: write
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    access:
+                      type: object
+                      properties:
+                        user1@example.org:
+                          type: string
+  /domains/{domain}/keys:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      9426F536-2559-4FA0-BA50-644C90B5FAE4:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_write:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+                      586DAB85-9DCE-4FA2-AA9D-877AA7011190:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_write:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+              example:
+                respid: 592f821198f95
+                method: domains/example.org/keys
+                response:
+                  9426F536-2559-4FA0-BA50-644C90B5FAE4:
+                    description: Write Key
+                    domains_write: 'true'
+                    created: '1496284877'
+                    lastused: '1496284879'
+                  586DAB85-9DCE-4FA2-AA9D-877AA7011190:
+                    description: Read Key
+                    domains_write: 'false'
+                    created: '1496284877'
+                    lastused: '1496285565'
+      summary: Get known Domain Keys
+      operationId: Get known Domain Keys
+      description: >-
+        Returns the list of known Domain Keys and their description/permissions.
+
+
+        Domain keys behave like user API Keys, except they are limited to a
+        single domain and can only be given read or write access (not owner or
+        admin).
+
+
+        You will need `write` level access on a domain to view or make changes
+        to domain keys and will need to be authenticated as a real user and not
+        using another domain key.
+      tags:
+        - Domains
+      parameters:
+        - &ref_11
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: The response on success will show the newly created key
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                          domains_write:
+                            type: boolean
+                          created:
+                            type: number
+                          lastused:
+                            type: number
+                          updated:
+                            type: boolean
+              example:
+                respid: 592f825565d61
+                method: domains/example.org/keys
+                response:
+                  7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E:
+                    description: Read-Only Key
+                    domains_write: false
+                    created: 1496285781
+                    lastused: 0
+                    updated: true
+      summary: Create a new Key
+      operationId: Create a new Key
+      description: >-
+        Create a new Domain Key. The key itself will be randomly generated and
+        returned.
+      tags:
+        - Domains
+      parameters:
+        - *ref_11
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Read-Only Key
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+  /domains/{domain}/keys/{keyid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      domains_write:
+                        type: string
+                      created:
+                        type: string
+                      lastused:
+                        type: string
+              example:
+                respid: 592f828d6ddbd
+                method: domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E
+                response:
+                  description: Read-Only Key
+                  domains_write: 'false'
+                  created: '1496285781'
+                  lastused: '0'
+      summary: Get key description/permissions
+      operationId: Get key description/permissions
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_12
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - &ref_13
+          name: keyid
+          in: path
+          description: The key ID.
+          required: true
+          example: 7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the key as it exists after the
+            change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      domains_write:
+                        type: string
+                      created:
+                        type: string
+                      lastused:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 592f82ac75e21
+                method: domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E
+                response:
+                  description: Full-Access Key
+                  domains_write: 'true'
+                  created: '1496285781'
+                  lastused: '0'
+                  updated: true
+      summary: Update key
+      operationId: Update key
+      description: >-
+        This takes the same parameters as create, but will update an existing
+        key.
+      tags:
+        - Domains
+      parameters:
+        - *ref_12
+        - *ref_13
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                description: Full-Access Key
+                domains_write: 'true'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    description:
+                      type: string
+                    domains_write:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 592f82c0d3006
+                method: domains/example.org/keys/7BACDD7D-31D2-4B01-9D8B-D782CD71BF0E
+                response:
+                  deleted: 'true'
+      summary: Delete key
+      operationId: Delete key
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_12
+        - *ref_13
+  /domains/{domain}/hooks:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      '3':
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                          password:
+                            type: string
+                          disabled:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+                      '4':
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                          password:
+                            type: string
+                          disabled:
+                            type: string
+                          created:
+                            type: string
+                          lastused:
+                            type: string
+              example:
+                respid: 5a1afee40bc4c
+                method: domains/example.org/hooks
+                response:
+                  '3':
+                    url: http://hooks.example.org/hook1.php
+                    password: password
+                    disabled: 'false'
+                    created: '1511718537'
+                    lastused: '0'
+                  '4':
+                    url: http://hooks.example.org/hook2.php
+                    password: ''
+                    disabled: 'false'
+                    created: '1511718542'
+                    lastused: '0'
+      summary: Get known Domain Hooks
+      operationId: Get known Domain Hooks
+      description: >-
+        Returns the list of known Domain Hooks and any password associated with
+        them
+
+
+        Domain Hooks are web pages that recieve specially-crafted POST requests
+        when certain events happen related to a domain.
+
+
+        If a password is specified, the POST request will include an
+        X-HMAC-SIGNATURE header signing the data that was sent.
+      tags:
+        - Domains
+      parameters:
+        - &ref_14
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: The response on success will show the newly created hook
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      '5':
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                          password:
+                            type: string
+                          disabled:
+                            type: boolean
+                          created:
+                            type: number
+                          lastused:
+                            type: number
+                          updated:
+                            type: boolean
+              example:
+                respid: 5a1b003293d16
+                method: domains/example.org/hooks
+                response:
+                  '5':
+                    url: http://hooks.example.org/hook3.php
+                    password: ''
+                    disabled: false
+                    created: 1511718962
+                    lastused: 0
+                    updated: true
+      summary: Create a new Hook
+      operationId: Create a new Hook
+      description: Create a new Domain Hook.
+      tags:
+        - Domains
+      parameters:
+        - *ref_14
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                url: http://hooks.example.org/hook3.php
+                password: ''
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                    password:
+                      type: string
+  /domains/{domain}/hooks/{hookid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      password:
+                        type: string
+                      disabled:
+                        type: boolean
+                      created:
+                        type: number
+                      lastused:
+                        type: number
+              example:
+                respid: 592f828d6ddbd
+                method: domains/example.org/hooks/5
+                response:
+                  url: http://hooks.example.org/hook3.php
+                  password: ''
+                  disabled: false
+                  created: 1511718962
+                  lastused: 0
+      summary: Get Hook details
+      operationId: Get Hook details
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_15
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - &ref_16
+          name: hookid
+          in: path
+          description: The Hook ID.
+          required: true
+          example: '5'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the hook as it exists after the
+            change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      password:
+                        type: string
+                      disabled:
+                        type: string
+                      created:
+                        type: string
+                      lastused:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 5a1b00d645f22
+                method: domains/example.org/hooks/5
+                response:
+                  url: http://hooks.example.org/hook3.php
+                  password: foo
+                  disabled: 'false'
+                  created: '1511718900'
+                  lastused: '0'
+                  updated: true
+      summary: Update Hook
+      operationId: Update Hook
+      description: >-
+        This takes the same parameters as create, but will update an existing
+        hook.
+      tags:
+        - Domains
+      parameters:
+        - *ref_15
+        - *ref_16
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                password: foo
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    password:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 592f82c0d3006
+                method: domains/example.org/hooks/5
+                response:
+                  deleted: 'true'
+      summary: Delete Hook
+      operationId: Delete Hook
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_15
+        - *ref_16
+  /domains/{domain}/records:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            type:
+                              type: string
+                            content:
+                              type: string
+                            ttl:
+                              type: string
+                            priority:
+                              type: string
+                              nullable: true
+                            changed_at:
+                              type: string
+                            changed_by:
+                              nullable: true
+                            disabled:
+                              type: string
+                          required:
+                            - id
+                            - name
+                            - type
+                            - content
+                            - ttl
+                            - priority
+                            - changed_at
+                            - changed_by
+                            - disabled
+                      hasNS:
+                        type: boolean
+                      soa:
+                        type: object
+                        properties:
+                          primaryNS:
+                            type: string
+                          adminAddress:
+                            type: string
+                          serial:
+                            type: string
+                          refresh:
+                            type: string
+                          retry:
+                            type: string
+                          expire:
+                            type: string
+                          minttl:
+                            type: string
+              example:
+                respid: 58bcc3059365b
+                method: domains/example.org/records
+                response:
+                  records:
+                    - id: '18'
+                      name: ''
+                      type: A
+                      content: 127.0.0.1
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '19'
+                      name: www
+                      type: A
+                      content: 127.0.0.1
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '20'
+                      name: ''
+                      type: AAAA
+                      content: '::1'
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '21'
+                      name: www
+                      type: AAAA
+                      content: '::1'
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '22'
+                      name: txt
+                      type: TXT
+                      content: Some Text Record
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '23'
+                      name: ''
+                      type: MX
+                      content: ''
+                      ttl: '86400'
+                      priority: '10'
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                    - id: '24'
+                      name: ''
+                      type: MX
+                      content: test
+                      ttl: '86400'
+                      priority: '50'
+                      changed_at: '1488755309'
+                      changed_by: null
+                      disabled: 'false'
+                  hasNS: true
+                  soa:
+                    primaryNS: ns1.mydnshost.co.uk.
+                    adminAddress: dnsadmin.dataforce.org.uk.
+                    serial: '999'
+                    refresh: '86400'
+                    retry: '7200'
+                    expire: '2419200'
+                    minttl: '60'
+      summary: Get all domain records
+      operationId: Get all domain records
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_17
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            A success response will show the records that were changed, and any
+            new records that were added, along with the new domain serial.
+          headers: {}
+          content:
+            application/json:
+              example:
+                respid: 58bcc593acecc
+                method: domains/example.org/records
+                response:
+                  serial: '2017030600'
+                  changed:
+                    - id: '18'
+                      name: ''
+                      type: A
+                      content: 127.0.0.18
+                      ttl: '86400'
+                      priority: null
+                      changed_at: 1488766355
+                      changed_by: '2'
+                      disabled: 'false'
+                      updated: true
+                    - id: '19'
+                      name: www
+                      type: A
+                      content: 127.0.0.18
+                      ttl: '86400'
+                      priority: null
+                      changed_at: 1488766355
+                      changed_by: '2'
+                      disabled: 'false'
+                      updated: true
+                    - id: '35'
+                      name: localhost
+                      type: A
+                      content: 127.0.0.1
+                      ttl: '86400'
+                      priority: null
+                      changed_at: 1488766355
+                      changed_by: '2'
+                      disabled: false
+                      updated: true
+                    - id: '20'
+                      deleted: true
+        '400':
+          description: >-
+            A response will contain errorData to show errors related to specific
+            records passed in. If there are any errors, no changes are made.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+                  errorData:
+                    type: object
+                    properties:
+                      '1':
+                        type: string
+              example:
+                respid: 58bcc54aca077
+                method: domains/example.org/records
+                error: There was errors with the records provided.
+                errorData:
+                  '1': >-
+                    Unable to validate record: Content must be a valid IPv4
+                    Address.
+      summary: Update domain records
+      operationId: Update domain records
+      description: >-
+        This can update/delete specifically named records, or add new records
+        all in one go.
+
+
+        You can not edit the SOA from here, and the serial will be incremented
+        automatically.
+
+
+        As with other update methods, only fields that are provided will be
+        changed, you do not need to provide a complete object.
+      tags:
+        - Domains
+      parameters:
+        - *ref_17
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                records:
+                  - id: '18'
+                    content: 127.0.0.18
+                  - id: '19'
+                    content: 127.0.0.18
+                  - id: '20'
+                    delete: true
+                  - name: localhost
+                    type: A
+                    content: 127.0.0.1
+                    ttl: '86400'
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    records:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          content:
+                            type: string
+                          delete:
+                            type: boolean
+                          name:
+                            type: string
+                          type:
+                            type: string
+                          ttl:
+                            type: string
+                        required:
+                          - id
+                          - content
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: number
+                      serial:
+                        type: number
+              example:
+                respid: 58bcc5e696495
+                method: domains/example.org/records
+                response:
+                  deleted: 7
+                  serial: 2017030601
+      summary: Delete all domain records
+      operationId: Delete all domain records
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_17
+  /domains/{domain}/stats:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get raw statistics for this domain
+      operationId: Get raw statistics for this domain
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Type of stats (raw or derivative)
+          example: raw
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: ''
+          required: true
+          example: raw
+          schema:
+            type: string
+  /domains/{domain}/logs:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - timestamp
+                        - message
+              example:
+                respid: 5d5afd8092ecf
+                method: domains/example.org/logs
+                response:
+                  - timestamp: '2019-08-19T19:12:47.710Z'
+                    message: >-
+                      19-Aug-2019 19:12:47.709 zone example.org/IN (signed):
+                      reconfiguring zone keys
+                  - timestamp: '2019-08-19T19:12:47.711Z'
+                    message: >-
+                      19-Aug-2019 19:12:47.710 zone example.org/IN (signed):
+                      next key event: 19-Aug-2019 20:12:47.709
+      summary: Get logs for this domain
+      operationId: Get logs for this domain
+      description: Get recent logs related to this domain.
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+  /domains/{domain}/export/{type}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      zone:
+                        type: string
+              example:
+                respid: 58cef4d2a5104
+                method: domains/example.org/export
+                response:
+                  zone: |
+                    ; Written at Sun, 19 Mar 2017 21:14:58 +0000
+                    $TTL 86400
+                    $ORIGIN example.org.
+                    example.org. IN SOA ns1.example.org. dnsadmin.example.org. (
+                     2017031900
+                     86400
+                     7200
+                     2419200
+                     60 )
+
+                    example.org. 86400 IN NS dev.mydnshost.co.uk.
+                    example.org. 86400 IN A 127.0.0.1
+                    www.example.org. 86400 IN A 127.0.0.1
+                    example.org. 86400 IN AAAA ::1
+                    www.example.org. 86400 IN AAAA ::1
+                    test.example.org. 86400 IN CNAME www.example.org.
+                    txt.example.org. 86400 IN TXT "Some Text Record"
+                    example.org. 86400 IN MX 10 example.org.
+                    example.org. 86400 IN MX 50 www.example.org.
+      summary: Export zone as bind zone file
+      operationId: Export zone as bind zone file
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - name: type
+          in: path
+          description: 'Zone file format to export as (Valid types: bind)'
+          example: bind
+          schema:
+            type: string
+  /domains/{domain}/import/{type}:
+    post:
+      responses:
+        '200':
+          description: If the import is successful, the zone serial will be returned.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      serial:
+                        type: string
+              example:
+                respid: 58cef5a9d7216
+                method: domains/example.org/import
+                response:
+                  serial: '2017031900'
+      summary: Export zone as bind zone file
+      operationId: Export zone as bind zone file
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - name: type
+          in: path
+          description: 'Zone file format to import from (Valid types: bind)'
+          example: bind
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                zone: |
+                  ; Written at Sun, 19 Mar 2017 21:14:58 +0000
+                  $TTL 86400
+                  $ORIGIN example.org.
+                  example.org. IN SOA ns1.example.org. dnsadmin.example.org. (
+                   2017031900
+                   86400
+                   7200
+                   2419200
+                   60 )
+
+                  example.org. 86400 IN NS dev.mydnshost.co.uk.
+                  example.org. 86400 IN A 127.0.0.1
+                  www.example.org. 86400 IN A 127.0.0.1
+                  example.org. 86400 IN AAAA ::1
+                  www.example.org. 86400 IN AAAA ::1
+                  test.example.org. 86400 IN CNAME www.example.org.
+                  txt.example.org. 86400 IN TXT "Some Text Record"
+                  example.org. 86400 IN MX 10 example.org.
+                  example.org. 86400 IN MX 50 www.example.org.
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    zone:
+                      type: string
+  /domains/{domain}/records/{recordid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      type:
+                        type: string
+                      content:
+                        type: string
+                      ttl:
+                        type: string
+                      priority:
+                        nullable: true
+                      changed_at:
+                        type: string
+                      changed_by:
+                        nullable: true
+                      disabled:
+                        type: string
+              example:
+                respid: 58bcc673f3c17
+                method: domains/example.org/records/21
+                response:
+                  id: '21'
+                  name: www
+                  type: A
+                  content: 127.0.0.1
+                  ttl: '86400'
+                  priority: null
+                  changed_at: '1488766474'
+                  changed_by: null
+                  disabled: 'false'
+      summary: Get specific record information
+      operationId: Get specific record information
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - &ref_18
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - &ref_19
+          name: recordid
+          in: path
+          description: The record id
+          required: true
+          example: '21'
+          schema:
+            type: number
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      type:
+                        type: string
+                      content:
+                        type: string
+                      ttl:
+                        type: string
+                      priority:
+                        nullable: true
+                      changed_at:
+                        type: number
+                      changed_by:
+                        type: string
+                      disabled:
+                        type: string
+              example:
+                respid: 58bcc6cb79998
+                method: domains/example.org/records/21
+                response:
+                  id: '21'
+                  name: www
+                  type: A
+                  content: 127.0.0.18
+                  ttl: '86400'
+                  priority: null
+                  changed_at: 1488766667
+                  changed_by: '2'
+                  disabled: 'false'
+        '400':
+          description: >-
+            If there is a validation error, you will get `error` and `errorData`
+            rather than `response`
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+                  errorData:
+                    type: string
+              example:
+                respid: 58bcc6df9bd2d
+                method: domains/example.org/records/21
+                error: Error updating record.
+                errorData: Content must be a valid IPv4 Address.
+      summary: Update a specific record
+      operationId: Update a specific record
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_18
+        - *ref_19
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                content: 127.0.0.18
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    content:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+                      serial:
+                        type: number
+              example:
+                respid: 58bcc701e70d7
+                method: domains/example.org/records/21
+                response:
+                  deleted: 'true'
+                  serial: 2017030601
+        '400':
+          description: Bad Request
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcc75e10e3a
+                method: domains/example.org/records/21
+                error: 'Unknown record id for domain example.org : 21'
+      summary: Delete a specific record
+      operationId: Delete a specific record
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_18
+        - *ref_19
+  /domains/{domain}/record/{rrname}/{rrtype}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            type:
+                              type: string
+                            content:
+                              type: string
+                            ttl:
+                              type: string
+                            priority:
+                              nullable: true
+                            changed_at:
+                              type: string
+                            changed_by:
+                              nullable: true
+                            disabled:
+                              type: string
+              example:
+                respid: 591b5190e3f66
+                method: domains/example1.org/record/www/A
+                response:
+                  records:
+                    - id: '69'
+                      name: www
+                      type: A
+                      content: 127.0.0.1
+                      ttl: '86400'
+                      priority: null
+                      changed_at: '1490399322'
+                      changed_by: null
+                      disabled: 'false'
+      summary: Get all `www` records with a type of A
+      operationId: Get all `www` records with a type of A
+      description: >-
+        This allows looking at specific records by name and/or type.
+
+
+        (If rrtype is not specified, then all records of the requested name will
+        be
+
+        shown, regardless of the type)
+      tags:
+        - Domains
+      parameters:
+        - &ref_20
+          name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+        - &ref_21
+          name: rrname
+          in: path
+          description: The record name
+          required: true
+          example: www
+          schema:
+            type: string
+        - &ref_22
+          name: rrtype
+          in: path
+          description: The record type
+          example: A
+          schema:
+            type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: number
+                      serial:
+                        type: string
+              example:
+                respid: 591b51c5a5ca8
+                method: domains/example1.org/record/www/A
+                response:
+                  deleted: 1
+                  serial: '2017051600'
+      summary: Delete all domain records with a type of A
+      operationId: Delete all domain records with a type of A
+      description: ''
+      tags:
+        - Domains
+      parameters:
+        - *ref_20
+        - *ref_21
+        - *ref_22
+  /domains/{domain}/sync:
+    get:
+      responses:
+        '200':
+          description: >-
+            This will always show a successful response, it only fires the sync
+            hook.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+              example:
+                respid: 58cef6194ca63
+                method: domains/example.org/sync
+      summary: Force backend sync
+      operationId: Force backend sync
+      description: >-
+        Attempt to resync the domain with the server backends.
+
+
+        This can be used to force the server backend to refresh its copy of the
+        domain without needing to make any changes.
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+  /domains/{domain}/verify:
+    get:
+      responses:
+        '200':
+          description: >-
+            This will always show a successful response, it only fires the
+            verification hook.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+              example:
+                respid: 637c6e5bae81a
+                method: domains/example.org/verify
+      summary: Force backend sync
+      operationId: Force backend sync
+      description: Schedule a re-verification of the domain.
+      tags:
+        - Domains
+      parameters:
+        - name: domain
+          in: path
+          description: The domain name
+          required: true
+          example: example.org
+          schema:
+            type: string
+  /external/httpreq/present:
+    post:
+      responses:
+        '200':
+          description: A successful response will display any created/removed records
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      serial:
+                        type: number
+                      changed:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: number
+                            content:
+                              type: string
+                            deleted:
+                              type: boolean
+                            remote_domain_id:
+                              nullable: true
+                            name:
+                              type: string
+                            type:
+                              type: string
+                            ttl:
+                              type: number
+                            priority:
+                              nullable: true
+                            changed_at:
+                              type: number
+                            changed_by:
+                              type: number
+                            disabled:
+                              type: boolean
+                            updated:
+                              type: boolean
+                          required:
+                            - id
+                            - content
+              example:
+                respid: 616b6577cfbb5
+                method: httpreq/present
+                response:
+                  serial: 2021101601
+                  changed:
+                    - id: 705
+                      content: LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM
+                      deleted: true
+                    - id: 706
+                      remote_domain_id: null
+                      name: _acme-challenge.example1.org
+                      type: TXT
+                      content: LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM
+                      ttl: 60
+                      priority: null
+                      changed_at: 1634428279
+                      changed_by: 1
+                      disabled: false
+                      updated: true
+        '400':
+          description: >-
+            An error will include an `error` and possibly `errorData`
+            information.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 616b650485610
+                method: httpreq/present
+                error: 'No matching domains found for: _acme-challenge.example1.org'
+      summary: Present new ACME Challenge
+      operationId: Present new ACME Challenge
+      description: >-
+        If the user has the `domains_write` permission, they can use this to
+        submit the records for a new challenge.
+
+
+        We support normal mode or raw mode for this, and in raw mode we will
+        accept the `keyAuth` with the token prepended already or not.
+
+
+        In raw mode, we will calculate the desired `fqdn`
+        (`_acme-challenge.<domain>`) and `value`
+        (`base64(sha256(<token>.<keyAuth>))`) based on the provided `domain` and
+        `token` + `keyAuth` parameters, then proceed as per normal mode.
+
+
+        This will then delete any `TXT` records on the domain that match both
+        the `fqdn` and the given `value` (or all if `value` is blank) and then
+        create a new one with the new value (unless `value` is blank)
+      tags:
+        - ACME Requests - HTTPREQ / ACMEPROXY
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                value:
+                  fqdn: _acme-challenge.example1.org
+                  value: LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM
+              example2:
+                value:
+                  domain: example1.org
+                  token: ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM
+                  keyAuth: >-
+                    ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM.dO1Pl622P384UR9DFQ1wJLxfUfoldDh4nsedCZtnbdc
+            schema:
+              type: object
+              properties:
+                fqdn:
+                  type: string
+                value:
+                  type: string
+  /external/httpreq/cleanup:
+    post:
+      responses:
+        '200':
+          description: A successful response will display any created/removed records
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      serial:
+                        type: number
+                      changed:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: number
+                            content:
+                              type: string
+                            deleted:
+                              type: boolean
+              example:
+                respid: 616b6577cfbb5
+                method: httpreq/cleanup
+                response:
+                  serial: 2021101601
+                  changed:
+                    - id: 705
+                      content: LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM
+                      deleted: true
+        '400':
+          description: >-
+            An error will include an `error` and possibly `errorData`
+            information.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 616b650485610
+                method: httpreq/present
+                error: 'No matching domains found for: _acme-challenge.example1.org'
+      summary: Cleanup ACME Challenge
+      operationId: Cleanup ACME Challenge
+      description: >-
+        This behaves exactly the same (and takes exactly the same parameters) as
+        `/external/httpreq/present` but stops after clearing up the records and
+        does not go on to create new ones.
+      tags:
+        - ACME Requests - HTTPREQ / ACMEPROXY
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            examples:
+              example1:
+                value:
+                  fqdn: _acme-challenge.example1.org
+                  value: LHDhK3oGRvkiefQnx7OOczTY5Tic_xZ6HcMOc_gmtoM
+              example2:
+                value:
+                  domain: example1.org
+                  token: ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM
+                  keyAuth: >-
+                    ftSaeX_y0adqp2Q7RQwpTKtzUumMb-JoMVWyNLWUwyM.dO1Pl622P384UR9DFQ1wJLxfUfoldDh4nsedCZtnbdc
+            schema:
+              type: object
+              properties:
+                fqdn:
+                  type: string
+                value:
+                  type: string
+  /admin/domains:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get list of all known domains
+      operationId: Get list of all known domains
+      description: See what domains exist and user access levels for each.
+      tags:
+        - Domains Admin
+      parameters: []
+    post:
+      responses:
+        '200':
+          description: A successful response will display the newly-created domain.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      domain:
+                        type: string
+                      disabled:
+                        type: boolean
+                      SOA:
+                        type: object
+                        properties:
+                          primaryNS:
+                            type: string
+                          adminAddress:
+                            type: string
+                          serial:
+                            type: string
+                          refresh:
+                            type: string
+                          retry:
+                            type: string
+                          expire:
+                            type: string
+                          minttl:
+                            type: string
+              example:
+                respid: 58bcc0c377913
+                method: domains
+                response:
+                  id: '9'
+                  domain: example.net
+                  disabled: false
+                  SOA:
+                    primaryNS: ns1.example.net.
+                    adminAddress: dnsadmin.example.net.
+                    serial: '0'
+                    refresh: '86400'
+                    retry: '7200'
+                    expire: '2419200'
+                    minttl: '60'
+        '400':
+          description: >-
+            An error will include an `error` and possibly `errorData`
+            information.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+                  errorData:
+                    type: string
+              example:
+                respid: 58bcc115b3601
+                method: domains
+                error: Error updating domain.
+                errorData: Duplicate entry 'example.net' for key 'domain_domain_unique'
+      summary: Create a new domain
+      operationId: Create a new domain
+      description: >-
+        This behaves the same as the non-admin end-point, and requires the
+        `domains_create` permission in addition to the `manage_domains`
+        permission.
+
+
+        The admin version of the endpoint however also allows specifying an
+        owner of a newly created domain.
+
+
+        If owner is not specified, then the current user will be set as the
+        owner (same as non-admin end-point)
+
+
+        If owner is blank, no owner will be set.
+      tags:
+        - Domains Admin
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                domain: example.net
+                owner: someone@example.net
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    domain:
+                      type: string
+                    owner:
+                      type: string
+  /articles:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      '1':
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          created:
+                            type: string
+                      '2':
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          created:
+                            type: string
+                      '3':
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          created:
+                            type: string
+                      '4':
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          created:
+                            type: string
+              example:
+                respid: 5be8f02eaa91d
+                method: articles
+                response:
+                  '1':
+                    title: 2017-09-10 - Domain Statistics.
+                    content: >-
+                      Domain query statistics are now available from the API and
+                      from the zone details section.
+                    created: '1505077534'
+                  '2':
+                    title: 2017-09-13 - DNSSEC Support is now live.
+                    content: >-
+                      Zones are automatically signed, with DS records available
+                      in the zone details section.
+                    created: '1505259296'
+                  '3':
+                    title: 2017-09-24 - Domain display default page.
+                    content: >-
+                      A new setting has been added to the user-profile to change
+                      the default page displayed when viewing a domain to be
+                      either the "Records" or "Zone Details" page.
+                    created: '1506219150'
+                  '4':
+                    title: 2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.
+                    content: >-
+                      Support has now been added for Domain Hooks which get
+                      called whenever records on a domain are changed. There has
+                      also been some minor changes to the 2FA login flow (2FA
+                      Code is now requested on a separate page, and devices can
+                      be saved to bypass the 2FA requirement in future), and
+                      CNAME-and-other-records validation has been added.
+                    created: '1511721570'
+      summary: Get articles
+      operationId: Get articles
+      description: >-
+        This lets you get the current articles for display.
+
+
+        All articles will have "title", "content" and "created" parameters. Some
+        articles may include "contentfull" for additional content that can be
+        displayed when viewing that specific article.
+      tags:
+        - Articles
+      parameters: []
+  /admin/articles:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      '1':
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          contentfull:
+                            nullable: true
+                          created:
+                            type: string
+                          visiblefrom:
+                            type: string
+                          visibleuntil:
+                            type: string
+                      '2':
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          contentfull:
+                            nullable: true
+                          created:
+                            type: string
+                          visiblefrom:
+                            type: string
+                          visibleuntil:
+                            type: string
+                      '3':
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          contentfull:
+                            nullable: true
+                          created:
+                            type: string
+                          visiblefrom:
+                            type: string
+                          visibleuntil:
+                            type: string
+                      '4':
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          title:
+                            type: string
+                          content:
+                            type: string
+                          contentfull:
+                            nullable: true
+                          created:
+                            type: string
+                          visiblefrom:
+                            type: string
+                          visibleuntil:
+                            type: string
+              example:
+                respid: 5be8f02eaa91d
+                method: /admin/articles
+                response:
+                  '1':
+                    id: '1'
+                    title: 2017-09-10 - Domain Statistics.
+                    content: >-
+                      Domain query statistics are now available from the API and
+                      from the zone details section.
+                    contentfull: null
+                    created: '1505077534'
+                    visiblefrom: '1505077534'
+                    visibleuntil: '-1'
+                  '2':
+                    id: '2'
+                    title: 2017-09-13 - DNSSEC Support is now live.
+                    content: >-
+                      Zones are automatically signed, with DS records available
+                      in the zone details section.
+                    contentfull: null
+                    created: '1505259296'
+                    visiblefrom: '1505259296'
+                    visibleuntil: '-1'
+                  '3':
+                    id: '3'
+                    title: 2017-09-24 - Domain display default page.
+                    content: >-
+                      A new setting has been added to the user-profile to change
+                      the default page displayed when viewing a domain to be
+                      either the "Records" or "Zone Details" page.
+                    contentfull: null
+                    created: '1506219150'
+                    visiblefrom: '1506219150'
+                    visibleuntil: '-1'
+                  '4':
+                    id: '4'
+                    title: 2017-11-26 - Domain Hooks, 2FA Changes, CNAME Validation.
+                    content: >-
+                      Support has now been added for Domain Hooks which get
+                      called whenever records on a domain are changed. There has
+                      also been some minor changes to the 2FA login flow (2FA
+                      Code is now requested on a separate page, and devices can
+                      be saved to bypass the 2FA requirement in future), and
+                      CNAME-and-other-records validation has been added.
+                    contentfull: null
+                    created: '1511721570'
+                    visiblefrom: '1511721570'
+                    visibleuntil: '-1'
+      summary: Get all articles
+      operationId: Get all articles
+      description: >-
+        This is similar to `/articles` but will allow a user with the
+        `manage_articles` permission to show all the articles not just those
+        that are visible.
+
+
+        All articles will have "title", "content" and "created" parameters. Some
+        articles may include "contentfull" for additional content that can be
+        displayed when viewing that specific article.
+      tags:
+        - Articles
+      parameters: []
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      title:
+                        type: string
+                      content:
+                        type: string
+                      contentfull:
+                        nullable: true
+                      created:
+                        type: number
+                      visiblefrom:
+                        type: number
+                      visibleuntil:
+                        type: number
+                      updated:
+                        type: boolean
+              example:
+                respid: 58bcba77c1505
+                method: admin/articles
+                response:
+                  id: '5'
+                  title: Test Article
+                  content: Some content
+                  contentfull: null
+                  created: 1552237749
+                  visiblefrom: 0
+                  visibleuntil: -1
+                  updated: true
+      summary: Create an article
+      operationId: Create an article
+      description: >-
+        This allows a user with the `manage_articles` permission to create new
+        articles.
+
+
+        This behaves similarly to updating an article, except that "title",
+        "content", "visiblefrom" and "visibleuntil" are all required.
+      tags:
+        - Articles
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                title: Test Article
+                content: Some content
+                visiblefrom: 0
+                visibleuntil: -1
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    content:
+                      type: string
+                    visiblefrom:
+                      type: number
+                    visibleuntil:
+                      type: number
+  /admin/articles/{articleid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      title:
+                        type: string
+                      content:
+                        type: string
+                      contentfull:
+                        nullable: true
+                      created:
+                        type: string
+                      visiblefrom:
+                        type: string
+                      visibleuntil:
+                        type: string
+              example:
+                respid: 58bcba77c1505
+                method: admin/articles/3
+                response:
+                  id: '3'
+                  title: 2017-09-24 - Domain display default page.
+                  content: >-
+                    A new setting has been added to the user-profile to change
+                    the default page displayed when viewing a domain to be
+                    either the "Records" or "Zone Details" page.
+                  contentfull: null
+                  created: '1506219150'
+                  visiblefrom: '1506219150'
+                  visibleuntil: '-1'
+      summary: Get information about a specific article
+      operationId: Get information about a specific article
+      description: Returns complete information about the requested article.
+      tags:
+        - Articles
+      parameters:
+        - &ref_23
+          name: articleid
+          in: path
+          description: The article ID.
+          required: true
+          example: '3'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the user account as it exists
+            after the change.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      title:
+                        type: string
+                      content:
+                        type: string
+                      contentfull:
+                        type: string
+                      created:
+                        type: string
+                      visiblefrom:
+                        type: string
+                      visibleuntil:
+                        type: string
+                      updated:
+                        type: boolean
+              example:
+                respid: 58bcbc34234e3
+                method: admin/articles/3
+                response:
+                  id: '3'
+                  title: 2017-09-24 - Domain display default page.
+                  content: >-
+                    A new setting has been added to the user-profile to change
+                    the default page displayed when viewing a domain to be
+                    either the "Records" or "Zone Details" page.
+                  contentfull: Additional content here.
+                  created: '1506219150'
+                  visiblefrom: '1506219150'
+                  visibleuntil: '-1'
+                  updated: true
+        '400':
+          description: >-
+            If there is an error you will get an `error` key rather than a
+            `response` key in the output
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcbcc7dc8d1
+                method: admin/articles/3
+                error: 'Error updating artcile: 3'
+      summary: Update information about a specific article
+      operationId: Update information about a specific article
+      description: >-
+        Allows updating a specific article. Any fields that are passed in will
+        be updated, fields not passed will be unchanged.
+      tags:
+        - Articles
+      parameters:
+        - *ref_23
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                contentfull: Additional content here.
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    contentfull:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcbde798d3a
+                method: admin/articles/3
+                response:
+                  deleted: 'true'
+      summary: Delete a specific Article
+      operationId: Delete a specific Article
+      description: >-
+        This will allow a user with the `manage_articles` permission to delete
+        the article specified.
+      tags:
+        - Articles
+      parameters:
+        - *ref_23
+  /admin/blockregexes:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get all blockregexes
+      operationId: Get all blockregexes
+      description: >-
+        This will allow a user with the `manage_blocks` permission to see all
+        the blockregexes.
+      tags:
+        - BlockRegexes
+      parameters: []
+    post:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Create an blockregex
+      operationId: Create an blockregex
+      description: >-
+        This allows a user with the `manage_blockregexes` permission to create
+        new blockregexes.
+
+
+        This behaves similarly to updating an blockregex, except that "title",
+        "content", "visiblefrom" and "visibleuntil" are all required.
+      tags:
+        - BlockRegexes
+      parameters: []
+  /admin/blockregexes/{blockregexid}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get information about a specific blockregex
+      operationId: Get information about a specific blockregex
+      description: Returns complete information about the requested blockregex.
+      tags:
+        - BlockRegexes
+      parameters:
+        - &ref_24
+          name: blockregexid
+          in: path
+          description: The blockregex ID.
+          required: true
+          example: '1'
+          schema:
+            type: string
+    post:
+      responses:
+        '200':
+          description: >-
+            The response on success will show the user account as it exists
+            after the change.
+          headers: {}
+          content: {}
+        '400':
+          description: >-
+            If there is an error you will get an `error` key rather than a
+            `response` key in the output
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+              example:
+                respid: 58bcbcc7dc8d1
+                method: admin/blockregexes/1
+                error: 'Error updating blockregex: 1'
+      summary: Update information about a specific blockregex
+      operationId: Update information about a specific blockregex
+      description: >-
+        Allows updating a specific blockregex. Any fields that are passed in
+        will be updated, fields not passed will be unchanged.
+      tags:
+        - BlockRegexes
+      parameters:
+        - *ref_24
+      requestBody:
+        content:
+          application/json:
+            example:
+              data:
+                comment: Block people pretending to be us
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    comment:
+                      type: string
+    delete:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      deleted:
+                        type: string
+              example:
+                respid: 58bcbde798d3a
+                method: admin/blockregexes/1
+                response:
+                  deleted: 'true'
+      summary: Delete a specific BlockRegex
+      operationId: Delete a specific BlockRegex
+      description: >-
+        This will allow a user with the `manage_blockregexes` permission to
+        delete the blockregex specified.
+      tags:
+        - BlockRegexes
+      parameters:
+        - *ref_24
+  /system/datavalue/{datavalue}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      validPermissions:
+                        type: array
+                        items:
+                          type: string
+              example:
+                respid: 59b5f1440fca4
+                method: system/datavalue/validPermissions
+                response:
+                  validPermissions:
+                    - domains_stats
+                    - manage_domains
+                    - domains_create
+                    - manage_users
+                    - manage_permissions
+                    - impersonate_users
+      summary: Get system datavalues from the API
+      operationId: Get system datavalues from the API
+      description: >-
+        This lets you get system datavalues from the api. These are mostly used
+        by the frontend to allow it to dynamically adapt to certain backend
+        changes.
+
+
+        Some datavalues require authentication, some do not.
+      tags:
+        - System
+      parameters:
+        - name: datavalue
+          in: path
+          description: The datavalue to get.
+          required: true
+          example: validPermissions
+          schema:
+            type: string
+  /system/stats/{stat}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content: {}
+      summary: Get system statistics from the API
+      operationId: Get system statistics from the API
+      description: This lets you get system-level statistics from the api.
+      tags:
+        - System
+      parameters:
+        - name: stat
+          in: path
+          description: >-
+            The statistic to get (queries-per-server, queries-per-rrtype,
+            queries-per-zone).
+          required: true
+          example: queries-per-server
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Type of stats (raw or derivative)
+          example: raw
+          schema:
+            type: string
+tags:
+  - name: General
+    description: General API Endpoints.
+  - name: Users
+    description: Endpoints for dealing with user accounts
+  - name: Domains
+    description: Endpoints for dealing with domains.
+  - name: ACME Requests - HTTPREQ / ACMEPROXY
+    description: >-
+      Endpoints for supporting HTTPREQ based ACME requests, as supported by <a
+      href="https://github.com/go-acme/lego/tree/master/providers/dns/httpreq">lego</a>
+      and <a
+      href="https://github.com/acmesh-official/acme.sh/wiki/dnsapi#78-use-acmeproxy-dns-api">acme.sh</a>
+      (as acmeproxy)
+  - name: Domains Admin
+    description: >-
+      Admin Endpoints for dealing with domains, end points under `/admin`
+      require the `manage_domains` permission.
+
+
+      As a general rule, anything that exists under `/domains` also exists under
+      `/admin/domains` but in a less-restricted fashion. (ie, behaves as if the
+      user had `owner` access to all domains and allows setting the domain owner
+      access level on a domain).
+
+
+      As such, to prevent documentation duplication, this section only lists
+      methods where the result is different.
+  - name: Articles
+    description: |-
+      Endpoints for dealing with articles.
+
+      These are used to display information to users after logging in.
+  - name: BlockRegexes
+    description: |-
+      Endpoints for dealing with blockregexes.
+
+      These are used to block names/emails/domains that match a given regex.
+  - name: System
+    description: >-
+      Endpoints for dealing with system internals.
+
+
+      Whilst every effort will be made to keep the API stable, resources
+      available under this endpoint are subject to change without warning as
+      required.
+  - name: Custom Extensions
+    description: >-
+      In addition to standard DNS features, MyDNSHost also supports some custom
+      record types, their behaviour is defined below.
+
+
+      ## Template Records
+
+
+      Record names prefixed with a `$` (such as `$server1`) are considered to be
+      template records.
+
+
+      They will not be exported into the public zone file but are otherwise
+      validated as normal.
+
+
+      They are primarily intended for use with `RRCLONE` records.
+
+
+      ## RRCLONE
+
+
+      `RRCLONE` records are special records that are replaced at zone-compile
+      time with all active (not disabled) records matching the target provided
+      (eg `$server1.example.com`).
+
+
+      By default, *all* rrtypes are inserted, but this behaviour can be changed
+      by adding a rrtype specifier to the start of the target, for example:
+      `(A,AAAA) $server1.example.com` will only insert `A` and `AAAA` records
+      from `$server1.example.com`
+
+
+      `RRCLONE` records can point at any other non-`RRCLONE` record, and are not
+      limited to just template records. If pointed at a template record from
+      another zone file, the 2 zone files must both have a matching set of
+      owner/admin/write users. This check can be passed by naming the record
+      with `$public-` rather than just `$` to allow any user to reference it.
+      Non-Template records are considered to be public records and can be
+      referenced as such without a matching set of users.
+  - name: Experimental
+    description: >-
+      There may be some experimental endpoints available under /experimental
+      from time to time, these are mostly undocumented and should not be relied
+      on.
+
+
+      You can find more information about some of these at <a
+      href="/experimental/docs/">/experimental/docs/</a>
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: "HTTP Basic Auth"
+    JWTToken:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: "Example: \n> Authorization: Bearer <token>"
+    X-2FA-Key:
+      type: apiKey
+      description: '2FA Key if required'
+      name: X-2FA-Key
+      in: header
+    X-2FA-Device-ID:
+      type: apiKey
+      description: '2FA device id if required'
+      name: X-2FA-DEVICE-ID
+      in: header
+    X-API-User:
+      type: apiKey
+      description: 'API Key Username'
+      name: X-API-User
+      in: header
+    X-API-Key:
+      type: apiKey
+      description: 'API Key'
+      name: X-API-Key
+      in: header
+    X-Domain:
+      type: apiKey
+      description: 'Domain Key Domain'
+      name: X-Domain
+      in: header
+    X-Domain-Key:
+      type: apiKey
+      description: 'Domain Key'
+      name: X-Domain-Key
+      in: header
+    X-SESSION-ID:
+      type: apiKey
+      description: 'Session Key'
+      name: X-SESSION-ID
+      in: header
+security:
+- BasicAuth: []
+- BasicAuth: []
+  X-2FA-Key: []
+- BasicAuth: []
+  X-2FA-DEVICE-ID: []
+- JWTToken: []
+- X-API-User: []
+  X-API-Key: []
+- X-Domain: []
+  X-Domain-Key: []
+- X-SESSION-ID: []

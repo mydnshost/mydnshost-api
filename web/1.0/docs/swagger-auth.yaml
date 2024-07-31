@@ -1,0 +1,58 @@
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: "HTTP Basic Auth"
+    JWTToken:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: "Example: \n> Authorization: Bearer <token>"
+    X-2FA-Key:
+      type: apiKey
+      description: '2FA Key if required'
+      name: X-2FA-Key
+      in: header
+    X-2FA-Device-ID:
+      type: apiKey
+      description: '2FA device id if required'
+      name: X-2FA-DEVICE-ID
+      in: header
+    X-API-User:
+      type: apiKey
+      description: 'API Key Username'
+      name: X-API-User
+      in: header
+    X-API-Key:
+      type: apiKey
+      description: 'API Key'
+      name: X-API-Key
+      in: header
+    X-Domain:
+      type: apiKey
+      description: 'Domain Key Domain'
+      name: X-Domain
+      in: header
+    X-Domain-Key:
+      type: apiKey
+      description: 'Domain Key'
+      name: X-Domain-Key
+      in: header
+    X-SESSION-ID:
+      type: apiKey
+      description: 'Session Key'
+      name: X-SESSION-ID
+      in: header
+security:
+- BasicAuth: []
+- BasicAuth: []
+  X-2FA-Key: []
+- BasicAuth: []
+  X-2FA-DEVICE-ID: []
+- JWTToken: []
+- X-API-User: []
+  X-API-Key: []
+- X-Domain: []
+  X-Domain-Key: []
+- X-SESSION-ID: []

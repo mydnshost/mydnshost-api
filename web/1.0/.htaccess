@@ -8,8 +8,8 @@ RewriteRule ^(.*)$ - [E=BASE:%1]
 RewriteRule ^help/?(.*)$ %{ENV:BASE}docs/$1 [R,L]
 
 # Allowed
-RewriteRule ^(docs)/index.apib$ - [L]
-RewriteRule ^(docs)/index.html$ - [L]
+RewriteRule ^(docs)/index.(html|apib)$ - [L]
+RewriteRule ^(docs)/swagger.(json|html|yaml)$ - [L]
 RewriteRule ^(docs)/$ - [L]
 
 # Everything Else
