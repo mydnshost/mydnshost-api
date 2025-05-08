@@ -28,7 +28,7 @@
 
 			$this->checkPermissions(['manage_articles']);
 
-			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				throw new RouterMethod_AccessDenied();
 			}
 		}

@@ -97,7 +97,7 @@
 
 		protected function listUsers() {
 			if ($this->checkPermissions(['manage_users'], true)) {
-				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 				}
 				$users = User::find($this->getContextKey('db'), []);
@@ -172,7 +172,7 @@
 				$isAdminEdit = $this->hasContextKey('impersonator') || $this->checkPermissions(['manage_users'], true);
 
 				if (!$isAdminEdit) {
-					if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+					if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 						$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 					}
 
@@ -297,7 +297,7 @@
 
 			// Can this user disable/enable user accounts?
 			if ($this->checkPermissions(['manage_users'], true)) {
-				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 				}
 
@@ -852,7 +852,7 @@
 			if ($userid != 'self' && $userid != $user->getID()) {
 				$this->checkPermissions(['manage_users']);
 
-				if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+				if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 				}
 			}
@@ -870,7 +870,7 @@
 	$router->addRoute('(POST)', '/users/([0-9]+)/resendwelcome', new class extends UserAdmin {
 		function post($userid) {
 			$this->checkPermissions(['manage_users']);
-			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 			}
 
@@ -1119,7 +1119,7 @@
 	$router->post('/users/create', new class extends UserAdmin {
 		function run() {
 			$this->checkPermissions(['manage_users', 'user_write']);
-			if ($this->hasContextKey('key') && !$this->hasContextKey('key')->getAdminFeatures()) {
+			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 			}
 
