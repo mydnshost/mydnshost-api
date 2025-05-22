@@ -1399,11 +1399,12 @@
 
 			if (array_key_exists('name', $data)) {
 				if ($data['name'] == '@' || $data['name'] == '.') { $data['name'] = ''; }
+				$isEmpty = empty($data['name']) && $data['name'] !== '0' && $data['name'] !== 0;
 
-				if (!empty($data['name']) && endsWith($data['name'], $domain->getDomain() . '.')) {
+				if (!$isEmpty && endsWith($data['name'], $domain->getDomain() . '.')) {
 					$data['name'] = rtrim($data['name'], '.');
 				} else {
-					if (!empty($data['name']) && !endsWith($data['name'], '.')) { $data['name'] .= '.'; }
+					if (!$isEmpty && !endsWith($data['name'], '.')) { $data['name'] .= '.'; }
 					$data['name'] .= $domain->getDomain();
 				}
 			}
