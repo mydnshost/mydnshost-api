@@ -39,11 +39,17 @@ jobs:
         env:
           COMMIT_MESSAGE: ${{ github.event.client_payload.commit_message }}
         run: |
+          SOURCE="${{ github.event.client_payload.source }}"
+          COMMIT="${{ github.event.client_payload.commit }}"
+          COMMIT_SHORT="${{ github.event.client_payload.commit_short }}"
           echo "### Triggered by upstream build" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Source:** ${{ github.event.client_payload.source }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Commit:** \`${{ github.event.client_payload.commit_short }}\` (${{ github.event.client_payload.commit }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Source:** [${SOURCE}](https://github.com/${SOURCE})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** [\`${COMMIT_SHORT}\`](https://github.com/${SOURCE}/commit/${COMMIT})" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "${COMMIT_MESSAGE}" ]; then
-            echo "- **Message:** ${COMMIT_MESSAGE}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- **Message:**" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "${COMMIT_MESSAGE}" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Set up Docker Buildx
