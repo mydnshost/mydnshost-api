@@ -118,6 +118,89 @@
 		}
 	});
 
+	$router->post('/system/jobs/create', new class extends SystemJobsMgmt {
+		function run() {
+			$data = $this->getContextKey('data');
+
+			if (!isset($data['data']['name']) || empty(trim($data['data']['name']))) {
+				$this->getContextKey('response')->sendError('Job name is required.');
+				return TRUE;
+			}
+
+			if (!isset($data['data']['data'])) {
+				$this->getContextKey('response')->sendError('Job payload is required.');
+				return TRUE;
+			}
+
+			$name = trim($data['data']['name']);
+			$jobData = $data['data']['data'];
+
+			if (is_string($jobData)) {
+				$decoded = json_decode($jobData, true);
+				if ($decoded === null && $jobData !== 'null') {
+					$this->getContextKey('response')->sendError('Job payload must be valid JSON.');
+					return TRUE;
+				}
+				$jobData = $decoded;
+			}
+
+			if (!is_array($jobData)) {
+				$jobData = [];
+			}
+
+			$job = JobQueue::get()->create($name, $jobData);
+
+			// If a dependency is specified, set the job as blocked instead of publishing it.
+			$dependsOn = isset($data['data']['dependsOn']) ? intval($data['data']['dependsOn']) : 0;
+			if ($dependsOn > 0) {
+				$parent = Job::load($this->getContextKey('db'), $dependsOn);
+				if ($parent === false) {
+					$this->getContextKey('response')->sendError('Depends-on job ID ' . $dependsOn . ' not found.');
+					return TRUE;
+				}
+				$job->addDependency($dependsOn)->setState('blocked')->save();
+			} else {
+				JobQueue::get()->publish($job);
+			}
+
+			$this->getContextKey('response')->data(['jobid' => $job->getID(), 'status' => $dependsOn > 0 ? 'Job created (blocked, waiting on job ' . $dependsOn . ').' : 'Job scheduled.']);
+			return TRUE;
+		}
+	});
+
+	$router->get('/system/jobs/([0-9]+)/cancel', new class extends SystemJobsMgmt {
+		function run($job) {
+			$j = Job::load($this->getContextKey('db'), $job);
+
+			if ($j === false) {
+				$this->getContextKey('response')->sendError('Error loading job.');
+				return TRUE;
+			}
+
+			if (!in_array($j->getState(), ['created', 'blocked'])) {
+				$this->getContextKey('response')->sendError('Only jobs in created or blocked state can be cancelled.');
+				return TRUE;
+			}
+
+			$cancelled = $this->cancelRecursive($j);
+			$this->getContextKey('response')->data(['status' => $cancelled . ' job' . ($cancelled != 1 ? 's' : '') . ' cancelled.']);
+			return TRUE;
+		}
+
+		private function cancelRecursive($job) {
+			$job->setState('cancelled')->save();
+			$count = 1;
+
+			foreach ($job->getDependants() as $child) {
+				if (in_array($child->getState(), ['created', 'blocked'])) {
+					$count += $this->cancelRecursive($child);
+				}
+			}
+
+			return $count;
+		}
+	});
+
 	$router->get('/system/jobs/([0-9]+)/logs', new class extends SystemJobsMgmt {
 		function run($job) {
 			$j = Job::load($this->getContextKey('db'), $job);
