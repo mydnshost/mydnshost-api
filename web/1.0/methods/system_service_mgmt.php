@@ -30,14 +30,38 @@
 		function run($service) {
 			Mongo::get()->connect();
 
-			$logs = Mongo::get()->getCollection('dockerlogs')->find(['docker.hostname' => $service], ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'limit' => 100])->toArray();
+			$limit = 100;
+			$page = isset($_REQUEST['page']) ? max(1, intval($_REQUEST['page'])) : 1;
+
+			$filter = ['docker.hostname' => $service];
+
+			// Filter by stream (stdout/stderr).
+			if (isset($_REQUEST['stream']) && $_REQUEST['stream'] !== '') {
+				$filter['stream'] = $_REQUEST['stream'];
+			}
+
+			// Filter by message text (case-insensitive regex).
+			if (isset($_REQUEST['search']) && $_REQUEST['search'] !== '') {
+				$filter['message'] = ['$regex' => preg_quote($_REQUEST['search']), '$options' => 'i'];
+			}
+
+			$collection = Mongo::get()->getCollection('dockerlogs');
+
+			// Get total count for pagination.
+			$total = intval($collection->countDocuments($filter));
+			$totalPages = intval(max(1, ceil($total / $limit)));
+			$page = min($page, $totalPages);
+			$skip = ($page - 1) * $limit;
+
+			$logs = $collection->find($filter, ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'skip' => $skip, 'limit' => $limit])->toArray();
 			$logs = array_reverse($logs);
 			foreach ($logs as &$log) {
 				if ($log['timestamp'] instanceof \MongoDB\BSON\UTCDateTime) {
 					$log['timestamp'] = $log['timestamp']->toDateTime()->format('r');
 				}
 			}
-			$this->getContextKey('response')->data($logs);
+
+			$this->getContextKey('response')->data(['logs' => $logs, 'pagination' => ['page' => $page, 'totalPages' => $totalPages, 'total' => $total]]);
 
 			return TRUE;
 		}

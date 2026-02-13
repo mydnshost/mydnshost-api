@@ -66,3 +66,172 @@ This lets you get system-level statistics from the api.
                             {"time": 1505098440, "value": 6}
                         ]
             }
+
+
+## System Jobs List [/system/jobs/list{?page,filter}]
+### List jobs [GET]
+List recent jobs with pagination and optional filtering. Requires `system_job_mgmt` permission.
+
+Results are ordered by job ID descending (most recent first), with 50 jobs per page.
+
++ Parameters
+    + page: `1` (optional, number) - Page number for pagination. Defaults to 1.
+    + filter (optional, object) - Filter criteria.
+        + name: `UpdateBindZone` (optional, string) - Filter by job name.
+        + state: `finished` (optional, string) - Filter by job state.
+        + data (optional, object) - Filter by job data key/value pairs (client-side filtered).
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/jobs/list",
+                "response": {
+                    "jobs": [
+                        {
+                            "id": "1234",
+                            "name": "UpdateBindZone",
+                            "state": "finished",
+                            "created": "1625000000",
+                            "updated": "1625000010",
+                            "data": "{\"domain\": \"example.org\"}",
+                            "dependsOn": [],
+                            "dependants": ["1235"]
+                        }
+                    ],
+                    "pagination": {
+                        "page": 1,
+                        "totalPages": 5,
+                        "total": 230
+                    }
+                }
+            }
+
+
+## System Job [/system/jobs/{job}]
+### Get a specific job [GET]
+Get details of a specific job by ID, including its logs. Requires `system_job_mgmt` permission.
+
++ Parameters
+    + job: `1234` (required, number) - The job ID.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/jobs/1234",
+                "response": {
+                    "id": "1234",
+                    "name": "UpdateBindZone",
+                    "state": "finished",
+                    "created": "1625000000",
+                    "updated": "1625000010",
+                    "data": "{\"domain\": \"example.org\"}",
+                    "dependsOn": [],
+                    "dependants": ["1235"],
+                    "logs": [
+                        {
+                            "time": "1625000005",
+                            "entry": "Processing zone update for example.org"
+                        }
+                    ]
+                }
+            }
+
+## System Job Repeat [/system/jobs/{job}/repeat]
+### Repeat a job [GET]
+Schedule a repeat of a specific job with the same name and data. Requires `system_job_mgmt` permission.
+
++ Parameters
+    + job: `1234` (required, number) - The job ID to repeat.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/jobs/1234/repeat",
+                "response": {
+                    "jobid": "1300",
+                    "status": "Repeat job scheduled."
+                }
+            }
+
+## System Job Logs [/system/jobs/{job}/logs]
+### Get job logs [GET]
+Get the logs for a specific job. Requires `system_job_mgmt` permission.
+
++ Parameters
+    + job: `1234` (required, number) - The job ID.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/jobs/1234/logs",
+                "response": [
+                    {
+                        "time": "1625000005",
+                        "entry": "Processing zone update for example.org"
+                    }
+                ]
+            }
+
+## System Services List [/system/service/list]
+### List services [GET]
+List all known service hostnames from container logs. Requires `system_service_mgmt` permission.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/service/list",
+                "response": [
+                    "api",
+                    "bind-master",
+                    "dispatcher",
+                    "workers"
+                ]
+            }
+
+
+## System Service Logs [/system/service/{service}/logs{?page,stream,search}]
+### Get service logs [GET]
+Get container logs for a specific service with pagination and optional filtering. Requires `system_service_mgmt` permission.
+
+Results are returned in chronological order (oldest first within the page), with 100 logs per page.
+
++ Parameters
+    + service: `api` (required, string) - The service hostname.
+    + page: `1` (optional, number) - Page number for pagination. Defaults to 1.
+    + stream: `stderr` (optional, string) - Filter by log stream (stdout or stderr).
+    + search: `error` (optional, string) - Filter by message text (case-insensitive).
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/service/api/logs",
+                "response": {
+                    "logs": [
+                        {
+                            "timestamp": "Thu, 01 Jul 2021 12:00:00 +0000",
+                            "message": "Request processed successfully",
+                            "stream": "stdout",
+                            "docker": {
+                                "hostname": "api"
+                            }
+                        }
+                    ],
+                    "pagination": {
+                        "page": 1,
+                        "totalPages": 10,
+                        "total": 950
+                    }
+                }
+            }

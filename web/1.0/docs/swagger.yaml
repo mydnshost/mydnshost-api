@@ -5372,6 +5372,401 @@ paths:
           example: raw
           schema:
             type: string
+  /system/jobs/list:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      jobs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            state:
+                              type: string
+                            created:
+                              type: string
+                            updated:
+                              type: string
+                            data:
+                              type: string
+                            dependsOn:
+                              type: array
+                              items: {}
+                            dependants:
+                              type: array
+                              items:
+                                type: string
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          totalPages:
+                            type: number
+                          total:
+                            type: number
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/jobs/list
+                response:
+                  jobs:
+                    - id: '1234'
+                      name: UpdateBindZone
+                      state: finished
+                      created: '1625000000'
+                      updated: '1625000010'
+                      data: '{"domain": "example.org"}'
+                      dependsOn: []
+                      dependants:
+                        - '1235'
+                  pagination:
+                    page: 1
+                    totalPages: 5
+                    total: 230
+      summary: List jobs
+      operationId: List jobs
+      description: >-
+        List recent jobs with pagination and optional filtering. Requires
+        `system_job_mgmt` permission.
+
+
+        Results are ordered by job ID descending (most recent first), with 50
+        jobs per page.
+      tags:
+        - System
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination. Defaults to 1.
+          example: '1'
+          schema:
+            type: number
+        - name: filter
+          in: query
+          description: >-
+            Filter criteria.
+
+
+            + name: `UpdateBindZone` (optional, string) - Filter by job name.
+
+
+            + state: `finished` (optional, string) - Filter by job state.
+
+
+            + data (optional, object) - Filter by job data key/value pairs
+            (client-side filtered).
+          schema:
+            type: string
+  /system/jobs/{job}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      state:
+                        type: string
+                      created:
+                        type: string
+                      updated:
+                        type: string
+                      data:
+                        type: string
+                      dependsOn:
+                        type: array
+                        items: {}
+                      dependants:
+                        type: array
+                        items:
+                          type: string
+                      logs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            time:
+                              type: string
+                            entry:
+                              type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/jobs/1234
+                response:
+                  id: '1234'
+                  name: UpdateBindZone
+                  state: finished
+                  created: '1625000000'
+                  updated: '1625000010'
+                  data: '{"domain": "example.org"}'
+                  dependsOn: []
+                  dependants:
+                    - '1235'
+                  logs:
+                    - time: '1625000005'
+                      entry: Processing zone update for example.org
+      summary: Get a specific job
+      operationId: Get a specific job
+      description: >-
+        Get details of a specific job by ID, including its logs. Requires
+        `system_job_mgmt` permission.
+      tags:
+        - System
+      parameters:
+        - name: job
+          in: path
+          description: The job ID.
+          required: true
+          example: '1234'
+          schema:
+            type: number
+  /system/jobs/{job}/repeat:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      jobid:
+                        type: string
+                      status:
+                        type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/jobs/1234/repeat
+                response:
+                  jobid: '1300'
+                  status: Repeat job scheduled.
+      summary: Repeat a job
+      operationId: Repeat a job
+      description: >-
+        Schedule a repeat of a specific job with the same name and data.
+        Requires `system_job_mgmt` permission.
+      tags:
+        - System
+      parameters:
+        - name: job
+          in: path
+          description: The job ID to repeat.
+          required: true
+          example: '1234'
+          schema:
+            type: number
+  /system/jobs/{job}/logs:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        time:
+                          type: string
+                        entry:
+                          type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/jobs/1234/logs
+                response:
+                  - time: '1625000005'
+                    entry: Processing zone update for example.org
+      summary: Get job logs
+      operationId: Get job logs
+      description: Get the logs for a specific job. Requires `system_job_mgmt` permission.
+      tags:
+        - System
+      parameters:
+        - name: job
+          in: path
+          description: The job ID.
+          required: true
+          example: '1234'
+          schema:
+            type: number
+  /system/service/list:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: array
+                    items:
+                      type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/service/list
+                response:
+                  - api
+                  - bind-master
+                  - dispatcher
+                  - workers
+      summary: List services
+      operationId: List services
+      description: >-
+        List all known service hostnames from container logs. Requires
+        `system_service_mgmt` permission.
+      tags:
+        - System
+      parameters: []
+  /system/service/{service}/logs:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      logs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            timestamp:
+                              type: string
+                            message:
+                              type: string
+                            stream:
+                              type: string
+                            docker:
+                              type: object
+                              properties:
+                                hostname:
+                                  type: string
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          totalPages:
+                            type: number
+                          total:
+                            type: number
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/service/api/logs
+                response:
+                  logs:
+                    - timestamp: Thu, 01 Jul 2021 12:00:00 +0000
+                      message: Request processed successfully
+                      stream: stdout
+                      docker:
+                        hostname: api
+                  pagination:
+                    page: 1
+                    totalPages: 10
+                    total: 950
+      summary: Get service logs
+      operationId: Get service logs
+      description: >-
+        Get container logs for a specific service with pagination and optional
+        filtering. Requires `system_service_mgmt` permission.
+
+
+        Results are returned in chronological order (oldest first within the
+        page), with 100 logs per page.
+      tags:
+        - System
+      parameters:
+        - name: service
+          in: path
+          description: The service hostname.
+          required: true
+          example: api
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for pagination. Defaults to 1.
+          example: '1'
+          schema:
+            type: number
+        - name: stream
+          in: query
+          description: Filter by log stream (stdout or stderr).
+          example: stderr
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Filter by message text (case-insensitive).
+          example: error
+          schema:
+            type: string
 tags:
   - name: General
     description: General API Endpoints.
