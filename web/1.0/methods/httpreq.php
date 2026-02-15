@@ -55,7 +55,7 @@
 
 			$data['fqdn'] = rtrim($data['fqdn'], '.');
 
-			$wantedRecordFull = $wantedRecord = $data['fqdn'];
+			$wantedRecord = $data['fqdn'];
 
 			$this->checkUserCanEditRecord('TXT', $data['fqdn']);
 
@@ -67,6 +67,14 @@
 			$this->checkAccess($domain, ['write', 'admin', 'owner']);
 
 			$wantedRecord = preg_replace('#\.?' . preg_quote($domain->getDomain(), '#') . '$#', '', $wantedRecord);
+
+			$topDomain = $domain->getAliasDomain(true);
+			if ($topDomain !== FALSE) {
+				$domain = $topDomain;
+				$this->checkAccess($domain, ['write', 'admin', 'owner']);
+			}
+
+			$wantedRecordFull = $wantedRecord . '.' . $domain->getDomain();
 
 			$this->getContextKey('db')->beginTransaction();
 

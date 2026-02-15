@@ -30,6 +30,10 @@
 			}
 
 			$this->checkPermissions(['domains_write']);
+
+			if ($domain->getAliasOf() != null) {
+				$this->getContextKey('response')->sendError('This endpoint is unavailable for aliased domains.');
+			}
 		}
 
 		public function run($domainName, $domainKey, $rrname, $rrtype) {
