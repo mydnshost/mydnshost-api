@@ -23,56 +23,35 @@
 			$db = $this->getContextKey('db');
 			$filter = isset($_REQUEST['filter']) ? $_REQUEST['filter'] : [];
 
-			// Build WHERE clause for both count and search queries.
-			$where = [];
-			$params = [];
-			if (isset($filter['name']) && $filter['name'] !== '') {
-				$where[] = '`name` = :name';
-				$params[':name'] = $filter['name'];
-			}
-			if (isset($filter['state']) && $filter['state'] !== '') {
-				$where[] = '`state` = :state';
-				$params[':state'] = $filter['state'];
-			}
-
-			// Get total count for pagination.
-			$countSql = 'SELECT COUNT(*) as total FROM `jobs`';
-			if (!empty($where)) {
-				$countSql .= ' WHERE ' . implode(' AND ', $where);
-			}
-			$countStmt = $db->getPDO()->prepare($countSql);
-			$countStmt->execute($params);
-			$total = intval($countStmt->fetch(PDO::FETCH_ASSOC)['total']);
-			$totalPages = intval(max(1, ceil($total / $limit)));
-			$page = min($page, $totalPages);
-			$offset = ($page - 1) * $limit;
-
 			$jobSearch = Job::getSearch($db);
 			$jobSearch->order('id', 'desc');
 
-			// Server-side filtering by name and state.
+			// Server-side filtering by name, state, and JSON payload.
 			if (isset($filter['name']) && $filter['name'] !== '') {
 				$jobSearch->where('name', $filter['name']);
 			}
 			if (isset($filter['state']) && $filter['state'] !== '') {
 				$jobSearch->where('state', $filter['state']);
 			}
+			if (isset($filter['data']) && is_array($filter['data'])) {
+				foreach ($filter['data'] as $key => $value) {
+					$safePath = preg_replace('/[^a-zA-Z0-9_-]/', '', $key);
+					if ($safePath === '' || $value === '') { continue; }
+					$jobSearch->whereJson('data', $safePath, $value);
+				}
+			}
+
+			// Get total count for pagination (before applying limit).
+			$total = $jobSearch->count();
+			$totalPages = intval(max(1, ceil($total / $limit)));
+			$page = min($page, $totalPages);
+			$offset = ($page - 1) * $limit;
 
 			// Note: Limit class generates LIMIT $1,$2 — MySQL interprets as LIMIT offset,count
 			$jobSearch->limit($offset, $limit);
 
 			$rows = [];
 			foreach ($jobSearch->search([]) as $j) {
-				if (isset($filter['data'])) {
-					foreach ($filter['data'] as $key => $value) {
-						$json = $j->getJobData();
-
-						if (!isset($json[$key]) || strtolower($json[$key]) != strtolower($value)) {
-							continue 2;
-						}
-					}
-				}
-
 				$arr = $j->toArray();
 				$arr['dependsOn'] = array_keys($j->getDependsOn());
 				$arr['dependants'] = array_keys($j->getDependants());
