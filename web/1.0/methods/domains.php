@@ -270,9 +270,6 @@
 					$rr = $keyrec->getType();
 					$data = $keyrec->getContent();
 
-					if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
-					$r['DNSSEC'][$rr][] = $keyrec->__toString();
-
 					if ($rr == 'DS') {
 						$bits = explode(' ', $data);
 
@@ -280,6 +277,8 @@
 						$algorithm = $bits[1];
 						$type = $bits[2];
 						$digest = $bits[3];
+
+						if ($type == '1') { continue; } // Skip SHA-1
 
 						if (!isset($dsCount[$keyID])) { $dsCount[$keyID] = 0; }
 						$dsCount[$keyID]++;
@@ -302,6 +301,9 @@
 						$r['DNSSEC']['parsed'][$keyID]['Flags'] = (isset($flagTypes[$flags]) ? $flagTypes[$flags] : 'Other') . ' (' . $flags . ')';
 						$r['DNSSEC']['parsed'][$keyID]['Protocol'] = $protocol;
 					}
+
+					if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
+					$r['DNSSEC'][$rr][] = $keyrec->__toString();
 				}
 
 				if (empty($r['DNSSEC']['parsed'])) { unset($r['DNSSEC']['parsed']); }
