@@ -127,22 +127,60 @@
 				$jobData = [];
 			}
 
-			$job = JobQueue::get()->create($name, $jobData);
-
-			// If a dependency is specified, set the job as blocked instead of publishing it.
+			// Validate dependency before creating the job.
 			$dependsOn = isset($data['data']['dependsOn']) ? intval($data['data']['dependsOn']) : 0;
+			$parent = null;
 			if ($dependsOn > 0) {
 				$parent = Job::load($this->getContextKey('db'), $dependsOn);
 				if ($parent === false) {
 					$this->getContextKey('response')->sendError('Depends-on job ID ' . $dependsOn . ' not found.');
 					return TRUE;
 				}
-				$job->addDependency($dependsOn)->setState('blocked')->save();
+			}
+
+			$job = JobQueue::get()->create($name, $jobData);
+
+			$status = 'Job scheduled.';
+			if ($parent !== null) {
+				$parentState = $parent->getState();
+				if ($parentState === 'finished') {
+					$job->addDependency($dependsOn)->save();
+					JobQueue::get()->publish($job);
+					$status = 'Job scheduled (parent job already finished).';
+				} else if ($parentState === 'error') {
+					$job->addDependency($dependsOn)->setState('error')->setResult('PARENT ERROR')->save();
+					EventQueue::get()->publish('job.finished', [$job->getID(), 'PARENT ERROR']);
+					$status = 'Job created but immediately failed (parent job errored).';
+				} else {
+					$job->addDependency($dependsOn)->setState('blocked')->save();
+					$status = 'Job created (blocked, waiting on job ' . $dependsOn . ').';
+				}
 			} else {
 				JobQueue::get()->publish($job);
 			}
 
-			$this->getContextKey('response')->data(['jobid' => $job->getID(), 'status' => $dependsOn > 0 ? 'Job created (blocked, waiting on job ' . $dependsOn . ').' : 'Job scheduled.']);
+			$this->getContextKey('response')->data(['jobid' => $job->getID(), 'status' => $status]);
+			return TRUE;
+		}
+	});
+
+	$router->get('/system/jobs/([0-9]+)/republish', new class extends SystemJobsMgmt {
+		function run($job) {
+			$j = Job::load($this->getContextKey('db'), $job);
+
+			if ($j === false) {
+				$this->getContextKey('response')->sendError('Error loading job.');
+				return TRUE;
+			}
+
+			if ($j->getState() !== 'created') {
+				$this->getContextKey('response')->sendError('Only jobs in created state can be republished.');
+				return TRUE;
+			}
+
+			JobQueue::get()->publish($j);
+
+			$this->getContextKey('response')->data(['jobid' => $j->getID(), 'status' => 'Job republished.']);
 			return TRUE;
 		}
 	});
