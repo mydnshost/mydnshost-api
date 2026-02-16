@@ -30,7 +30,7 @@
 			if (isset($filter['name']) && $filter['name'] !== '') {
 				$jobSearch->where('name', $filter['name']);
 			}
-			if (isset($filter['state']) && $filter['state'] !== '') {
+			if (isset($filter['state']) && !empty($filter['state'])) {
 				$jobSearch->where('state', $filter['state']);
 			}
 			if (isset($filter['data']) && is_array($filter['data'])) {
