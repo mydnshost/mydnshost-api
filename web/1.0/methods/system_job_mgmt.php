@@ -51,7 +51,7 @@
 			$jobSearch->limit($offset, $limit);
 
 			$rows = [];
-			foreach ($jobSearch->search([]) as $j) {
+			foreach ($jobSearch->search([]) ?: [] as $j) {
 				$arr = $j->toArray();
 				$arr['dependsOn'] = array_keys($j->getDependsOn());
 				$arr['dependants'] = array_keys($j->getDependants());
@@ -73,6 +73,15 @@
 				$arr['dependsOn'] = array_keys($j->getDependsOn());
 				$arr['dependants'] = array_keys($j->getDependants());
 				$arr['logs'] = $j->getLogs();
+
+				$arr['relatedJobs'] = [];
+				foreach ($j->getRelatedJobs() as $rj) {
+					$rArr = $rj->toArray();
+					$rArr['dependsOn'] = array_keys($rj->getDependsOn());
+					$rArr['dependants'] = array_keys($rj->getDependants());
+					$arr['relatedJobs'][] = $rArr;
+				}
+
 				$this->getContextKey('response')->data($arr);
 			} else {
 				$this->getContextKey('response')->sendError('Error loading job.');

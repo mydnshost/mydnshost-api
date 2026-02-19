@@ -407,6 +407,25 @@
 		}
 	}
 
+	// Set actor context on EventQueue so all published events include who triggered them.
+	if (isset($context['user'])) {
+		$actor = ['email' => $context['user']->getEmail()];
+		if (isset($context['domainkey'])) {
+			$actor['type'] = 'domainkey';
+			$actor['key'] = $context['domainkey']->getDescription();
+			$actor['domain'] = $context['domainkey']->getDomain()->getDomainRaw();
+		} else if (isset($context['key'])) {
+			$actor['type'] = 'apikey';
+			$actor['key'] = $context['key']->getDescription();
+		} else {
+			$actor['type'] = 'user';
+		}
+		if (isset($context['impersonator'])) {
+			$actor['impersonator'] = $context['impersonator']->getEmail();
+		}
+		EventQueue::get()->setActor($actor);
+	}
+
 	// Now, look for the API Method that does what we want!
 	try {
 		$router->run($requestMethod, $method, $context);
