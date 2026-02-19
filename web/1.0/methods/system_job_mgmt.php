@@ -86,7 +86,7 @@
 			$j = Job::load($this->getContextKey('db'), $job);
 
 			if ($j !== false) {
-				$job = JobQueue::get()->create($j->getName(), $j->getJobData());
+				$job = JobQueue::get()->create($j->getName(), $j->getJobData(), 'Repeat of job #' . $j->getID());
 				JobQueue::get()->publish($job);
 
 				$this->getContextKey('response')->data(['jobid' => $job->getID(), 'status' => 'Repeat job scheduled.']);
@@ -138,7 +138,8 @@
 				}
 			}
 
-			$job = JobQueue::get()->create($name, $jobData);
+			$reason = isset($data['data']['reason']) && !empty(trim($data['data']['reason'])) ? trim($data['data']['reason']) : 'Manually created';
+			$job = JobQueue::get()->create($name, $jobData, $reason);
 
 			$status = 'Job scheduled.';
 			if ($parent !== null) {
