@@ -264,6 +264,12 @@
 				$flagTypes[256] = 'ZSK';
 				$flagTypes[257] = 'KSK';
 
+				// Index ZoneKey objects by key ID for signing state lookup
+				$zoneKeysByID = [];
+				foreach ($domain->getZoneKeys() as $zk) {
+					$zoneKeysByID[$zk->getKeyID()] = $zk;
+				}
+
 				$dsCount = [];
 
 				foreach ($keys as $keyrec) {
@@ -294,12 +300,19 @@
 						$algorithm = $bits[2];
 						$key = preg_replace('#\s+#', "\n", $bits[3]);
 
-						$keyID = $this->generate_keytag($flags, $protocol, $algorithm, $key);
+						$keyID = Dig::computeKeytag($flags, $protocol, $algorithm, $key);
 
 						$r['DNSSEC']['parsed'][$keyID]['Algorithm'] = (isset($algorithmTypes[$algorithm]) ? $algorithmTypes[$algorithm] : 'Other') . ' (' . $algorithm . ')';
 						$r['DNSSEC']['parsed'][$keyID]['Public Key'] = $key;
 						$r['DNSSEC']['parsed'][$keyID]['Flags'] = (isset($flagTypes[$flags]) ? $flagTypes[$flags] : 'Other') . ' (' . $flags . ')';
 						$r['DNSSEC']['parsed'][$keyID]['Protocol'] = $protocol;
+
+						// Add signing state from ZoneKey if checked
+						if (isset($zoneKeysByID[$keyID]) && $zoneKeysByID[$keyID]->getSigningCheckTime() > 0) {
+							$r['DNSSEC']['parsed'][$keyID]['Signing'] = $zoneKeysByID[$keyID]->getIsSigning();
+							$r['DNSSEC']['parsed'][$keyID]['At Parent'] = $zoneKeysByID[$keyID]->getAtParent();
+							$r['DNSSEC']['parsed'][$keyID]['Signing Check Time'] = $zoneKeysByID[$keyID]->getSigningCheckTime();
+						}
 					}
 
 					if (!isset($r['DNSSEC'][$rr])) { $r['DNSSEC'][$rr] = []; }
@@ -337,23 +350,8 @@
 			return true;
 		}
 
-		// From https://robin.waarts.eu/2012/07/14/get-the-keytag-from-dnskey-data-in-php/
-		private function generate_keytag($flags, $prot, $algo, $key){
-			$rdata = base64_decode($key);
-			$sum = 0;
-			$wire = pack("ncc", $flags, $prot, $algo) . $rdata;
-			if ($algo == 1) {
-				$keytag = 0xffff & unpack("n", substr($wire, -3, 2));
-			} else {
-				$sum = 0;
-				for ($i = 0; $i < strlen($wire); $i++) {
-					$a = unpack("C", substr($wire,$i,1));
-					$sum += ($i & 1) ? $a[1] : $a[1] << 8;
-				}
-				$keytag = 0xffff & ($sum + ($sum >> 16));
-			}
-
-			return $keytag;
+		private function generate_keytag($flags, $prot, $algo, $key) {
+			return Dig::computeKeytag($flags, $prot, $algo, $key);
 		}
 
 		/**
@@ -799,6 +797,7 @@
 						$value = [];
 						$value['access'] = $domain->getAccess($this->getContextKey('user'));
 						$value['verification'] = ['state' => $domain->getVerificationState(), 'time' => $domain->getVerificationStateTime()];
+						$value['dnssec'] = ['state' => $domain->getDnssecState()];
 						if ($useValData && !empty($valDataName)) {
 							$value[$valDataName] = isset($valData[$domain->getID()]) ? $valData[$domain->getID()] : '';
 						}
@@ -825,7 +824,7 @@
 		 * @return TRUE if we handled this method.
 		 */
 		protected function getDomainListAdmin() {
-			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled', 'verificationstate', 'verificationstatetime']);
+			$s = new Search($this->getContextKey('db')->getPDO(), 'domains', ['domain', 'disabled', 'verificationstate', 'verificationstatetime', 'dnssecstate']);
 			$s->join('domain_access', '`domains`.`id` = `domain_access`.`domain_id`', 'LEFT');
 			$s->join('users', '`users`.`id` = `domain_access`.`user_id`', 'LEFT');
 			$s->select('users', 'email', 'user');
@@ -844,6 +843,7 @@
 				$domains[$row['domain']]['users'][$row['user']] = $row['level'];
 				$domains[$row['domain']]['userinfo'][$row['user']] = ['avatar' => $row['avatar']];
 				$domains[$row['domain']]['verification'] = ['state' => $row['verificationstate'], 'time' => $row['verificationstatetime']];
+				$domains[$row['domain']]['dnssec'] = ['state' => $row['dnssecstate']];
 			}
 
 			$this->getContextKey('response')->data($domains);
