@@ -309,9 +309,11 @@
 
 						// Add signing state from ZoneKey if checked
 						if (isset($zoneKeysByID[$keyID]) && $zoneKeysByID[$keyID]->getSigningCheckTime() > 0) {
-							$r['DNSSEC']['parsed'][$keyID]['Signing'] = $zoneKeysByID[$keyID]->getIsSigning();
-							$r['DNSSEC']['parsed'][$keyID]['At Parent'] = $zoneKeysByID[$keyID]->getAtParent();
-							$r['DNSSEC']['parsed'][$keyID]['Signing Check Time'] = $zoneKeysByID[$keyID]->getSigningCheckTime();
+							$isSigning = $zoneKeysByID[$keyID]->getIsSigning();
+							$atParent = $zoneKeysByID[$keyID]->getAtParent();
+							$r['DNSSEC']['parsed'][$keyID]['Signing'] = ($isSigning === null) ? 'Unknown' : ($isSigning ? 'Yes' : 'No');
+							$r['DNSSEC']['parsed'][$keyID]['At Parent'] = ($atParent === null) ? 'Unknown' : ($atParent ? 'Yes' : 'No');
+							$r['DNSSEC']['parsed'][$keyID]['Signing Check Time'] = date('Y-m-d H:i:s', $zoneKeysByID[$keyID]->getSigningCheckTime());
 						}
 					}
 
