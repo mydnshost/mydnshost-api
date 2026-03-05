@@ -259,14 +259,14 @@
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'emailchanged.tpl');
-							EventQueue::get()->publish('mail.send', [$oldEmail, $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('mail.send', [$oldEmail, $subject, $message, $htmlmessage, 'Email change notification']);
 						}
 
 						if ($newPass != $oldPass && !empty($oldPass)) {
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
-							EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Password change notification']);
 						}
 					} else if ($isCreate) {
 						EventQueue::get()->publish('user.new', [$user->getID()]);
@@ -275,7 +275,7 @@
 							$te = TemplateEngine::get();
 							$te->setVar('user', $user);
 							[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-							EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+							EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Welcome email']);
 						}
 					}
 
@@ -490,7 +490,7 @@
 					$te->setVar('apikey', $key);
 					$template = $isCreate ? 'apikey/create.tpl' : 'apikey/update.tpl';
 					[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-					EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'API key ' . ($isCreate ? 'created' : 'updated')]);
 				}
 
 				return TRUE;
@@ -525,7 +525,7 @@
 			$te->setVar('apikey', $key);
 			$template = 'apikey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'API key deleted']);
 
 			return TRUE;
 		}
@@ -678,7 +678,7 @@
 				if ($isCreate) {
 					$template = '2fakey/create.tpl';
 					[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-					EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+					EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, '2FA key created']);
 				} else {
 					// Doesn't make sense to send this mail, as only the
 					// description can change, we won't show the 2FA Secret in
@@ -746,7 +746,7 @@
 			$te->setVar('twofactorkey', $key);
 			$template = '2fakey/delete.tpl';
 			[$subject, $message, $htmlmessage] = templateToMail($te, $template);
-			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, '2FA key deleted']);
 
 			return TRUE;
 		}
@@ -883,7 +883,7 @@
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
 			[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Resend welcome email']);
 
 			$this->getContextKey('response')->data(['success' => 'Registration email resent.']);
 

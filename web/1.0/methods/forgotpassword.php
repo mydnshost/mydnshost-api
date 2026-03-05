@@ -29,7 +29,7 @@
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
 			[$subject, $message, $htmlmessage] = templateToMail($te, 'forgotpassword.tpl');
-			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+			EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Forgot password request']);
 
 
 			$this->getContextKey('response')->data($successMessage);
@@ -93,7 +93,7 @@
 				$te = TemplateEngine::get();
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
-				EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+				EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Password reset confirmation']);
 
 				$this->getContextKey('response')->data(['success' => 'Password was changed, you can now login.']);
 			} else {

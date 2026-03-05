@@ -83,7 +83,7 @@
 				$te = TemplateEngine::get();
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'register.tpl');
-				EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage]);
+				EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, 'Registration verification']);
 				EventQueue::get()->publish('user.new', [$user->getID()]);
 
 				return TRUE;
