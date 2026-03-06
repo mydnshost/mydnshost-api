@@ -334,7 +334,8 @@
 			}
 
 			// Can this user set permissions?
-			if (isset($data['permissions']) && $this->checkPermissions(['manage_permissions'], true)) {
+			// Never allow permission changes while impersonating.
+			if (isset($data['permissions']) && !$this->hasContextKey('impersonator') && $this->checkPermissions(['manage_permissions'], true)) {
 				$oldPermissions = $user->getPermissions();
 
 				// Set requested permissions.
@@ -342,11 +343,23 @@
 					$user->setPermission($permission, $value);
 				}
 
-				// Don't allow users to remove their own ability to edit permissions.
+				// Don't allow users to remove their own ability to edit permissions
+				// or view the audit log.
 				if ($this->getContextKey('user')->getID() == $user->getID()) {
-					foreach (['manage_permissions', 'manage_users'] as $p) {
+					foreach (['manage_permissions', 'manage_users', 'system_audit_log'] as $p) {
 						if ($oldPermissions[$p] === true) {
 							$user->setPermission($p, true);
+						}
+					}
+				}
+
+				// system_audit_log can only be granted by someone who already
+				// has it, unless no one has it yet (bootstrap).
+				if ($user->getPermission('system_audit_log') && !($oldPermissions['system_audit_log'] ?? false)) {
+					$actingUser = $this->getContextKey('user');
+					if (!$actingUser->getPermission('system_audit_log')) {
+						if (User::anyUserHasPermission($this->getContextKey('db'), 'system_audit_log')) {
+							$user->setPermission('system_audit_log', false);
 						}
 					}
 				}
@@ -360,14 +373,17 @@
 					if ($ucd == false) {
 						if (empty($value)) { continue; } // No point continuing
 
+						$oldValue = null;
 						$ucd = (new UserCustomData($this->getContextKey('db')))->setUserID($uid)->setKey($key);
+					} else {
+						$oldValue = $ucd->getValue();
 					}
 					if (empty($value)) {
 						$ucd->delete();
 						EventQueue::get()->publish('user.customdata.deleted', [$uid, $key]);
 					} else {
 						$ucd->setValue($value)->save();
-						EventQueue::get()->publish('user.customdata.updated', [$uid, $key, $value]);
+						EventQueue::get()->publish('user.customdata.updated', [$uid, $key, $oldValue, $value]);
 					}
 				}
 			}
@@ -868,6 +884,7 @@
 			}
 
 			if ($customdata !== FALSE) {
+				$oldValue = $isCreate ? null : $customdata->getValue();
 				$this->doUpdateCustomData($customdata, $data['data']);
 
 				try {
@@ -891,7 +908,7 @@
 						$this->getContextKey('response')->sendError('Error updating customdata: ' . $customdata->getKey(), $ex->getMessage());
 					}
 				} else {
-					EventQueue::get()->publish('user.customdata.updated', [$user->getID(), $customdata->getKey(), $customdata->getValue()]);
+					EventQueue::get()->publish('user.customdata.updated', [$user->getID(), $customdata->getKey(), $oldValue, $customdata->getValue()]);
 					$this->getContextKey('response')->data($k);
 				}
 

@@ -1129,14 +1129,17 @@
 					if ($udcd == false) {
 						if (empty($value)) { continue; } // No point continuing
 
+						$oldValue = null;
 						$udcd = (new UserDomainCustomData($this->getContextKey('db')))->setUserID($uid)->setDomainID($did)->setKey($key);
+					} else {
+						$oldValue = $udcd->getValue();
 					}
 					if (empty($value)) {
 						$udcd->delete();
 						EventQueue::get()->publish('domain.userdata.deleted', [$did, $uid, $key]);
 					} else {
 						$udcd->setValue($value)->save();
-						EventQueue::get()->publish('domain.userdata.updated', [$did, $uid, $key, $value]);
+						EventQueue::get()->publish('domain.userdata.updated', [$did, $uid, $key, $oldValue, $value]);
 					}
 				}
 			}
