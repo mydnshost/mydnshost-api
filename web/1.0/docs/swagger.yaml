@@ -5954,6 +5954,162 @@ paths:
           example: error
           schema:
             type: string
+  /system/audit/list:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      entries:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: number
+                            time:
+                              type: number
+                            actor:
+                              type: string
+                            type:
+                              type: string
+                            args:
+                              type: string
+                            summary:
+                              type: string
+                            extendedsummary:
+                              type: string
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          totalPages:
+                            type: number
+                          total:
+                            type: number
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/audit/list
+                response:
+                  entries:
+                    - id: 42
+                      time: 1709769600
+                      actor: admin@example.com
+                      type: record.add
+                      args: '[1, 5, "{\"name\": \"www.example.com\", ...}"]'
+                      summary: '"www.example.com" A record on "example.com" added'
+                      extendedsummary: 'content: "1.2.3.4", ttl: 300'
+                  pagination:
+                    page: 1
+                    totalPages: 5
+                    total: 230
+      summary: List audit log entries
+      operationId: List audit log entries
+      description: >-
+        List audit log entries with pagination and optional filtering. Requires
+        `system_audit_log` permission.
+
+
+        Results are ordered by ID descending (most recent first), with 50
+        entries per page.
+      tags:
+        - System
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination. Defaults to 1.
+          example: '1'
+          schema:
+            type: number
+        - name: filter
+          in: query
+          description: >-
+            Filter criteria.
+
+
+            + type: `record.add` (optional, string) - Filter by event type
+            (exact match).
+
+
+            + actor: `admin@example.com` (optional, string) - Filter by actor
+            (substring match).
+
+
+            + search: `example.com` (optional, string) - Filter by summary text
+            (substring match).
+          schema:
+            type: string
+  /system/audit/{id}:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      id:
+                        type: number
+                      time:
+                        type: number
+                      actor:
+                        type: string
+                      type:
+                        type: string
+                      args:
+                        type: string
+                      summary:
+                        type: string
+                      extendedsummary:
+                        type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: system/audit/42
+                response:
+                  id: 42
+                  time: 1709769600
+                  actor: admin@example.com
+                  type: record.add
+                  args: '[1, 5, "{\"name\": \"www.example.com\", ...}"]'
+                  summary: '"www.example.com" A record on "example.com" added'
+                  extendedsummary: 'content: "1.2.3.4", ttl: 300'
+      summary: Get a specific audit log entry
+      operationId: Get a specific audit log entry
+      description: >-
+        Get details of a specific audit log entry by ID. Requires
+        `system_audit_log` permission.
+      tags:
+        - System
+      parameters:
+        - name: id
+          in: path
+          description: The audit log entry ID.
+          required: true
+          example: '42'
+          schema:
+            type: number
 tags:
   - name: General
     description: General API Endpoints.

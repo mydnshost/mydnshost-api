@@ -271,3 +271,68 @@ Results are returned in chronological order (oldest first within the page), with
                     }
                 }
             }
+
+
+## System Audit Log List [/system/audit/list{?page,filter}]
+### List audit log entries [GET]
+List audit log entries with pagination and optional filtering. Requires `system_audit_log` permission.
+
+Results are ordered by ID descending (most recent first), with 50 entries per page.
+
++ Parameters
+    + page: `1` (optional, number) - Page number for pagination. Defaults to 1.
+    + filter (optional, object) - Filter criteria.
+        + type: `record.add` (optional, string) - Filter by event type (exact match).
+        + actor: `admin@example.com` (optional, string) - Filter by actor (substring match).
+        + search: `example.com` (optional, string) - Filter by summary text (substring match).
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/audit/list",
+                "response": {
+                    "entries": [
+                        {
+                            "id": 42,
+                            "time": 1709769600,
+                            "actor": "admin@example.com",
+                            "type": "record.add",
+                            "args": "[1, 5, \"{\\\"name\\\": \\\"www.example.com\\\", ...}\"]",
+                            "summary": "\"www.example.com\" A record on \"example.com\" added",
+                            "extendedsummary": "content: \"1.2.3.4\", ttl: 300"
+                        }
+                    ],
+                    "pagination": {
+                        "page": 1,
+                        "totalPages": 5,
+                        "total": 230
+                    }
+                }
+            }
+
+
+## System Audit Log Entry [/system/audit/{id}]
+### Get a specific audit log entry [GET]
+Get details of a specific audit log entry by ID. Requires `system_audit_log` permission.
+
++ Parameters
+    + id: `42` (required, number) - The audit log entry ID.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "system/audit/42",
+                "response": {
+                    "id": 42,
+                    "time": 1709769600,
+                    "actor": "admin@example.com",
+                    "type": "record.add",
+                    "args": "[1, 5, \"{\\\"name\\\": \\\"www.example.com\\\", ...}\"]",
+                    "summary": "\"www.example.com\" A record on \"example.com\" added",
+                    "extendedsummary": "content: \"1.2.3.4\", ttl: 300"
+                }
+            }
