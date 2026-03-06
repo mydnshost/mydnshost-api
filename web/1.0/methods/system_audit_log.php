@@ -33,7 +33,10 @@
 				$search->where('actor', '%' . $filter['actor'] . '%', 'LIKE');
 			}
 			if (isset($filter['search']) && $filter['search'] !== '') {
-				$search->where('summary', '%' . $filter['search'] . '%', 'LIKE');
+				$search->whereOr([
+					['summary', '%' . $filter['search'] . '%', 'LIKE'],
+					['extendedsummary', '%' . $filter['search'] . '%', 'LIKE'],
+				]);
 			}
 
 			$total = $search->count();
