@@ -367,11 +367,35 @@
 		}
 	}
 
+	// Validate admin elevation token if provided.
+	if (getAdminElevationEnabled() && isset($_SERVER['HTTP_X_ADMIN_TOKEN']) && isset($context['user'])) {
+		$adminToken = $_SERVER['HTTP_X_ADMIN_TOKEN'];
+		if (ReallySimpleJWT\Token::validate($adminToken, getAdminJWTSecret())) {
+			$adminPayload = ReallySimpleJWT\Token::getPayload($adminToken, getAdminJWTSecret());
+			if (isset($adminPayload['type']) && $adminPayload['type'] === 'admin_elevation'
+				&& isset($adminPayload['userid']) && $adminPayload['userid'] == $context['user']->getID()
+				&& isset($adminPayload['exp']) && $adminPayload['exp'] > time()) {
+				$context['admin_elevated'] = true;
+			}
+		}
+	}
+
 	// Handle impersonation.
 	if ($user != FALSE && array_key_exists('user', $context) && isset($postdata['impersonate'])) {
 		if (isset($context['access']['impersonate_users']) && parseBool($context['access']['impersonate_users'])) {
 			if (isset($context['key']) && !$context['key']->getAdminFeatures()) {
 				$resp->sendError('Impersonation is not permitted with this key.');
+			}
+
+			// Require admin elevation for impersonation.
+			if (getAdminElevationEnabled()) {
+				if (!isset($context['key']) || !$context['key']->getAdminFeatures()) {
+					if (!isset($context['admin_elevated']) || $context['admin_elevated'] !== true) {
+						$resp->setErrorCode('403', 'Forbidden');
+						$resp->setHeader('admin_elevation', 'required');
+						$resp->sendError('Admin elevation required.');
+					}
+				}
 			}
 
 			if ($postdata['impersonate'][0] == 'id') {
@@ -441,6 +465,10 @@
 		header('WWW-Authenticate: Basic realm="API"');
 		$resp->setErrorCode('401', 'Unauthorized');
 		$resp->sendError('Authentication required.', $errorExtraData);
+	} catch (RouterMethod_AdminElevationRequired $ex) {
+		$resp->setErrorCode('403', 'Forbidden');
+		$resp->setHeader('admin_elevation', 'required');
+		$resp->sendError('Admin elevation required.');
 	} catch (RouterMethod_AccessDenied $ex) {
 		if (!empty($ex->getMessage())) { $errorExtraData[] = $ex->getMessage(); }
 		$resp->setErrorCode('403', 'Forbidden');

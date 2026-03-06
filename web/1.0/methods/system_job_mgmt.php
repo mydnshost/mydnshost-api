@@ -12,6 +12,8 @@
 			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				throw new RouterMethod_AccessDenied();
 			}
+
+			$this->requireAdminElevation();
 		}
 	}
 
@@ -90,7 +92,7 @@
 		}
 	});
 
-	$router->get('/system/jobs/([0-9]+)/repeat', new class extends SystemJobsMgmt {
+	$router->post('/system/jobs/([0-9]+)/repeat', new class extends SystemJobsMgmt {
 		function run($job) {
 			$j = Job::load($this->getContextKey('db'), $job);
 
@@ -174,7 +176,7 @@
 		}
 	});
 
-	$router->get('/system/jobs/([0-9]+)/republish', new class extends SystemJobsMgmt {
+	$router->post('/system/jobs/([0-9]+)/republish', new class extends SystemJobsMgmt {
 		function run($job) {
 			$j = Job::load($this->getContextKey('db'), $job);
 
@@ -195,7 +197,7 @@
 		}
 	});
 
-	$router->get('/system/jobs/([0-9]+)/cancel', new class extends SystemJobsMgmt {
+	$router->post('/system/jobs/([0-9]+)/cancel', new class extends SystemJobsMgmt {
 		function run($job) {
 			$j = Job::load($this->getContextKey('db'), $job);
 

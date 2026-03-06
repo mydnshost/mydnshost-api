@@ -103,6 +103,34 @@
 		}
 	});
 
+	$router->get('/system/datavalue/adminElevationEnabled', new class extends RouterMethod {
+		function check() {
+			if ($this->getContextKey('user') == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function run() {
+			$this->getContextKey('response')->set('adminElevationEnabled', getAdminElevationEnabled());
+
+			return TRUE;
+		}
+	});
+
+	$router->get('/system/datavalue/adminElevationType', new class extends RouterMethod {
+		function check() {
+			if ($this->getContextKey('user') == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function run() {
+			$this->getContextKey('response')->set('adminElevationType', getAdminElevationType());
+
+			return TRUE;
+		}
+	});
+
 	$router->get('/system/datavalue/exportTypes', new class extends RouterMethod {
 		function run() {
 			$this->getContextKey('response')->set('exportTypes', ['bind', 'raw']);

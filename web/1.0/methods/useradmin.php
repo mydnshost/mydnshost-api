@@ -855,6 +855,8 @@
 				if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 					$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 				}
+
+				$this->requireAdminElevation();
 			}
 		}
 	}
@@ -873,6 +875,7 @@
 			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 			}
+			$this->requireAdminElevation();
 
 			$user = $this->getUserFromParam($userid);
 
@@ -1122,6 +1125,7 @@
 			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				$this->getContextKey('response')->sendError('Admin features not permitted with this key.');
 			}
+			$this->requireAdminElevation();
 
 			return $this->createUser();
 		}

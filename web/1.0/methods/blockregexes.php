@@ -14,6 +14,8 @@
 			if ($this->hasContextKey('key') && !$this->getContextKey('key')->getAdminFeatures()) {
 				throw new RouterMethod_AccessDenied();
 			}
+
+			$this->requireAdminElevation();
 		}
 
 		protected function getBlockRegexFromParam($id) {

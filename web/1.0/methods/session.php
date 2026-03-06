@@ -44,6 +44,90 @@
 		}
 	});
 
+	$router->post('/session/admintoken', new class extends RouterMethod {
+		function check() {
+			$user = $this->getContextKey('user');
+			if ($user == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function run() {
+			if (!getAdminElevationEnabled()) {
+				$this->getContextKey('response')->sendError('Admin elevation is not enabled.');
+			}
+
+			$data = $this->getContextKey('data');
+			$user = $this->getContextKey('user');
+			$db = $this->getContextKey('db');
+			$elevationType = getAdminElevationType();
+
+			if ($elevationType === '2fa') {
+				if (!isset($data['data']['code']) || empty($data['data']['code'])) {
+					$this->getContextKey('response')->sendError('2FA code is required.');
+				}
+
+				$testCode = $data['data']['code'];
+
+				// Load active 2FA keys for this user.
+				$possibleKeys = TwoFactorKey::getSearch($db)
+					->where('user_id', $user->getID())
+					->where('active', 'true')
+					->find('key');
+
+				$keys = [];
+				foreach ($possibleKeys as $key) {
+					if ($key->isUsableKey($user)) { $keys[] = $key; }
+				}
+
+				if (count($keys) === 0) {
+					$this->getContextKey('response')->sendError('2FA is required for admin elevation. Please set up 2FA first.');
+				}
+
+				$valid = false;
+				foreach ($keys as $key) {
+					if ($key->isCode() && $key->verify($testCode, 1)) {
+						$valid = true;
+						$key->setLastUsed(time())->save();
+						break;
+					}
+				}
+
+				if (!$valid) {
+					$this->getContextKey('response')->sendError('Invalid 2FA code.');
+				}
+			} else if ($elevationType === 'password') {
+				if (!isset($data['data']['password']) || empty($data['data']['password'])) {
+					$this->getContextKey('response')->sendError('Password is required.');
+				}
+
+				if (!$user->checkPassword($data['data']['password'])) {
+					$this->getContextKey('response')->sendError('Invalid password.');
+				}
+			} else {
+				$this->getContextKey('response')->sendError('Unknown admin elevation type configured.');
+			}
+
+			// Build the admin token JWT.
+			$ttl = getAdminElevationTTL();
+			$payload = [
+				'iat' => time(),
+				'exp' => time() + $ttl,
+				'iss' => getSiteName(),
+				'type' => 'admin_elevation',
+				'userid' => $user->getID(),
+			];
+
+			$token = ReallySimpleJWT\Token::customPayload($payload, getAdminJWTSecret());
+
+			$this->getContextKey('response')->data([
+				'admintoken' => $token,
+				'expires' => time() + $ttl,
+			]);
+			return true;
+		}
+	});
+
 	$router->addRoute('GET', '/session/jwt', new class extends RouterMethod {
 		function check() {
 			$user = $this->getContextKey('user');
