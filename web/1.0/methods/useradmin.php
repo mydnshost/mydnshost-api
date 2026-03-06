@@ -381,7 +381,7 @@
 					if (empty($value)) {
 						$ucd->delete();
 						EventQueue::get()->publish('user.customdata.deleted', [$uid, $key]);
-					} else {
+					} else if ($value !== $oldValue) {
 						$ucd->setValue($value)->save();
 						EventQueue::get()->publish('user.customdata.updated', [$uid, $key, $oldValue, $value]);
 					}
@@ -886,6 +886,14 @@
 			if ($customdata !== FALSE) {
 				$oldValue = $isCreate ? null : $customdata->getValue();
 				$this->doUpdateCustomData($customdata, $data['data']);
+
+				if (!$isCreate && $customdata->getValue() === $oldValue) {
+					$k = $customdata->toArray();
+					unset($k['user_id']);
+					unset($k['id']);
+					$this->getContextKey('response')->data($k);
+					return TRUE;
+				}
 
 				try {
 					$customdata->validate();

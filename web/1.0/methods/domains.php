@@ -1137,7 +1137,7 @@
 					if (empty($value)) {
 						$udcd->delete();
 						EventQueue::get()->publish('domain.userdata.deleted', [$did, $uid, $key]);
-					} else {
+					} else if ($value !== $oldValue) {
 						$udcd->setValue($value)->save();
 						EventQueue::get()->publish('domain.userdata.updated', [$did, $uid, $key, $oldValue, $value]);
 					}
