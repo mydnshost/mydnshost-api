@@ -139,7 +139,9 @@
 			}
 
 			if (isset($data['data']['acceptterms']) && parseBool($data['data']['acceptterms'])) {
-				$user->setAcceptTerms(time())->save();
+				$acceptTime = time();
+				$user->setAcceptTerms($acceptTime)->save();
+				EventQueue::get()->publish('user.terms.accepted', [$user->getID(), $acceptTime]);
 				$this->getContextKey('response')->data(['acceptterms' => 'Terms accepted.']);
 
 				return TRUE;
@@ -163,6 +165,9 @@
 				$oldPass = $user->getRawPassword();
 				$oldEmail = $user->getEmail();
 				$oldName = $user->getRealName();
+				$oldUserState = $user->toArray();
+				unset($oldUserState['password']);
+				unset($oldUserState['verifycode']);
 				$this->doUpdateUser($user, $data['data']);
 				$newPass = $user->getRawPassword();
 				$newEmail = $user->getEmail();
@@ -254,6 +259,13 @@
 						$this->getContextKey('response')->sendError('Error updating user: ' . $user->getID());
 					}
 				} else {
+					if (!$isCreate) {
+						$newUserState = $user->toArray();
+						unset($newUserState['password']);
+						unset($newUserState['verifycode']);
+						EventQueue::get()->publish('user.updated', [$user->getID(), json_encode($oldUserState), json_encode($newUserState)]);
+					}
+
 					if (!$isCreate && !$this->hasContextKey('impersonator')) {
 						if ($newEmail != $oldEmail && !empty($oldEmail)) {
 							$te = TemplateEngine::get();
@@ -352,8 +364,10 @@
 					}
 					if (empty($value)) {
 						$ucd->delete();
+						EventQueue::get()->publish('user.customdata.deleted', [$uid, $key]);
 					} else {
 						$ucd->setValue($value)->save();
+						EventQueue::get()->publish('user.customdata.updated', [$uid, $key, $value]);
 					}
 				}
 			}
@@ -402,7 +416,12 @@
 				}
 			}
 
-			$this->getContextKey('response')->data(['deleted' => $user->delete()]);
+			$userEmail = $user->getEmail();
+			$deleted = $user->delete();
+			if ($deleted) {
+				EventQueue::get()->publish('user.deleted', [$user->getID(), $userEmail]);
+			}
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 			return TRUE;
 		}
 
@@ -451,6 +470,15 @@
 			}
 
 			if ($key !== FALSE) {
+				$oldKeyState = null;
+				if (!$isCreate) {
+					$oldKeyState = $key->toArray();
+					unset($oldKeyState['id']);
+					unset($oldKeyState['user_id']);
+					unset($oldKeyState['apikey']);
+					$oldKeyState['maskedkey'] = $key->getKey(true);
+				}
+
 				$this->doUpdateKey($key, $data['data']);
 
 				try {
@@ -477,9 +505,11 @@
 						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
 				} else if ($isCreate) {
+					EventQueue::get()->publish('apikey.created', [$user->getID(), $key->getKey(true)]);
 					$this->getContextKey('response')->data([$key->getKey() => $k]);
 					$sendMail = true;
 				} else {
+					EventQueue::get()->publish('apikey.updated', [$user->getID(), $key->getKey(true), json_encode($oldKeyState), json_encode($k)]);
 					$this->getContextKey('response')->data($k);
 					$sendMail = true;
 				}
@@ -518,7 +548,13 @@
 		}
 
 		protected function deleteAPIKey($user, $key) {
-			$this->getContextKey('response')->data(['deleted' => $key->delete()]);
+			$maskedKey = $key->getKey(true);
+			$deleted = $key->delete();
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
+
+			if ($deleted) {
+				EventQueue::get()->publish('apikey.deleted', [$user->getID(), $maskedKey]);
+			}
 
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
@@ -632,6 +668,15 @@
 			}
 
 			if ($key !== FALSE) {
+				$old2FAState = null;
+				if (!$isCreate) {
+					$old2FAState = $key->toArray();
+					unset($old2FAState['user_id']);
+					unset($old2FAState['key']);
+					unset($old2FAState['internal']);
+					unset($old2FAState['internaldata']);
+				}
+
 				$this->doUpdate2FAKey($key, $data['data']);
 
 				try {
@@ -676,10 +721,22 @@
 				$te->setVar('user', $user);
 				$te->setVar('twofactorkey', $key);
 				if ($isCreate) {
+					$keyInfo = $key->toArray();
+					unset($keyInfo['user_id']);
+					unset($keyInfo['key']);
+					unset($keyInfo['internal']);
+					unset($keyInfo['internaldata']);
+					EventQueue::get()->publish('2fa.created', [$user->getID(), $key->getID(), json_encode($keyInfo)]);
 					$template = '2fakey/create.tpl';
 					[$subject, $message, $htmlmessage] = templateToMail($te, $template);
 					EventQueue::get()->publish('mail.send', [$user->getEmail(), $subject, $message, $htmlmessage, '2FA key created']);
 				} else {
+					$new2FAState = $key->toArray();
+					unset($new2FAState['user_id']);
+					unset($new2FAState['key']);
+					unset($new2FAState['internal']);
+					unset($new2FAState['internaldata']);
+					EventQueue::get()->publish('2fa.updated', [$user->getID(), $key->getID(), json_encode($old2FAState), json_encode($new2FAState)]);
 					// Doesn't make sense to send this mail, as only the
 					// description can change, we won't show the 2FA Secret in
 					// the mails...
@@ -733,13 +790,26 @@
 			if (!$key->isOneTime()) { $key->setLastUsed(time()); }
 			$key->save();
 
+			EventQueue::get()->publish('2fa.verified', [$user->getID(), $key->getID()]);
+
 			$this->getContextKey('response')->data(['success' => 'Valid code provided.']);
 
 			return TRUE;
 		}
 
 		protected function delete2FAKey($user, $key) {
-			$this->getContextKey('response')->data(['deleted' => $key->delete()]);
+			$keyID = $key->getID();
+			$keyInfo = $key->toArray();
+			unset($keyInfo['user_id']);
+			unset($keyInfo['key']);
+			unset($keyInfo['internal']);
+			unset($keyInfo['internaldata']);
+			$deleted = $key->delete();
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
+
+			if ($deleted) {
+				EventQueue::get()->publish('2fa.deleted', [$user->getID(), $keyID, json_encode($keyInfo)]);
+			}
 
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
@@ -752,7 +822,12 @@
 		}
 
 		protected function delete2FADevice($user, $device) {
-			$this->getContextKey('response')->data(['deleted' => $device->delete()]);
+			$deviceID = $device->getID();
+			$deleted = $device->delete();
+			if ($deleted) {
+				EventQueue::get()->publish('2fa.device.deleted', [$user->getID(), $deviceID]);
+			}
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 
 			return TRUE;
 		}
@@ -816,6 +891,7 @@
 						$this->getContextKey('response')->sendError('Error updating customdata: ' . $customdata->getKey(), $ex->getMessage());
 					}
 				} else {
+					EventQueue::get()->publish('user.customdata.updated', [$user->getID(), $customdata->getKey(), $customdata->getValue()]);
 					$this->getContextKey('response')->data($k);
 				}
 
@@ -837,7 +913,12 @@
 		}
 
 		protected function deleteCustomData($user, $customdata) {
-			$this->getContextKey('response')->data(['deleted' => $customdata->delete()]);
+			$key = $customdata->getKey();
+			$deleted = $customdata->delete();
+			if ($deleted) {
+				EventQueue::get()->publish('user.customdata.deleted', [$user->getID(), $key]);
+			}
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 			return TRUE;
 		}
 	}

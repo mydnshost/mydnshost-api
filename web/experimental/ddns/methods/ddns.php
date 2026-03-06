@@ -136,6 +136,7 @@
 					$r['updated'] = $record->save();
 					$r['id'] = $record->getID();
 					$result[] = $r;
+					$added[] = $record;
 				}
 			}
 
@@ -152,12 +153,13 @@
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 			foreach ($added as $record) {
-				EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 
 			if (!empty($result)) {
+				$oldSoa = json_encode($domain->getSOARecord());
 				$serial = $domain->updateSerial();
-				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'update_records', 'serial' => $serial, 'time' => time()]]);
 			} else {

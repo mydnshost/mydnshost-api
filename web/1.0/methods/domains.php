@@ -441,6 +441,7 @@
 			$parsedsoa['expire'] = $zoneData['soa']['Expire'];
 			$parsedsoa['minttl'] = $zoneData['soa']['MinTTL'];
 
+			$oldSoa = json_encode($soa);
 			try {
 				$soa->updateSOAContent($parsedsoa);
 				$soa->validate();
@@ -542,10 +543,10 @@
 				}
 
 				foreach ($newRecords as $r) {
-					EventQueue::get()->publish('record.add', [$domain->getID(), $r->getID()]);
+					EventQueue::get()->publish('record.add', [$domain->getID(), $r->getID(), json_encode($r)]);
 				}
 
-				EventQueue::get()->publish('record.update', [$domain->getID(), $soa->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $soa->getID(), $oldSoa, json_encode($soa)]);
 
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
@@ -636,6 +637,10 @@
 				$domain->setAccess($users[$email]->getID(), $access);
 			}
 			$domain->save();
+
+			foreach ($data['data']['access'] as $email => $access) {
+				EventQueue::get()->publish('domain.access.changed', [$domain->getID(), $email, $access]);
+			}
 
 			$r = $domain->toArray();
 			$access = $domain->getAccessUsers();
@@ -939,6 +944,7 @@
 
 			$oldName = $domain->getDomain();
 			$oldSuperAlias = $domain->getAliasDomain(true);
+			$oldSoa = json_encode($domain->getSOARecord());
 			$this->doUpdateDomain($domain, $data['data'], $this->checkPermissions(['rename_domains'], true));
 			$newName = $domain->getDomain();
 			$newSuperAlias = $domain->getAliasDomain(true);
@@ -1027,9 +1033,9 @@
 			}
 
 			if ($isCreate) {
-				EventQueue::get()->publish('record.add', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.add', [$domain->getID(), $domain->getSOARecord()->getID(), json_encode($domain->getSOARecord())]);
 			} else {
-				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 			}
 
 			// If we are triggering the superalias, no need to trigger us, we will
@@ -1066,7 +1072,7 @@
 				try {
 					$record->validate();
 					if ($record->save()) {
-						EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
+						EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID(), json_encode($record)]);
 					}
 				} catch (ValidationFailed $ex) { }
 			}
@@ -1127,8 +1133,10 @@
 					}
 					if (empty($value)) {
 						$udcd->delete();
+						EventQueue::get()->publish('domain.userdata.deleted', [$did, $uid, $key]);
 					} else {
 						$udcd->setValue($value)->save();
+						EventQueue::get()->publish('domain.userdata.updated', [$did, $uid, $key, $value]);
 					}
 				}
 			}
@@ -1202,6 +1210,7 @@
 			}
 
 			$this->getContextKey('db')->beginTransaction();
+			$oldRecord = json_encode($record);
 			$record = $this->doUpdateRecord($domain, $record, $data['data']);
 
 			// Check again incase the name changed, key must be able to edit both.
@@ -1219,10 +1228,11 @@
 						}
 						$this->getContextKey('db')->commit();
 
-						EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID()]);
+						EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID(), $oldRecord, json_encode($record)]);
 
+						$oldSoa = json_encode($domain->getSOARecord());
 						$serial = $domain->updateSerial();
-						EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+						EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 						EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 					}
 				}
@@ -1260,6 +1270,7 @@
 			$errors = array();
 			$recordsToBeSaved = array();
 			$recordsToBeDeleted = array();
+			$oldRecordStates = array();
 
 			if (isset($data['data']['records'])) {
 				for ($i = 0; $i < count($data['data']['records']); $i++) {
@@ -1280,6 +1291,7 @@
 							// Check if we can edit this record.
 							$this->checkUserCanEditRecord($record->getType(), $record->getName());
 						}
+						$oldRecordStates[$i] = json_encode($record);
 						$this->doUpdateRecord($domain, $record, $r);
 						// Check again incase the name changed, key must be able to edit both.
 						$this->checkUserCanEditRecord($record->getType(), $record->getName());
@@ -1359,16 +1371,17 @@
 			foreach ($deletedRecords as $record) {
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
-			foreach ($updatedRecords as $record) {
-				EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID()]);
+			foreach ($updatedRecords as $i => $record) {
+				EventQueue::get()->publish('record.update', [$domain->getID(), $record->getID(), $oldRecordStates[$i] ?? '{}', json_encode($record)]);
 			}
 			foreach ($addedRecords as $record) {
-				EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID()]);
+				EventQueue::get()->publish('record.add', [$domain->getID(), $record->getID(), json_encode($record)]);
 			}
 
 			if ($changeCount > 0) {
+				$oldSoa = json_encode($domain->getSOARecord());
 				$serial = $domain->updateSerial();
-				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 			} else {
 				$serial = $domain->getSOARecord()->parseSOA()['serial'];
@@ -1449,8 +1462,9 @@
 			if ($deleted) {
 				EventQueue::get()->publish('record.delete', [$domain->getID(), $record->getID(), json_encode($record)]);
 
+				$oldSoa = json_encode($domain->getSOARecord());
 				$serial = $domain->updateSerial();
-				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_record', 'serial' => $serial, 'time' => time()]]);
@@ -1493,9 +1507,10 @@
 			}
 			$this->getContextKey('response')->set('deleted', $count);
 			if ($count > 0) {
+				$oldSoa = json_encode($domain->getSOARecord());
 				$serial = $domain->updateSerial();
 
-				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID()]);
+				EventQueue::get()->publish('record.update', [$domain->getID(), $domain->getSOARecord()->getID(), $oldSoa, json_encode($domain->getSOARecord())]);
 				EventQueue::get()->publish('domain.records.changed', [$domain->getID()]);
 
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'delete_records', 'serial' => $serial, 'time' => time()]]);
@@ -1586,6 +1601,15 @@
 			}
 
 			if ($key !== FALSE) {
+				$oldKeyState = null;
+				if (!$isCreate) {
+					$oldKeyState = $key->toArray();
+					unset($oldKeyState['id']);
+					unset($oldKeyState['domain_id']);
+					unset($oldKeyState['domainkey']);
+					$oldKeyState['maskedkey'] = $key->getKey(true);
+				}
+
 				$this->doUpdateKey($key, $data['data']);
 
 				try {
@@ -1611,8 +1635,10 @@
 						$this->getContextKey('response')->sendError('Error updating key: ' . $key->getKey(), $ex->getMessage());
 					}
 				} else if ($isCreate) {
+					EventQueue::get()->publish('domain.key.created', [$domain->getID(), $key->getKey(true)]);
 					$this->getContextKey('response')->data([$key->getKey() => $k]);
 				} else {
+					EventQueue::get()->publish('domain.key.updated', [$domain->getID(), $key->getKey(true), json_encode($oldKeyState), json_encode($k)]);
 					$this->getContextKey('response')->data($k);
 				}
 
@@ -1638,7 +1664,12 @@
 		}
 
 		protected function deleteDomainKey($domain, $key) {
-			$this->getContextKey('response')->data(['deleted' => $key->delete()]);
+			$maskedKey = $key->getKey(true);
+			$deleted = $key->delete();
+			if ($deleted) {
+				EventQueue::get()->publish('domain.key.deleted', [$domain->getID(), $maskedKey]);
+			}
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 			return TRUE;
 		}
 
@@ -1678,6 +1709,14 @@
 			}
 
 			if ($hook !== FALSE) {
+				$oldHookState = null;
+				if (!$isCreate) {
+					$oldHookState = $hook->toArray();
+					unset($oldHookState['id']);
+					unset($oldHookState['domain_id']);
+					unset($oldHookState['password']);
+				}
+
 				$this->doUpdateHook($hook, $data['data']);
 
 				try {
@@ -1701,8 +1740,14 @@
 						$this->getContextKey('response')->sendError('Error updating hook: ' . $hook->getID());
 					}
 				} else if ($isCreate) {
+					EventQueue::get()->publish('domain.hook.created', [$domain->getID(), $hook->getID()]);
 					$this->getContextKey('response')->data([$hook->getID() => $k]);
 				} else {
+					$newHookState = $hook->toArray();
+					unset($newHookState['id']);
+					unset($newHookState['domain_id']);
+					unset($newHookState['password']);
+					EventQueue::get()->publish('domain.hook.updated', [$domain->getID(), $hook->getID(), json_encode($oldHookState), json_encode($newHookState)]);
 					$this->getContextKey('response')->data($k);
 				}
 
@@ -1727,7 +1772,12 @@
 		}
 
 		protected function deleteDomainHook($domain, $hook) {
-			$this->getContextKey('response')->data(['deleted' => $hook->delete()]);
+			$hookID = $hook->getID();
+			$deleted = $hook->delete();
+			if ($deleted) {
+				EventQueue::get()->publish('domain.hook.deleted', [$domain->getID(), $hookID, $hook->getURL()]);
+			}
+			$this->getContextKey('response')->data(['deleted' => $deleted]);
 			return TRUE;
 		}
 	}

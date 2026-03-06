@@ -26,6 +26,8 @@
 			$user->setVerifyCode($code);
 			$user->save();
 
+			EventQueue::get()->publish('user.forgotpassword.requested', [$user->getID()]);
+
 			$te = TemplateEngine::get();
 			$te->setVar('user', $user);
 			[$subject, $message, $htmlmessage] = templateToMail($te, 'forgotpassword.tpl');
@@ -90,6 +92,8 @@
 			$result = $user->save();
 
 			if ($result) {
+				EventQueue::get()->publish('user.forgotpassword.completed', [$user->getID()]);
+
 				$te = TemplateEngine::get();
 				$te->setVar('user', $user);
 				[$subject, $message, $htmlmessage] = templateToMail($te, 'passwordchanged.tpl');
