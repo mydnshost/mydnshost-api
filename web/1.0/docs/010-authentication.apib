@@ -76,6 +76,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE1NjEzMjgzM
 
 JWT tokens will expire approximately 1 hour after they were issued, or if the method used to acquire it becomes invalid.
 
+## Admin Elevation
+
+When admin elevation is enabled on the server, admin-level write operations (non-GET requests to admin endpoints) require an additional `X-Admin-Token` header. This is a short-lived JWT obtained from the `/session/admintoken` endpoint by verifying your identity (2FA code or password, depending on server configuration).
+
+```http
+X-Admin-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Admin tokens expire after a configurable period (default: 15 minutes). When an admin token is required but not provided (or expired), the API will respond with HTTP 403 and an `admin_elevation: required` response header.
+
+API keys with the `admin_features` permission are exempt from admin elevation requirements, allowing automation and scripting to continue without interruption.
+
+GET requests are always exempt from elevation requirements.
+
 ## Request-ID
 For any of the requests, you can pass a X-Request-ID header:
 

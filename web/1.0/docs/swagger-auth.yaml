@@ -44,6 +44,11 @@ components:
       description: 'Session Key'
       name: X-SESSION-ID
       in: header
+    X-Admin-Token:
+      type: apiKey
+      description: 'Admin elevation token for admin write operations'
+      name: X-Admin-Token
+      in: header
 security:
 - BasicAuth: []
 - BasicAuth: []

@@ -100,6 +100,52 @@ This will obtain a new JWT token for use in future requests.
                 }
             }
 
+## Get an Admin Token [/session/admintoken]
+### Obtain an admin elevation token [POST]
+When admin elevation is enabled, this endpoint is used to obtain a short-lived admin token by verifying your identity. The verification method depends on server configuration (2FA code or password).
+
+The returned token should be passed as an `X-Admin-Token` header on subsequent requests that require admin elevation.
+
++ Request Elevate with 2FA code (application/json)
+    + Body
+
+            {
+                "data": {
+                    "code": "123456"
+                }
+            }
+
++ Request Elevate with password (application/json)
+    + Body
+
+            {
+                "data": {
+                    "password": "my_password"
+                }
+            }
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "session/admintoken",
+                "response": {
+                    "admintoken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "expires": 1625001800
+                }
+            }
+
++ Response 400 (application/json)
+    If verification fails or 2FA is required but not configured.
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "session/admintoken",
+                "error": "Invalid 2FA code."
+            }
+
 ## Forgot Password [/forgotpassword]
 ### Initiate a Forgot Password request [POST]
 This will cause an email to be sent to the user with a link to click on to reset their password.
