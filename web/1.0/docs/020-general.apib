@@ -146,6 +146,50 @@ The returned token should be passed as an `X-Admin-Token` header on subsequent r
                 "error": "Invalid 2FA code."
             }
 
+## Check 2FA Push Availability [/session/2fa_push/check]
+### Check if 2FA push is available [GET]
+Checks whether the authenticated user has any active push-capable 2FA keys.
+
++ Response 200 (application/json)
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "session/2fa_push/check",
+                "response": {
+                    "hasPushKey": true
+                }
+            }
+
+## Initiate 2FA Push [/session/2fa_push]
+### Initiate a 2FA push verification [GET]
+Sends a push notification to the user's push-capable 2FA device and waits for approval. On success, returns a short-lived one-time pushcode that can be used as a 2FA code (e.g. for login or admin elevation).
+
+This request blocks until the push is approved or times out.
+
++ Response 200 (application/json)
+    On successful push approval.
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "session/2fa_push",
+                "response": {
+                    "pushcode": "a1b2c3d4e5f6"
+                }
+            }
+
++ Response 403 (application/json)
+    If the push was denied, timed out, or no push keys are available.
+    + Body
+
+            {
+                "respid": "60a1b2c3d4e5f",
+                "method": "session/2fa_push",
+                "error": "Failed.",
+                "errormore": "2FA Push Failed"
+            }
+
 ## Forgot Password [/forgotpassword]
 ### Initiate a Forgot Password request [POST]
 This will cause an email to be sent to the user with a link to click on to reset their password.

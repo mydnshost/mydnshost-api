@@ -564,6 +564,97 @@ paths:
                   properties:
                     code:
                       type: string
+  /session/2fa_push/check:
+    get:
+      responses:
+        '200':
+          description: OK
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      hasPushKey:
+                        type: boolean
+              example:
+                respid: 60a1b2c3d4e5f
+                method: session/2fa_push/check
+                response:
+                  hasPushKey: true
+      summary: Check if 2FA push is available
+      operationId: Check if 2FA push is available
+      description: >-
+        Checks whether the authenticated user has any active push-capable 2FA
+        keys.
+      tags:
+        - General
+      parameters: []
+  /session/2fa_push:
+    get:
+      responses:
+        '200':
+          description: On successful push approval.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  response:
+                    type: object
+                    properties:
+                      pushcode:
+                        type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: session/2fa_push
+                response:
+                  pushcode: a1b2c3d4e5f6
+        '403':
+          description: If the push was denied, timed out, or no push keys are available.
+          headers: {}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  respid:
+                    type: string
+                  method:
+                    type: string
+                  error:
+                    type: string
+                  errormore:
+                    type: string
+              example:
+                respid: 60a1b2c3d4e5f
+                method: session/2fa_push
+                error: Failed.
+                errormore: 2FA Push Failed
+      summary: Initiate a 2FA push verification
+      operationId: Initiate a 2FA push verification
+      description: >-
+        Sends a push notification to the user's push-capable 2FA device and
+        waits for approval. On success, returns a short-lived one-time pushcode
+        that can be used as a 2FA code (e.g. for login or admin elevation).
+
+
+        This request blocks until the push is approved or times out.
+      tags:
+        - General
+      parameters: []
   /forgotpassword:
     post:
       responses:
