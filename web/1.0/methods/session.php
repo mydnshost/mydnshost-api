@@ -163,3 +163,75 @@
 			return true;
 		}
 	});
+
+	$router->addRoute('GET', '/session/2fa_push/check', new class extends RouterMethod {
+		function check() {
+			$user = $this->getContextKey('user');
+			if ($user == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function get() {
+			$user = $this->getContextKey('user');
+			$db = $this->getContextKey('db');
+			$possibleKeys = TwoFactorKey::getSearch($db)->where('user_id', $user->getID())->where('active', 'true')->find('key');
+
+			$keys = [];
+			foreach ($possibleKeys as $key) { if ($key->isUsableKey($user)) { $keys[] = $key; } }
+
+			$hasPushKey = false;
+
+			foreach ($keys as $key) {
+				if ($key->isPush()) { $hasPushKey = true; }
+			}
+
+			$this->getContextKey('response')->data(['hasPushKey' => $hasPushKey]);
+			return true;
+		}
+	});
+
+	$router->addRoute('GET', '/session/2fa_push', new class extends RouterMethod {
+		function check() {
+			$user = $this->getContextKey('user');
+			if ($user == NULL) {
+				throw new RouterMethod_NeedsAuthentication();
+			}
+		}
+
+		function get() {
+			$user = $this->getContextKey('user');
+			$db = $this->getContextKey('db');
+			$possibleKeys = TwoFactorKey::getSearch($db)->where('user_id', $user->getID())->where('active', 'true')->find('key');
+
+			$keys = [];
+			foreach ($possibleKeys as $key) { if ($key->isUsableKey($user)) { $keys[] = $key; } }
+
+			$hasPushKey = false;
+
+			foreach ($keys as $key) {
+				if ($key->isPush()) { $hasPushKey = true; }
+
+				if ($key->isPush() && $key->pushVerify('2FA Request for ' . getSiteName())) {
+					// Valid push.
+
+					// Create a new short-term key.
+					$tempKey = (new TwoFactorKey($db))->setUserID($user->getID())->setCreated(time());
+					$tempKey->setDescription('2FA Session Token');
+					$tempKey->setType('plain')->setKey(true)->setOneTime(true)->setInternal(true)->setActive(true)->setExpires(time() + 30);
+					$tempKey->save();
+
+					$this->getContextKey('response')->data(['pushcode' => $tempKey->getKey()]);
+					return true;
+				}
+			}
+
+			if ($hasPushKey) {
+				$this->getContextKey('response')->setErrorCode('403', 'Forbidden');
+				$this->getContextKey('response')->sendError('Failed.', '2FA Push Failed');
+			} else {
+				$this->getContextKey('response')->setErrorCode('403', 'Forbidden');
+				$this->getContextKey('response')->sendError('Failed.', 'No 2FA Push Keys Found');
+			}
+		}
+	});
