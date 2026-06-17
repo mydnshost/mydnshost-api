@@ -37,7 +37,7 @@
 				$info = $data;
 				$data = ['fqdn' => '_acme-challenge.' . $info['domain'] . '.', 'value' => ''];
 
-				if (isset($data['keyAuth']) && !empty($data['keyAuth'])) {
+				if (isset($info['keyAuth']) && !empty($info['keyAuth'])) {
 					if (!startsWith($info['keyAuth'], $info['token'] . '.')) {
 						$info['keyAuth'] = $info['token'] . '.' . $info['keyAuth'];
 					}
