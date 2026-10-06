@@ -450,6 +450,7 @@
 			}
 
 			$newRecords = [];
+			$skippedRecords = [];
 
 			foreach ($zoneData['records'] as $type => $entries) {
 				foreach ($entries as $rname => $records) {
@@ -463,6 +464,14 @@
 							$name .= $domain->getDomain();
 						} else {
 							$name = rtrim($name, '.');
+						}
+
+						// Skip out-of-zone records (eg glue for external nameservers).
+						$lowerName = strtolower($name);
+						$lowerDomain = strtolower($domain->getDomain());
+						if ($lowerName != $lowerDomain && !endsWith($lowerName, '.' . $lowerDomain)) {
+							$skippedRecords[] = $name . ' ' . $type . ' ' . $record['Address'];
+							continue;
 						}
 
 						if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
@@ -552,6 +561,9 @@
 				EventQueue::get()->publish('domain.hooks.call', [$domain->getID(), ['domain' => $domain->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'import', 'serial' => $parsedsoa['serial'], 'time' => time()]]);
 
 				$this->getContextKey('response')->set('serial', $parsedsoa['serial']);
+				if (!empty($skippedRecords)) {
+					$this->getContextKey('response')->set('skipped', $skippedRecords);
+				}
 
 			} else {
 				$this->getContextKey('db')->rollback();

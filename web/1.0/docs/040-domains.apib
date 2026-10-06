@@ -836,7 +836,7 @@ Get recent logs related to this domain.
 
 
 + Response 200 (application/json)
-If the import is successful, the zone serial will be returned.
+If the import is successful, the zone serial will be returned. Out-of-zone records (eg glue for external nameservers) are not imported, and if any were present they will be listed in `skipped`.
     + Body
 
             {

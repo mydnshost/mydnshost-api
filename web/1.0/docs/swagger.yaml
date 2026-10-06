@@ -3998,7 +3998,10 @@ paths:
     post:
       responses:
         '200':
-          description: If the import is successful, the zone serial will be returned.
+          description: >-
+            If the import is successful, the zone serial will be returned.
+            Out-of-zone records (eg glue for external nameservers) are not
+            imported, and if any were present they will be listed in `skipped`.
           headers: {}
           content:
             application/json:
