@@ -456,15 +456,10 @@
 				foreach ($entries as $rname => $records) {
 					foreach ($records as $record) {
 						$r = (new Record($domain->getDB()))->setDomainID($domain->getID());
+						$r->setFromBindInfo($domain->getDomain(), $rname, $type, $record);
 
-						$name = $rname;
-
-						if (!endsWith($name, '.')) {
-							if (!empty($name) || $name == "0") { $name .= '.'; }
-							$name .= $domain->getDomain();
-						} else {
-							$name = rtrim($name, '.');
-						}
+						$name = $r->getName();
+						$ttl = $r->getTTL();
 
 						// Skip out-of-zone records (eg glue for external nameservers).
 						$lowerName = strtolower($name);
@@ -474,31 +469,13 @@
 							continue;
 						}
 
-						if (in_array($type, ['CNAME', 'NS', 'MX', 'PTR'])) {
-							if (endsWith($record['Address'], '.')) {
-								$record['Address'] = rtrim($record['Address'], '.');
-							} else {
-								if (!empty($record['Address'])) { $record['Address'] .= '.'; }
-								$record['Address'] .= $domain->getDomain();
-							}
-						} else if ($type == 'SRV' && preg_match('#^([0-9]+ [0-9]+) ([^\s]+)$#', $record['Address'], $m)) {
-							if ($m[2] != '.') {
-								if (endsWith($record['Address'], '.')) {
-									$record['Address'] = rtrim($record['Address'], '.');
-								} else {
-									if (!empty($record['Address'])) { $record['Address'] .= '.'; }
-									$record['Address'] .= $domain->getDomain();
-								}
-							}
-						}
-
 						// Test for cloudflare imports.
-						if ($type == 'NS' && $record['Address'] == 'REPLACE&ME$WITH^YOUR@NAMESERVER') {
+						if ($type == 'NS' && $r->getContent() == 'REPLACE&ME$WITH^YOUR@NAMESERVER') {
 							foreach ($this->getDefaultRecords($domain) as $r) {
 								if ($r->getType() == 'NS') {
 									$r->setName($name);
 									$r->setType($type);
-									$r->setTTL($record['TTL']);
+									$r->setTTL($ttl);
 									$r->setChangedAt(time());
 									$r->setChangedBy($this->getContextKey('user')->getID());
 
@@ -514,16 +491,6 @@
 								}
 							}
 						} else {
-							$r->setName($name);
-							$r->setType($type);
-							$r->setTTL($record['TTL']);
-							$r->setContent($record['Address']);
-							if ($type == 'MX' || $type == 'SRV' || $type == 'SVCB' || $type == 'HTTPS') {
-								$r->setPriority($record['Priority']);
-							}
-							if (isset($record['Comment']) && !empty($record['Comment'])) {
-								$r->setComment(implode("\n", $record['Comment']));
-							}
 							$r->setChangedAt(time());
 							$r->setChangedBy($this->getContextKey('user')->getID());
 
