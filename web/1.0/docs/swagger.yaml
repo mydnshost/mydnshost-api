@@ -4003,8 +4003,10 @@ paths:
         '200':
           description: >-
             If the import is successful, the zone serial will be returned.
-            Out-of-zone records (eg glue for external nameservers) are not
-            imported, and if any were present they will be listed in `skipped`.
+            Records that can not be imported (out-of-zone records such as glue
+            for external nameservers, unsupported record types, and records in
+            classes other than `IN`) are skipped, and if any were present they
+            will be listed in `skipped` along with the reason.
           headers: {}
           content:
             application/json:
