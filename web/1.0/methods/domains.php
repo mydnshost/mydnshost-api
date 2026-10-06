@@ -450,7 +450,7 @@
 			}
 
 			$newRecords = [];
-			$skippedRecords = [];
+			$skippedRecords = $zoneData['skipped'] ?? [];
 
 			foreach ($zoneData['records'] as $type => $entries) {
 				foreach ($entries as $rname => $records) {
@@ -461,11 +461,17 @@
 						$name = $r->getName();
 						$ttl = $r->getTTL();
 
+						// Skip record types we don't support.
+						if (!in_array($type, Record::getValidRecordTypes())) {
+							$skippedRecords[] = $name . ' ' . $type . ' ' . $record['Address'] . ' (unsupported record type)';
+							continue;
+						}
+
 						// Skip out-of-zone records (eg glue for external nameservers).
 						$lowerName = strtolower($name);
 						$lowerDomain = strtolower($domain->getDomain());
 						if ($lowerName != $lowerDomain && !endsWith($lowerName, '.' . $lowerDomain)) {
-							$skippedRecords[] = $name . ' ' . $type . ' ' . $record['Address'];
+							$skippedRecords[] = $name . ' ' . $type . ' ' . $record['Address'] . ' (out of zone)';
 							continue;
 						}
 
