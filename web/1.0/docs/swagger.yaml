@@ -3990,7 +3990,10 @@ paths:
             type: string
         - name: type
           in: path
-          description: 'Zone file format to export as (Valid types: bind)'
+          description: >-
+            Zone file format to export as (Valid types: bind, raw). `raw` is a
+            bind zone file that includes `RRCLONE` and template records as-is
+            rather than expanded, see Custom Extensions.
           example: bind
           schema:
             type: string
@@ -6291,6 +6294,35 @@ tags:
       with `$public-` rather than just `$` to allow any user to reference it.
       Non-Template records are considered to be public records and can be
       referenced as such without a matching set of users.
+
+
+      The target is always treated as a fully qualified name, so a trailing `.`
+      is not required (eg `$server1.example.com` and `$server1.example.com.` are
+      equivalent).
+
+
+      ### Zone file representation
+
+
+      Normal zone exports (and the zone files that are actually served) contain
+      the expanded records rather than the `RRCLONE` records themselves, and do
+      not include template records.
+
+
+      Raw exports (`/domains/{domain}/export/raw`) instead include `RRCLONE` and
+      template records as they are stored. `RRCLONE` content is written as a
+      quoted string in the same way as a `TXT` record, for example:
+
+
+      ```dns
+
+      blog.example.com.    IN    RRCLONE    "(A,AAAA) $server1.example.com"
+
+      ```
+
+
+      Raw exports can be imported again to recreate the same records (other than
+      disabled records, which are not included in any export).
   - name: Experimental
     description: >-
       There may be some experimental endpoints available under /experimental

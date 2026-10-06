@@ -804,7 +804,7 @@ Get recent logs related to this domain.
 
 + Parameters
     + domain: `example.org` (required, string) - The domain name
-    + type: `bind` (optional, string) - Zone file format to export as (Valid types: bind)
+    + type: `bind` (optional, string) - Zone file format to export as (Valid types: bind, raw). `raw` is a bind zone file that includes `RRCLONE` and template records as-is rather than expanded, see Custom Extensions.
 
 ### Export zone as bind zone file [GET]
 + Response 200 (application/json)
