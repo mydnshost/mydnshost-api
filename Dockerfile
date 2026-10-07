@@ -14,8 +14,6 @@ RUN \
   ln -s /dnsapi/web /var/www/html && \
   mkdir /bind && \
   chown www-data: /dnsapi && \
-  chown -Rfv www-data: /dnsapi/web /dnsapi/templates /var/www /bind && \
-  groupadd -for -g 999 docker && \
-  usermod -aG docker www-data
+  chown -Rfv www-data: /dnsapi/web /dnsapi/templates /var/www /bind
 
 ENTRYPOINT ["/dnsapi/docker/run.sh"]
