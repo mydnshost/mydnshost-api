@@ -19,10 +19,10 @@
 
 	$router->get('/system/service/list', new class extends SystemServiceMgmt {
 		function run() {
-			Mongo::get()->connect();
-			$containers = Mongo::get()->getCollection('dockerlogs')->distinct('docker.hostname');
+			$services = VictoriaLogs::get()->streamFieldValues('*', 'service');
+			sort($services);
 
-			$this->getContextKey('response')->data($containers);
+			$this->getContextKey('response')->data($services);
 
 			return TRUE;
 		}
@@ -30,38 +30,37 @@
 
 	$router->get('/system/service/([^/]+)/logs', new class extends SystemServiceMgmt {
 		function run($service) {
-			Mongo::get()->connect();
-
 			$limit = 100;
 			$page = isset($_REQUEST['page']) ? max(1, intval($_REQUEST['page'])) : 1;
 
-			$filter = ['docker.hostname' => $service];
+			$filter = '{service=' . VictoriaLogs::quote($service) . '}';
 
 			// Filter by stream (stdout/stderr).
 			if (isset($_REQUEST['stream']) && $_REQUEST['stream'] !== '') {
-				$filter['stream'] = $_REQUEST['stream'];
+				$filter .= ' stream:=' . VictoriaLogs::quote($_REQUEST['stream']);
 			}
 
-			// Filter by message text (case-insensitive regex).
+			// Filter by message text (case-insensitive).
 			if (isset($_REQUEST['search']) && $_REQUEST['search'] !== '') {
-				$filter['message'] = ['$regex' => preg_quote($_REQUEST['search']), '$options' => 'i'];
+				$filter .= ' ~' . VictoriaLogs::quote('(?i)' . preg_quote($_REQUEST['search']));
 			}
-
-			$collection = Mongo::get()->getCollection('dockerlogs');
 
 			// Get total count for pagination.
-			$total = intval($collection->countDocuments($filter));
+			$count = VictoriaLogs::get()->query($filter . ' | stats count() total');
+			$total = intval($count[0]['total'] ?? 0);
 			$totalPages = intval(max(1, ceil($total / $limit)));
 			$page = min($page, $totalPages);
 			$skip = ($page - 1) * $limit;
 
-			$logs = $collection->find($filter, ['projection' => ['_id' => 0], 'sort' => ['timestamp' => -1], 'skip' => $skip, 'limit' => $limit])->toArray();
-			$logs = array_reverse($logs);
-			foreach ($logs as &$log) {
-				if ($log['timestamp'] instanceof \MongoDB\BSON\UTCDateTime) {
-					$log['timestamp'] = $log['timestamp']->toDateTime()->format('r');
-				}
+			$logs = [];
+			foreach (VictoriaLogs::get()->query($filter . ' | sort by (_time) desc | offset ' . $skip . ' | limit ' . $limit) as $log) {
+				$logs[] = ['timestamp' => VictoriaLogs::formatTime($log['_time']),
+				           'stream' => $log['stream'] ?? '',
+				           'message' => $log['_msg'],
+				           'docker' => ['hostname' => $log['service'], 'name' => $log['container_name'] ?? '', 'id' => $log['container_id'] ?? '', 'image' => $log['image'] ?? ''],
+				          ];
 			}
+			$logs = array_reverse($logs);
 
 			$this->getContextKey('response')->data(['logs' => $logs, 'pagination' => ['page' => $page, 'totalPages' => $totalPages, 'total' => $total]]);
 

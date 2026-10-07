@@ -218,7 +218,7 @@ Get the logs for a specific job. Requires `system_job_mgmt` permission.
 
 ## System Services List [/system/service/list]
 ### List services [GET]
-List all known service hostnames from container logs. Requires `system_service_mgmt` permission.
+List all known services (docker compose service names) from container logs. Requires `system_service_mgmt` permission.
 
 + Response 200 (application/json)
     + Body
@@ -228,9 +228,9 @@ List all known service hostnames from container logs. Requires `system_service_m
                 "method": "system/service/list",
                 "response": [
                     "api",
-                    "bind-master",
+                    "bind",
                     "dispatcher",
-                    "workers"
+                    "gmworker1"
                 ]
             }
 
@@ -242,7 +242,7 @@ Get container logs for a specific service with pagination and optional filtering
 Results are returned in chronological order (oldest first within the page), with 100 logs per page.
 
 + Parameters
-    + service: `api` (required, string) - The service hostname.
+    + service: `api` (required, string) - The service name.
     + page: `1` (optional, number) - Page number for pagination. Defaults to 1.
     + stream: `stderr` (optional, string) - Filter by log stream (stdout or stderr).
     + search: `error` (optional, string) - Filter by message text (case-insensitive).
@@ -260,7 +260,10 @@ Results are returned in chronological order (oldest first within the page), with
                             "message": "Request processed successfully",
                             "stream": "stdout",
                             "docker": {
-                                "hostname": "api"
+                                "hostname": "api",
+                                "name": "mydnshost-api-1",
+                                "id": "5427f1c6e1d11d4285239cac92bf8d6d5ca474222c1067d4a544680a8fb9df9c",
+                                "image": "registry.shanemcc.net/mydnshost-public/api:latest"
                             }
                         }
                     ],

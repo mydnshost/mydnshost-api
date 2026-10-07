@@ -5948,14 +5948,14 @@ paths:
                 method: system/service/list
                 response:
                   - api
-                  - bind-master
+                  - bind
                   - dispatcher
-                  - workers
+                  - gmworker1
       summary: List services
       operationId: List services
       description: >-
-        List all known service hostnames from container logs. Requires
-        `system_service_mgmt` permission.
+        List all known services (docker compose service names) from container
+        logs. Requires `system_service_mgmt` permission.
       tags:
         - System
       parameters: []
@@ -5993,6 +5993,12 @@ paths:
                               properties:
                                 hostname:
                                   type: string
+                                name:
+                                  type: string
+                                id:
+                                  type: string
+                                image:
+                                  type: string
                       pagination:
                         type: object
                         properties:
@@ -6012,6 +6018,10 @@ paths:
                       stream: stdout
                       docker:
                         hostname: api
+                        name: mydnshost-api-1
+                        id: >-
+                          5427f1c6e1d11d4285239cac92bf8d6d5ca474222c1067d4a544680a8fb9df9c
+                        image: registry.shanemcc.net/mydnshost-public/api:latest
                   pagination:
                     page: 1
                     totalPages: 10
@@ -6030,7 +6040,7 @@ paths:
       parameters:
         - name: service
           in: path
-          description: The service hostname.
+          description: The service name.
           required: true
           example: api
           schema:
