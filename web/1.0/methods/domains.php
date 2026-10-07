@@ -986,6 +986,7 @@
 				// If it's already above us then we don't need to worry as
 				// things will behave anyway.
 				if ($mySOA['serial'] >= $parentSOA['serial']) {
+					$oldSuperAliasSoa = json_encode($newSuperAlias->getSOARecord());
 					$newSerial = $newSuperAlias->updateSerial($mySOA['serial']);
 					$mySOA['serial'] = $newSerial;
 
@@ -1037,6 +1038,7 @@
 
 			if ($triggerSuperAlias) {
 				// If we are here, $serial will be the serial of the super alias which is what we want...
+				EventQueue::get()->publish('record.update', [$newSuperAlias->getID(), $newSuperAlias->getSOARecord()->getID(), $oldSuperAliasSoa, json_encode($newSuperAlias->getSOARecord())]);
 				EventQueue::get()->publish('domain.records.changed', [$newSuperAlias->getID()]);
 				EventQueue::get()->publish('domain.hooks.call', [$newSuperAlias->getID(), ['domain' => $newSuperAlias->getDomainRaw(), 'type' => 'domain_changed', 'reason' => 'update', 'serial' => $serial, 'time' => time()]]);
 			}
@@ -1534,8 +1536,10 @@
 
 				// We need to serial bump and rebuild all the direct children...
 				foreach ($aliases as $alias) {
+					$oldAliasSoa = json_encode($alias->getSOARecord());
 					$serial = $alias->updateSerial($oldSOA['serial']);
 
+					EventQueue::get()->publish('record.update', [$alias->getID(), $alias->getSOARecord()->getID(), $oldAliasSoa, json_encode($alias->getSOARecord())]);
 					EventQueue::get()->publish('domain.records.changed', [$alias->getID()]);
 					EventQueue::get()->publish('domain.hooks.call', [$alias->getID(), ['domain' => $alias->getDomainRaw(), 'type' => 'records_changed', 'reason' => 'parent_deleted', 'serial' => $serial, 'time' => time()]]);
 				}
