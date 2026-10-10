@@ -825,12 +825,35 @@ Get recent logs related to this domain.
     + type: `bind` (optional, string) - Zone file format to import from (Valid types: bind)
 
 ### Export zone as bind zone file [POST]
+
+Optionally, `replaceNameservers` can be given to replace the apex `NS` records in the zone file (eg, the nameservers of a previous DNS provider) with other nameservers. This can be either a list of nameservers, or `true` to use the default nameservers for this service. When given, the primary nameserver in the `SOA` is also set to the first of these nameservers. `NS` records for sub-domains (delegations) are not affected.
+
 + Request import from zone file (application/json)
     + Body
 
             {
                 "data":{
                     "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS dev.mydnshost.co.uk.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\nexample.org. 86400 IN AAAA ::1\nwww.example.org. 86400 IN AAAA ::1\ntest.example.org. 86400 IN CNAME www.example.org.\ntxt.example.org. 86400 IN TXT \"Some Text Record\"\nexample.org. 86400 IN MX 10 example.org.\nexample.org. 86400 IN MX 50 www.example.org.\n"
+                }
+            }
+
++ Request import from zone file, replacing nameservers (application/json)
+    + Body
+
+            {
+                "data":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS ns1.otherprovider.com.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\n",
+                    "replaceNameservers": ["ns1.mydnshost.co.uk", "ns2.mydnshost.co.uk", "ns3.mydnshost.co.uk"]
+                }
+            }
+
++ Request import from zone file, replacing nameservers with the defaults (application/json)
+    + Body
+
+            {
+                "data":{
+                    "zone": "; Written at Sun, 19 Mar 2017 21:14:58 +0000\n$TTL 86400\n$ORIGIN example.org.\nexample.org. IN SOA ns1.example.org. dnsadmin.example.org. (\n 2017031900\n 86400\n 7200\n 2419200\n 60 )\n\nexample.org. 86400 IN NS ns1.otherprovider.com.\nexample.org. 86400 IN A 127.0.0.1\nwww.example.org. 86400 IN A 127.0.0.1\n",
+                    "replaceNameservers": true
                 }
             }
 

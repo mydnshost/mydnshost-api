@@ -409,6 +409,38 @@
 				$this->getContextKey('response')->sendError('This session is not permitted to overwrite zone data.');
 			}
 
+			// Optionally replace the apex NS records in the zone with our own.
+			// This can either be a list of nameservers, or `true` to use the
+			// system default nameservers.
+			$replaceNameservers = NULL;
+			if (isset($data['data']['replaceNameservers'])) {
+				$wanted = $data['data']['replaceNameservers'];
+
+				if (is_array($wanted)) {
+					$replaceNameservers = [];
+					foreach ($wanted as $ns) {
+						if (!is_string($ns) || trim($ns) === '') {
+							$this->getContextKey('response')->sendError('Invalid nameserver provided in replaceNameservers.');
+						}
+						$replaceNameservers[] = trim($ns);
+					}
+				} else if (parseBool($wanted)) {
+					$replaceNameservers = [];
+					foreach (getSystemDefaultRecords() as $r) {
+						if (strtoupper($r['type']) == 'NS' && ($r['name'] ?? '') === '') {
+							$replaceNameservers[] = $r['content'];
+						}
+					}
+				}
+
+				if ($replaceNameservers !== NULL) {
+					$replaceNameservers = array_values(array_unique($replaceNameservers));
+					if (empty($replaceNameservers)) {
+						$this->getContextKey('response')->sendError('No nameservers available to replace with.');
+					}
+				}
+			}
+
 			// Delete old records.
 			$this->getContextKey('db')->beginTransaction();
 			$deletedRecords = [];
@@ -433,7 +465,11 @@
 			$soa = $domain->getSOARecord();
 			$parsedsoa = $soa->parseSOA();
 
-			$parsedsoa['primaryNS'] = $zoneData['soa']['Nameserver'];
+			if ($replaceNameservers !== NULL) {
+				$parsedsoa['primaryNS'] = rtrim($replaceNameservers[0], '.') . '.';
+			} else {
+				$parsedsoa['primaryNS'] = $zoneData['soa']['Nameserver'];
+			}
 			$parsedsoa['adminAddress'] = $zoneData['soa']['Email'];
 			$parsedsoa['serial'] = $domain->getNextSerial($parsedsoa['serial']);
 			$parsedsoa['refresh'] = $zoneData['soa']['Refresh'];
@@ -451,6 +487,7 @@
 
 			$newRecords = [];
 			$skippedRecords = $zoneData['skipped'] ?? [];
+			$nsTTL = '';
 
 			foreach ($zoneData['records'] as $type => $entries) {
 				foreach ($entries as $rname => $records) {
@@ -472,6 +509,13 @@
 						$lowerDomain = strtolower($domain->getDomain());
 						if ($lowerName != $lowerDomain && !endsWith($lowerName, '.' . $lowerDomain)) {
 							$skippedRecords[] = $name . ' ' . $type . ' ' . $record['Address'] . ' (out of zone)';
+							continue;
+						}
+
+						// Drop the zone's own apex NS records if we are replacing them,
+						// but keep their TTL for the replacements.
+						if ($replaceNameservers !== NULL && $type == 'NS' && $lowerName == $lowerDomain) {
+							if ($nsTTL === '') { $nsTTL = $ttl; }
 							continue;
 						}
 
@@ -515,7 +559,22 @@
 				}
 			}
 
+			if ($replaceNameservers !== NULL) {
+				foreach ($replaceNameservers as $ns) {
+					$r = (new Record($domain->getDB()))->setDomainID($domain->getID());
+					$r = $this->doUpdateRecord($domain, $r, ['name' => '', 'type' => 'NS', 'content' => $ns, 'ttl' => $nsTTL]);
 
+					try {
+						$r->validate();
+						if (!$r->save()) { throw new ValidationFailed('Error saving record.'); }
+					} catch (Exception $ex) {
+						$this->getContextKey('db')->rollback();
+						$this->getContextKey('response')->sendError('Import Error: ' . $ex->getMessage() . ' => NS ' . $ns);
+					}
+
+					$newRecords[] = $r;
+				}
+			}
 
 			if ($soa->save()) {
 				$this->getContextKey('db')->commit();
