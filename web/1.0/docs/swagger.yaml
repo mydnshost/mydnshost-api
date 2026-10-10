@@ -4029,7 +4029,14 @@ paths:
                   serial: '2017031900'
       summary: Export zone as bind zone file
       operationId: Export zone as bind zone file
-      description: ''
+      description: >-
+        Optionally, `replaceNameservers` can be given to replace the apex `NS`
+        records in the zone file (eg, the nameservers of a previous DNS
+        provider) with other nameservers. This can be either a list of
+        nameservers, or `true` to use the default nameservers for this service.
+        When given, the primary nameserver in the `SOA` is also set to the first
+        of these nameservers. `NS` records for sub-domains (delegations) are not
+        affected.
       tags:
         - Domains
       parameters:
@@ -4049,28 +4056,93 @@ paths:
       requestBody:
         content:
           application/json:
-            example:
-              data:
-                zone: |
-                  ; Written at Sun, 19 Mar 2017 21:14:58 +0000
-                  $TTL 86400
-                  $ORIGIN example.org.
-                  example.org. IN SOA ns1.example.org. dnsadmin.example.org. (
-                   2017031900
-                   86400
-                   7200
-                   2419200
-                   60 )
+            examples:
+              example1:
+                value:
+                  data:
+                    zone: >
+                      ; Written at Sun, 19 Mar 2017 21:14:58 +0000
 
-                  example.org. 86400 IN NS dev.mydnshost.co.uk.
-                  example.org. 86400 IN A 127.0.0.1
-                  www.example.org. 86400 IN A 127.0.0.1
-                  example.org. 86400 IN AAAA ::1
-                  www.example.org. 86400 IN AAAA ::1
-                  test.example.org. 86400 IN CNAME www.example.org.
-                  txt.example.org. 86400 IN TXT "Some Text Record"
-                  example.org. 86400 IN MX 10 example.org.
-                  example.org. 86400 IN MX 50 www.example.org.
+                      $TTL 86400
+
+                      $ORIGIN example.org.
+
+                      example.org. IN SOA ns1.example.org. dnsadmin.example.org.
+                      (
+                       2017031900
+                       86400
+                       7200
+                       2419200
+                       60 )
+
+                      example.org. 86400 IN NS dev.mydnshost.co.uk.
+
+                      example.org. 86400 IN A 127.0.0.1
+
+                      www.example.org. 86400 IN A 127.0.0.1
+
+                      example.org. 86400 IN AAAA ::1
+
+                      www.example.org. 86400 IN AAAA ::1
+
+                      test.example.org. 86400 IN CNAME www.example.org.
+
+                      txt.example.org. 86400 IN TXT "Some Text Record"
+
+                      example.org. 86400 IN MX 10 example.org.
+
+                      example.org. 86400 IN MX 50 www.example.org.
+              example2:
+                value:
+                  data:
+                    zone: >
+                      ; Written at Sun, 19 Mar 2017 21:14:58 +0000
+
+                      $TTL 86400
+
+                      $ORIGIN example.org.
+
+                      example.org. IN SOA ns1.example.org. dnsadmin.example.org.
+                      (
+                       2017031900
+                       86400
+                       7200
+                       2419200
+                       60 )
+
+                      example.org. 86400 IN NS ns1.otherprovider.com.
+
+                      example.org. 86400 IN A 127.0.0.1
+
+                      www.example.org. 86400 IN A 127.0.0.1
+                    replaceNameservers:
+                      - ns1.mydnshost.co.uk
+                      - ns2.mydnshost.co.uk
+                      - ns3.mydnshost.co.uk
+              example3:
+                value:
+                  data:
+                    zone: >
+                      ; Written at Sun, 19 Mar 2017 21:14:58 +0000
+
+                      $TTL 86400
+
+                      $ORIGIN example.org.
+
+                      example.org. IN SOA ns1.example.org. dnsadmin.example.org.
+                      (
+                       2017031900
+                       86400
+                       7200
+                       2419200
+                       60 )
+
+                      example.org. 86400 IN NS ns1.otherprovider.com.
+
+                      example.org. 86400 IN A 127.0.0.1
+
+                      www.example.org. 86400 IN A 127.0.0.1
+                    replaceNameservers: true
             schema:
               type: object
               properties:
